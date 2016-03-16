@@ -1,4 +1,12 @@
+# msobox .gitignore
+# Blacklist
 *~
 *.pyc
-
+*.pdf
+.coverage
+.tox/
+htmlcov/
 sonic.log
+
+# Whitelist
+!tox.ini
