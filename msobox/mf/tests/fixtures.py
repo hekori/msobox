@@ -14,7 +14,7 @@ class PureBackendFixture(object):
 
     """Test evaluation of pure back end using AD identities."""
 
-    TOL = 6
+    TOL = 7
 
     def test_forward_vs_reverse_evaluation(self):
         """
@@ -34,7 +34,7 @@ class PureBackendFixture(object):
         NU = self.NU
 
         # define random inputs
-        f = numpy.random.random((NX,))
+        f = numpy.zeros((NX,))
         t = numpy.random.random((1,))
         x = numpy.random.random((NX,))
         p = numpy.random.random((NP,))
