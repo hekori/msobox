@@ -14,6 +14,8 @@ class PureBackendFixture(object):
 
     """Test evaluation of pure back end using AD identities."""
 
+    TOL = 6
+
     def test_forward_vs_reverse_evaluation(self):
         """
         Test forward vs reverse evaluation.
@@ -67,17 +69,19 @@ class PureBackendFixture(object):
         backend.ffcn_bar(f, f_bar, t, x, x_bar, p, p_bar, u, u_bar)
 
         # check correctness of function evaluation
-        assert_array_almost_equal(f, f_tmp)
+        assert_array_almost_equal(f, f_tmp, self.TOL)
 
         # check AD identity
         a = x_bar.T.dot(x_dot) + p_bar.T.dot(p_dot) + u_bar.T.dot(u_dot)
         b = f_bar.T.dot(f_dot)
-        assert_array_almost_equal(a, b)
+        assert_array_almost_equal(a, b, self.TOL)
 
 
 class BackendvsPythonFixture(object):
 
     """Test evaluation of specified back end vs pure python implementation."""
+
+    TOL = 7
 
     def test_backend_ffcn_vs_pure_python(self):
         """
@@ -93,7 +97,7 @@ class BackendvsPythonFixture(object):
         NU = self.NU
 
         # define random inputs
-        f = numpy.random.random((NX,))
+        f = numpy.zeros((NX,))
         t = numpy.random.random((1,))
         x = numpy.random.random((NX,))
         p = numpy.random.random((NP,))
@@ -107,7 +111,7 @@ class BackendvsPythonFixture(object):
         actual = f.copy()
 
         # compare evaluations
-        assert_almost_equal(expected, actual)
+        assert_almost_equal(expected, actual, self.TOL)
 
     def test_backend_ffcn_dot_vs_pure_python(self):
         """
@@ -123,7 +127,7 @@ class BackendvsPythonFixture(object):
         NU = self.NU
 
         # random inputs
-        f = numpy.random.random((NX,))
+        f = numpy.zeros((NX,))
         t = numpy.random.random((1,))
         x = numpy.random.random((NX,))
         p = numpy.random.random((NP,))
@@ -145,8 +149,8 @@ class BackendvsPythonFixture(object):
         actual_dot = f_dot.copy()
 
         # compare values
-        assert_almost_equal(expected, actual)
-        assert_almost_equal(expected_dot, actual_dot)
+        assert_almost_equal(expected, actual, self.TOL)
+        assert_almost_equal(expected_dot, actual_dot, self.TOL)
 
     def test_backend_ffcn_bar_vs_pure_python(self):
         """
@@ -162,7 +166,7 @@ class BackendvsPythonFixture(object):
         NU = self.NU
 
         # random inputs
-        f = numpy.random.random((NX,))
+        f = numpy.zeros((NX,))
         t = numpy.random.random((1,))
         x = numpy.random.random((NX,))
         p = numpy.random.random((NP,))
@@ -200,7 +204,7 @@ class BackendvsPythonFixture(object):
         actual_u_bar = u_bar.copy()
 
         # compare values
-        assert_almost_equal(expected, actual)
-        assert_almost_equal(expected_x_bar, actual_x_bar)
-        assert_almost_equal(expected_p_bar, actual_p_bar)
-        assert_almost_equal(expected_u_bar, actual_u_bar)
+        assert_almost_equal(expected, actual, self.TOL)
+        assert_almost_equal(expected_x_bar, actual_x_bar, self.TOL)
+        assert_almost_equal(expected_p_bar, actual_p_bar, self.TOL)
+        assert_almost_equal(expected_u_bar, actual_u_bar, self.TOL)
