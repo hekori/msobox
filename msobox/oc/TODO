@@ -1,0 +1,67 @@
+"""
+===============================================================================
+"""
+
+TODO
+
+"""
+===============================================================================
+"""
+
+SENSITIVITY ANALYSIS:
+
+calculation of sensitivity domain
+post optimal calculation of multipliers
+avoid inverting KKT-matrix
+automatize deletion of irrelevant controls and parameters in sensitivity analysis
+implement treatment of box constraints into sensitivity analysis
+
+"""
+===============================================================================
+"""
+
+OPTIMAL CONTROL:
+
+implement state and time dependent constraints (MS only)
+exploit problem structure
+only declare free boundary values as variables for solver
+implement transformation of free end parameters, t0 and tf
+use fortran backend to differentiate objective function
+
+"""
+===============================================================================
+"""
+
+INTEGRATION:
+
+implement implicit euler
+parallelization of integration (MS only)
+
+"""
+===============================================================================
+"""
+
+DOCUMENTATION:
+
+doc
+
+"""
+===============================================================================
+"""
+
+GENERAL:
+
+at least include some asserts
+avoid copying and creation of arrays
+
+"""
+===============================================================================
+"""
+
+QUESTIONS:
+
+...
+
+"""
+===============================================================================
+"""
