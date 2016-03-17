@@ -161,7 +161,6 @@ class RK4Classic(object):
         y = numpy.zeros(self.f.shape)
 
         for i in range(self.NTS-1):
-            self.update_u(i)
 
             h = self.ts[i+1] - self.ts[i]
             h2 = h/2.0
@@ -169,33 +168,37 @@ class RK4Classic(object):
             # K1 = h*f(t, y, p, u)
             t[0] = self.ts[i]
             y[:] = self.xs[i, :]
+            self.update_u(i, t[0])
             self.model.ffcn(K1, t, y, self.p, self.u)
             K1 *= h
 
             # K2 = h*f(t + h2, y + 0.5*K1, p, u)
             t[0] = self.ts[i] + h2
             y[:] = self.xs[i, :] + 0.5*K1
+            self.update_u(i, t[0])
             self.model.ffcn(K2, t, y, self.p, self.u)
             K2 *= h
 
             # K3 = h*f(t + h2, y + 0.5*K2, p, u)
             t[0] = self.ts[i] + h2
             y[:] = self.xs[i, :] + 0.5*K2
+            self.update_u(i, t[0])
             self.model.ffcn(K3, t, y, self.p, self.u)
             K3 *= h
 
             # K4 = h*f(t + h, y + K3, p, u)
             t[0] = self.ts[i] + h
             y[:] = self.xs[i, :] + K3
+            self.update_u(i, t[0])
             self.model.ffcn(t, y, K4, self.p, self.u)
             K4   *= h
 
             self.xs[i + 1, :] = self.xs[i, :] + (1./6.0)*(K1 + 2*K2 + 2*K3 + K4)
 
-    def fo_forward_xpu(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
+    def fo_forward_xpq(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
         """
         Solve nominal differential equation and evaluate first-order forward
-        sensitivities of the differential states using an Runge-Kutta scheme.
+        sensitivities of the differential states w.r.t. x, p and q.
 
         Parameters
         ----------
@@ -233,7 +236,6 @@ class RK4Classic(object):
         y_dot = numpy.zeros(self.f.shape + (self.P,))
 
         for i in range(self.NTS-1):
-            self.update_u_dot(i)
             h = self.ts[i+1] - self.ts[i]
             h2 = h/2.0
 
@@ -241,6 +243,7 @@ class RK4Classic(object):
             t[0] = self.ts[i]
             y[:] = self.xs[i, :]
             y_dot[:] = self.xs_dot[i, :]
+            self.update_u_dot(i, t[0])
             self.model.ffcn_dot(
                 K1, K1_dot,
                 t, y, y_dot,
@@ -254,6 +257,7 @@ class RK4Classic(object):
             t[0] = self.ts[i] + h2
             y[:] = self.xs[i, :] + 0.5*K1
             y_dot[:] = self.xs_dot[i, :] + 0.5*K1_dot
+            self.update_u_dot(i, t[0])
             self.model.ffcn_dot(
                 K2, K2_dot,
                 t, y, y_dot,
@@ -267,6 +271,7 @@ class RK4Classic(object):
             t[0] = self.ts[i] + h2
             y[:] = self.xs[i, :] + 0.5*K2
             y_dot[:] = self.xs_dot[i, :] + 0.5*K2_dot
+            self.update_u_dot(i, t[0])
             self.model.ffcn_dot(
                 K3, K3_dot,
                 t, y, y_dot,
@@ -280,6 +285,7 @@ class RK4Classic(object):
             t[0] = self.ts[i] + h
             y[:] = self.xs[i, :] + K3
             y_dot[:] = self.xs_dot[i, :] + K3_dot
+            self.update_u_dot(i, t[0])
             self.model.ffcn_dot(
                 K4, K4_dot,
                 t, y, y_dot,
@@ -293,14 +299,14 @@ class RK4Classic(object):
             self.xs[i + 1, :] = self.xs[i, :] + (1./6.0)*(K1 + 2*K2 + 2*K3 + K4)
 
 
-    def so_forward_xpu_xpu(self, ts,
+    def so_forward_xpq_xpq(self, ts,
                            x0, x0_dot2, x0_dot1, x0_ddot,
                            p,   p_dot2,  p_dot1, p_ddot,
                            q,   q_dot2,  q_dot1, q_ddot):
         """
         Solve nominal differential equation and evaluate first-order as well as
-        second-order forward sensitivities of the differential states using an
-        explicit Runge-Kutta scheme.
+        second-order forward sensitivities of the differential states w.r.t. x,
+        p and q. 
 
         Parameters
         ----------
@@ -368,7 +374,6 @@ class RK4Classic(object):
         y_ddot = numpy.zeros(self.f.shape + (self.P1, self.P2))
 
         for i in range(self.NTS-1):
-            self.update_u_ddot(i)
             h = self.ts[i+1] - self.ts[i]
             h2 = h/2.0
 
@@ -378,6 +383,7 @@ class RK4Classic(object):
             y_dot1[:] = self.xs_dot1[i, :]
             y_dot2[:] = self.xs_dot2[i, :]
             y_ddot[:] = self.xs_ddot[i, :]
+            self.update_u_ddot(i, t[0])
             self.model.ffcn_ddot(
                 K1, K1_dot2, K1_dot1, K1_ddot,
                 t,
@@ -396,6 +402,7 @@ class RK4Classic(object):
             y_dot1[:] = self.xs_dot1[i, :] + 0.5 * K1_dot1
             y_dot2[:] = self.xs_dot2[i, :] + 0.5 * K1_dot2
             y_ddot[:] = self.xs_ddot[i, :] + 0.5 * K1_ddot
+            self.update_u_ddot(i, t[0])
             self.model.ffcn_ddot(
                 K2, K2_dot2, K2_dot1, K2_ddot,
                 t,
@@ -414,6 +421,7 @@ class RK4Classic(object):
             y_dot1[:] = self.xs_dot1[i, :] + 0.5 * K2_dot1
             y_dot2[:] = self.xs_dot2[i, :] + 0.5 * K2_dot2
             y_ddot[:] = self.xs_ddot[i, :] + 0.5 * K2_ddot
+            self.update_u_ddot(i, t[0])
             self.model.ffcn_ddot(
                 K3, K3_dot2, K3_dot1, K3_ddot,
                 t,
@@ -432,6 +440,7 @@ class RK4Classic(object):
             y_dot1[:] = self.xs_dot1[i, :] + K3_dot1
             y_dot2[:] = self.xs_dot2[i, :] + K3_dot2
             y_ddot[:] = self.xs_ddot[i, :] + K3_ddot
+            self.update_u_ddot(i, t[0])
             self.model.ffcn_ddot(
                 K4, K4_dot2, K4_dot1, K4_ddot,
                 t,
@@ -492,31 +501,34 @@ class RK4Classic(object):
         xs_bar = self.xs_bar
 
         for i in range(self.NTS-1)[::-1]:
-            self.update_u(i)
             h = ts[i+1] - ts[i]
             h2 = h/2.0
 
             # forward K1 = h*f[t, y, p, u]
             t[0] = ts[i]
             y[:] = xs[i, :]
+            self.update_u(i, t[0])
             self.model.ffcn(K1, t, y, p, u)
             K1 *= h
 
             # forward K2 = h*f[t + h2, y + 0.5*K1, p, u]
             t[0] = ts[i] + h2
             y[:] = xs[i, :] + 0.5*K1
+            self.update_u(i, t[0])
             self.model.ffcn(K2, t, y, p, u)
             K2 *= h
 
             # forward K3 = h*f[t + h2, y + 0.5*K2, p, u]
             t[0] = ts[i] + h2
             y[:] = xs[i, :] + 0.5*K2
+            self.update_u(i, t[0])
             self.model.ffcn(K3, t, y, p, u)
             K3 *= h
 
             # foward K4   = h*f(t + h, y + K3, p, u)
             t[0] = self.ts[i] + h
             y[:] = self.xs[i, :] + K3
+            self.update_u(i, t[0])
             self.model.ffcn(K4, t, y, self.p, self.u)
             K4 *= h
 
@@ -541,6 +553,7 @@ class RK4Classic(object):
             K4_bar *= h
             y[:] = self.xs[i, :] + K3
             self.model.ffcn_bar(K4, K4_bar, t, y, y_bar, p, p_bar, u, u_bar)
+            self.update_u_bar(i, t[0])
             xs_bar[i, :] += y_bar
             K3_bar += y_bar
             y_bar[:] = 0.
@@ -550,6 +563,7 @@ class RK4Classic(object):
             K3_bar *= h
             y[:] = self.xs[i, :] + 0.5*K2
             self.model.ffcn_bar(K3, K3_bar, t, y, y_bar, p, p_bar, u, u_bar)
+            self.update_u_bar(i, t[0])
             xs_bar[i, :] += y_bar
             K2_bar += 0.5*y_bar
             y_bar[:] = 0.
@@ -559,6 +573,7 @@ class RK4Classic(object):
             K2_bar *= h
             y[:] = xs[i, :] + 0.5*K1
             self.model.ffcn_bar(K2, K2_bar, t, y, y_bar, p, p_bar, u, u_bar)
+            self.update_u_bar(i, t[0])
             xs_bar[i, :] += y_bar
             K1_bar += 0.5*y_bar
             y_bar[:] = 0.
@@ -568,24 +583,23 @@ class RK4Classic(object):
             K1_bar *= h
             y[:] = self.xs[i, :]
             self.model.ffcn_bar(K1, K1_bar, t, y, y_bar, p, p_bar, u, u_bar)
+            self.update_u_bar(i, t[0])
             xs_bar[i, :] += y_bar
             y_bar[:] = 0.
-
-            self.update_u_bar(i)
 
         self.x0_bar[:] += self.xs_bar[0, :]
         self.xs_bar[0, :] = 0.
 
-    def update_u(self, i):
+    def update_u(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
 
-    def update_u_dot(self, i):
+    def update_u_dot(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
         self.u_dot[:, :] = self.q_dot[:, i, 0, :]
 
-    def update_u_bar(self, i):
+    def update_u_bar(self, i, t):
         """Update control discretization for step i."""
         self.q_bar[:, i, 0] += self.u_bar[:]
         self.u_bar[:] = 0.

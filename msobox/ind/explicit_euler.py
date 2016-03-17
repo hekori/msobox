@@ -155,7 +155,7 @@ class ExplicitEuler(object):
         # integrate forward
         for i in range(self.NTS-1):
             # update control discretization
-            self.update_u(i)
+            self.update_u(i, self.ts[i])
 
             # calculate step size
             h = self.ts[i+1] - self.ts[i]
@@ -196,7 +196,7 @@ class ExplicitEuler(object):
         self.xs_dot[0, :, :] = x0_dot
 
         for i in range(self.NTS-1):
-            self.update_u_dot(i)
+            self.update_u_dot(i, self.ts[i])
             h = self.ts[i+1] - self.ts[i]
 
             self.xs_dot[i + 1, :, :] = self.xs_dot[i,:, :]
@@ -262,7 +262,7 @@ class ExplicitEuler(object):
         self.xs_ddot[0, :, :, :] = x0_ddot
 
         for i in range(self.NTS-1):
-            self.update_u_ddot(i)
+            self.update_u_ddot(i, self.ts[i])
             h = self.ts[i+1] - self.ts[i]
 
             self.xs_ddot[i + 1, :, :, :] = self.xs_ddot[i, :, :, :]
@@ -305,7 +305,7 @@ class ExplicitEuler(object):
 
         for i in range(self.NTS-1)[::-1]:
             h = self.ts[i+1] - self.ts[i]
-            self.update_u(i)
+            self.update_u(i, self.ts[i])
 
             self.xs_bar[i, :] += self.xs_bar[i + 1, :]
 
@@ -324,21 +324,21 @@ class ExplicitEuler(object):
         self.x0_bar[:] += self.xs_bar[0, :]
         self.xs_bar[0, :] = 0.
 
-    def update_u(self, i):
+    def update_u(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
 
-    def update_u_dot(self, i):
+    def update_u_dot(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
         self.u_dot[:, :] = self.q_dot[:, i, 0, :]
 
-    def update_u_bar(self, i):
+    def update_u_bar(self, i, t):
         """Update control discretization for step i."""
         self.q_bar[:, i, 0] += self.u_bar[:]
         self.u_bar[:] = 0.
 
-    def update_u_ddot(self, i):
+    def update_u_ddot(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
         self.u_dot1[:, :] = self.q_dot1[:, i, 0, :]
