@@ -1,0 +1,58 @@
+"""
+===============================================================================
+"""
+
+NOTATION
+
+"""
+===============================================================================
+"""
+
+OCP:
+
+x		states
+NX		number of states
+y		differential states
+NY 		number of differential states
+z		algebraic states
+NZ		number of algebraic states
+bc		box constraints
+NBC		number of box constraints
+g 		constraint functions
+NG		number of constraint functions
+p		parameters
+NP	 	number of parameters
+u		control functions
+NU		number of control functions
+
+"""
+===============================================================================
+"""
+
+DISCRETIZATION:
+
+ts 		time steps
+NTS		number of time steps
+s 		shooting variables
+NS 		number of shooting variables (= NTS)
+tsi 	time steps in shooting intervals
+NTSI 	number of time steps in shooting intervals
+q		control variables
+NQ	 	number of control variables
+c		constraints
+NC 		number of constraints
+
+"""
+===============================================================================
+"""
+
+SENSITIVITY ANALYSIS:
+
+ca 		indices of constraints active
+NCA		number of constraints active
+mul		non-zero multipliers
+NMUL	number of non-zero multipliers
+
+"""
+===============================================================================
+"""
