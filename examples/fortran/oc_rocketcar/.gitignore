@@ -1,0 +1,16 @@
+# blacklist
+*~
+*.f
+*.o
+*.so
+*.txt
+*.bak
+*.msg
+*.txt
+*.pdf
+*.png
+*.out
+Makefile
+
+# whitelist
+!ffcn.f
