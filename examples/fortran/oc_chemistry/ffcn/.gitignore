@@ -1,0 +1,9 @@
+# Blacklist
+*.o
+*.so
+*.bak
+*.msg
+*.txt
+
+# Whitelist
+!ffcn.f
