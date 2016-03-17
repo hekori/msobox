@@ -208,7 +208,7 @@ class OCSS_indegrator(object):
         q_dot   = np.zeros(q.shape + (self.NP,))
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -250,7 +250,7 @@ class OCSS_indegrator(object):
         q_dot.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -291,7 +291,7 @@ class OCSS_indegrator(object):
         q_dot   = np.zeros(q.shape + (self.NX,))
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -336,7 +336,7 @@ class OCSS_indegrator(object):
         q_ddot                                  = np.zeros(q_dot.shape + (self.NQ,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot, x0_dot, x0_ddot,
                                            p, p_dot, p_dot, p_ddot,
                                            q, q_dot, q_dot, q_ddot)
@@ -380,7 +380,7 @@ class OCSS_indegrator(object):
         q_ddot  = np.zeros(q_dot.shape + (self.NP,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot, x0_dot, x0_ddot,
                                            p, p_dot, p_dot, p_ddot,
                                            q, q_dot, q_dot, q_ddot)
@@ -428,7 +428,7 @@ class OCSS_indegrator(object):
         q_ddot                                      = np.zeros(q_dot1.shape + (self.NP,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot2, x0_dot1, x0_ddot,
                                            p, p_dot2, p_dot1, p_ddot,
                                            q, q_dot2, q_dot1, q_ddot)

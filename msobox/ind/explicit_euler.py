@@ -168,7 +168,7 @@ class ExplicitEuler(object):
             # compute next state
             self.xs[i + 1, :] = self.xs[i,:] + h*self.f
 
-    def fo_forward_xpu(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
+    def fo_forward_xpq(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
         """
         Solve nominal differential equation and evaluate first-order forward
         sensitivities of the differential states using an explicit Euler scheme.
@@ -213,7 +213,7 @@ class ExplicitEuler(object):
             self.xs_dot[i + 1, :, :] += h*self.f_dot
             self.xs[i + 1, :] += h*self.f
 
-    def so_forward_xpu_xpu(self, ts,
+    def so_forward_xpq_xpq(self, ts,
                            x0, x0_dot2, x0_dot1, x0_ddot,
                            p,   p_dot2,  p_dot1, p_ddot,
                            q,   q_dot2,  q_dot1, q_ddot):
