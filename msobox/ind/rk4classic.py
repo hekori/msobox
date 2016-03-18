@@ -190,7 +190,7 @@ class RK4Classic(object):
             t[0] = self.ts[i] + h
             y[:] = self.xs[i, :] + K3
             self.update_u(i, t[0])
-            self.model.ffcn(t, y, K4, self.p, self.u)
+            self.model.ffcn(K4, t, y, self.p, self.u)
             K4   *= h
 
             self.xs[i + 1, :] = self.xs[i, :] + (1./6.0)*(K1 + 2*K2 + 2*K3 + K4)
