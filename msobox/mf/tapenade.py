@@ -4,6 +4,7 @@ import glob
 import string
 import shutil
 import subprocess
+import fnmatch
 
 
 import string, re, os, shutil
@@ -217,13 +218,14 @@ def change_tapenade_forward_generated_code(s, retvals, replace_nbdirxmax = True)
 
 
 
-def tapenade_params(mode, path, functionname, filesuffix):
+def tapenade_params(mode, path, outdir, functionname, filesuffix):
     """
     build tapenade parameters
     mode:       string
                 'forward', 'forward_sd', 'reverse'
     path:       string or list of strings
                 paths to input files
+    outdir:     output directory
     filesuffix: string
                 append string, e.g. _d_{filesuffix}
     path are the files that tapenade considers during differentiation.
@@ -232,12 +234,6 @@ def tapenade_params(mode, path, functionname, filesuffix):
     """
 
     path=path.split()
-
-    if isinstance(path, list):
-        directory = os.path.dirname(path[0])
-        path = string.join(path)
-    else:
-        directory = os.path.dirname(path)
 
 
     if mode == 'forward' or mode == 'forward_sd':
@@ -255,7 +251,7 @@ def tapenade_params(mode, path, functionname, filesuffix):
             difffuncname="_d_" + filesuffix
             difffun = functionname + difffuncname
 
-        output_path = os.path.join(directory, difffun + ".f")
+        output_path = os.path.join(outdir, difffun + ".f")
         optim = '-nooptim "deadcontrol" '
 
 
@@ -265,14 +261,14 @@ def tapenade_params(mode, path, functionname, filesuffix):
         diffvarname = "_b"                       # appended to variable names
         difffuncname = "_"+"b"+"_"+filesuffix   # appended to function name
         difffun = functionname+ difffuncname
-        output_path = os.path.join(directory, difffun + ".f")
+        output_path = os.path.join(outdir, difffun + ".f")
         optim = '-nooptim "deadcontrol" -nooptim "adjointliveness"  '
 
     else:
         raise ValueError('mode has to be "forward" or "reverse", \
                          but you provided "%s"'%mode)
 
-    # print directory
+    # print outdir
     # print output_path
     # raw_input('enter')
 
@@ -281,13 +277,17 @@ def tapenade_params(mode, path, functionname, filesuffix):
 
 
 
-def call_tapenade(mode, path, functionname, x, y, filesuffix):
+def call_tapenade(mode, path, outdir, functionname, x, y, filesuffix):
     """
-    differentiates function `functionname` in file `filename` w.r.t. to the
-    variables `x`
-    If the output file already exists, the differentiation is skipped.
-    calls TAPENADE in the forward mode
-    the differentiated files lie in the directory `self.outputdir`
+
+    differentiate path and put output in folder outdir
+
+        differentiates function `functionname` in file `filename` w.r.t. to the
+        variables `x`
+        If the output file already exists, the differentiation is skipped.
+        calls TAPENADE in the forward mode
+        the differentiated files lie in the directory `self.outputdir`
+
     INPUT:
         mode                string      'forward', 'forward_sd' or 'reverse'
                                         'forward' is by default the
@@ -295,7 +295,9 @@ def call_tapenade(mode, path, functionname, x, y, filesuffix):
                                         mode whereas 'forward_sd' propagates
                                         just one tangent direction
         path                string      paths to the file,
-                                        e.g. `~/vplan/examples/A/fortran/ffcn.f ~/vplan/examples/A/fortran/myaux.f`
+                                        e.g. `./examples/A/fortran/ffcn.f ./examples/A/fortran/myaux.f`
+        outdir              string      directory, where the tapenade output is stored
+                                        e.g. `./examples/A/fortran/gen`
         function_name       string      function name to be differentiated,
                                         e.g. ffcn
         x                   dict        independent variables with dimension,
@@ -313,12 +315,6 @@ def call_tapenade(mode, path, functionname, x, y, filesuffix):
      returns output_path = '/tmp/inputs/ffcn_d_A_v.f'
     """
 
-    if isinstance(path, list):
-        directory = os.path.dirname(path[0])
-        path = string.join(path)
-    else:
-        directory = os.path.dirname(path)
-
     if isinstance(x, list):
         independent_vars = string.join(x)
     else:
@@ -332,7 +328,7 @@ def call_tapenade(mode, path, functionname, x, y, filesuffix):
     # print 'directory=', directory, 'Differentiating:' + path
 
 
-    method, multi, optim, difffun, difffuncname, diffvarname, output_path = tapenade_params(mode, path, functionname, filesuffix)
+    method, multi, optim, difffun, difffuncname, diffvarname, output_path = tapenade_params(mode, path, outdir, functionname, filesuffix)
 
     # print output_path
     # raw_input('enter')
@@ -354,7 +350,7 @@ def call_tapenade(mode, path, functionname, x, y, filesuffix):
     #     print("%s already exists: skipping"%functionname)
 
     # write command to a file
-    cmd_file_path = os.path.join(directory, difffun + "_tapenade_cmd.txt")
+    cmd_file_path = os.path.join(outdir, difffun + "_tapenade_cmd.txt")
     cmd_file = open(cmd_file_path, 'w')
     cmd_file.write('%s\n'%command)
     cmd_file.close()
@@ -363,7 +359,7 @@ def call_tapenade(mode, path, functionname, x, y, filesuffix):
     if not os.path.exists(output_path):
         err_str = 'Some error occurred when calling tapenade on the function %s\n'%output_path
         err_str+= 'Tapenade reported the error:\n```\n'
-        with open (os.path.join(directory, difffun + '.msg'), "r") as myfile:
+        with open (os.path.join(outdir, difffun + '.msg'), "r") as myfile:
             err_str += myfile.read()
         err_str+= '\n```'
         raise Exception(err_str)
@@ -416,45 +412,83 @@ clean:
     def __init__(self, path):
         self.path = os.path.abspath(path)
         self.dir  = os.path.dirname(self.path)
+        self.outdir  = os.path.join(self.dir, 'gen')
 
-        print self.path
-        print self.dir
+        # remove all generated files
+        # print self.path
+        # print self.dir
         self.clean()
+        # generate outdir
+        os.mkdir(self.outdir)
 
+        # ffcn - zeroth order
+        # ./gen/ffcn/ffcn.f
+        dirpath0 = os.path.join(self.outdir, 'ffcn')
+        path0 = os.path.join(dirpath0, 'ffcn.f')
+        os.mkdir(dirpath0)        
+        shutil.copy(path, dirpath0)
+        # print path0
+        # print dirpath0
 
-        # first order
-        call_tapenade('forward', self.path, 'ffcn', ['x', 'p', 'u'], ['f'], 'xpu')
-        change_tapenade_forward_generated_files(os.path.join(self.dir, 'ffcn_d_xpu_v.f'), ['f'], replace_nbdirxmax = True)
+        # ffcn - first order forward
+        # ./gen/ffcn/d_xpu_v/ffcn_d_xpu_v.f
+        dirpath1 = os.path.join(dirpath0, 'd_xpu_v')
+        path1 = os.path.join(dirpath1, 'ffcn_d_xpu_v.f')
+        os.mkdir(dirpath1)
+        call_tapenade('forward', path0, dirpath1, 'ffcn', ['x', 'p', 'u'], ['f'], 'xpu')
+        change_tapenade_forward_generated_files(path1, ['f'], replace_nbdirxmax = True)
 
-        call_tapenade('reverse', self.path, 'ffcn', ['x', 'p', 'u'], ['f', 'x', 'p', 'u'], 'xpu')
-        change_tapenade_forward_generated_files(os.path.join(self.dir, 'ffcn_b_xpu.f'), ['f'], replace_nbdirxmax = True)
+        # ffcn - second order forward
+        # ./gen/ffcn/ffcn_d_xpu_v/ffcn_d_xpu_v_d_xpu_v/ffcn_d_xpu_v_d_xpu_v.f
+        dirpath2 = os.path.join(dirpath1, 'd_xpu_v')
+        path2 =  os.path.join(dirpath2, 'ffcn_d_xpu_v_d_xpu_v.f')
+        os.mkdir(dirpath2)
+        call_tapenade('forward', path1, dirpath2, 'ffcn_d_xpu_v', ['x', 'x_d', 'p', 'p_d', 'u', 'u_d'], ['f', 'f_d'], 'xpu')
+        change_tapenade_forward_generated_files(path2, ['f'], replace_nbdirxmax = True)
+        
+        # ./gen/ffcn/b_xpu/ffcn_b_xpu.f
+        dirpath1 = os.path.join(dirpath0, 'b_xpu')
+        path0 = os.path.join(dirpath0, 'ffcn.f')
+        os.mkdir(dirpath1)
+        call_tapenade('reverse', path0, dirpath1,  'ffcn', ['x', 'p', 'u'], ['f', 'x', 'p', 'u'], 'xpu')
+        change_tapenade_forward_generated_files(os.path.join(dirpath1, 'ffcn_b_xpu.f'), ['f'], replace_nbdirxmax = True)
 
-        # second order
-        path2 = os.path.join(self.dir, 'ffcn_d_xpu_v.f')
-        call_tapenade('forward', path2, 'ffcn_d_xpu_v', ['x', 'x_d', 'p', 'p_d', 'u', 'u_d'], ['f', 'f_d'], 'xpu')
-        change_tapenade_forward_generated_files(os.path.join(self.dir, 'ffcn_d_xpu_v_d_xpu_v.f'), ['f'], replace_nbdirxmax = True)
-
-
+        self.collect_fortran_files()
         self.make()
      
 
+    def collect_fortran_files(self):
+
+        matches = []
+        for root, dirnames, filenames in os.walk(self.outdir):
+            for filename in fnmatch.filter(filenames, '*.f'):
+                matches.append(os.path.join(root, filename))
+
+        print matches
+        for match in matches:
+            print '%s to %s'%(match, self.outdir)
+            shutil.copy(match, self.outdir)
+
     def clean(self):
-        files = glob.glob(os.path.join(self.dir, 'ffcn[^_]*'))
-        files +=  glob.glob(os.path.join(self.dir, '~'))
-        files +=  glob.glob(os.path.join(self.dir, '.bak'))
-        files +=  glob.glob(os.path.join(self.dir, 'libproblem.*'))
-        for f in files:
-            os.remove(f)
+        # files = glob.glob(os.path.join(self.dir, 'ffcn[^_]*'))
+        # files +=  glob.glob(os.path.join(self.dir, '~'))
+        # files +=  glob.glob(os.path.join(self.dir, '.bak'))
+        # files +=  glob.glob(os.path.join(self.dir, 'libproblem.*'))
+        # for f in files:
+        #     os.remove(f)
 
-        for f in glob.glob(os.path.join(self.dir, '*.o')): os.remove(f)
-
+        # for f in glob.glob(os.path.join(self.dir, '*.o')): os.remove(f)
+        try:
+            shutil.rmtree(self.outdir)
+        except:
+            pass
 
     def make(self):
 
-        with open( os.path.join(self.dir, 'Makefile'), "w" ) as f:
+        with open( os.path.join(self.outdir, 'Makefile'), "w" ) as f:
             f.write(self.Makefile)
 
         cwd = os.getcwd()
-        os.chdir(self.dir)
+        os.chdir(self.outdir)
         p = subprocess.check_output('make', stderr=subprocess.STDOUT)
         os.chdir(cwd)

@@ -7,6 +7,9 @@
 .tox/
 htmlcov/
 sonic.log
+*.o
+*.so
+*.bak
 
 # Whitelist
 !tox.ini
