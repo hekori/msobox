@@ -295,6 +295,8 @@ class ExplicitEuler(object):
         xs_bar : array-like (NX, Q)
             backward directions for evaluation of derivatives wrt. x0, p, q.
         """
+
+        t = numpy.zeros(1)
         self.xs_bar = xs_bar.copy()
 
         self.x0_bar = numpy.zeros(self.x0.shape)
@@ -305,21 +307,22 @@ class ExplicitEuler(object):
 
         for i in range(self.NTS-1)[::-1]:
             h = self.ts[i+1] - self.ts[i]
+
+            # reverse
+            t[0] = self.ts[i]
             self.update_u(i, self.ts[i])
-
             self.xs_bar[i, :] += self.xs_bar[i + 1, :]
-
             self.f_bar[:] = h*self.xs_bar[i+1, :]
             self.model.ffcn_bar(
                 self.f, self.f_bar,
-                self.ts[i:i+1],
+                t,
                 self.xs[i, :], self.xs_bar[i,:],
                 self.p, self.p_bar,
                 self.u, self.u_bar
             )
 
             self.xs_bar[i + 1, :] = 0
-            self.update_u_bar(i)
+            self.update_u_bar(i, t[0])
 
         self.x0_bar[:] += self.xs_bar[0, :]
         self.xs_bar[0, :] = 0.

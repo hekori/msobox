@@ -1,7 +1,7 @@
       subroutine ffcn(f, t, x, p, u)
         implicit none
 
-        real*8 x(5), f(5), p(5), u(4),  t
+        real*8 f(5), t, x(5), p(5), u(4)
 
         real*8 n1, n2, n3, n4
         real*8 na1, na2, na4
