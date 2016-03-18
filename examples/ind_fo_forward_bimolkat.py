@@ -6,7 +6,7 @@ from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
 
 d = Differentiator('./fortran/bimolkat/ffcn.f')
-backend_fortran = BackendFortran('./mf/libproblem.so')
+backend_fortran = BackendFortran('./fortran/bimolkat/gen/libproblem.so')
 rk4 = RK4Classic(backend_fortran)
 
 # =============================================
