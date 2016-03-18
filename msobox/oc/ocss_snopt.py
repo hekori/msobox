@@ -165,7 +165,7 @@ class OCSS_snopt(object):
 
                 # integrate and build derivatives for q and x0
                 xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                xs_dot_x0       = self.ocp.integrate_ds(p, q, s)[1]
+                xs_dot_x0       = self.ocp.integrate_dx0(p, q, s)[1]
 
                 # calculate gradient of objective for current controls
                 G[0:self.ocp.NQ]                                            = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls

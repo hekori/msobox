@@ -9,7 +9,7 @@ C 	0 < u < 1
 C
 C ===============================================================================
 
-	subroutine ffcn(t, x, f, p, u)
+	subroutine ffcn(f, t, x, p, u)
 
 		implicit none
 

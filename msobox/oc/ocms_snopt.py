@@ -160,22 +160,23 @@ class OCMS_snopt(object):
 
                 # add the matching conditions for multiple shooting
                 for i in xrange(0, self.ocp.NS - 1):
-                    begin               = (self.ocp.NC + 1) + (i * self.ocp.NX)
-                    end                 = (self.ocp.NC + 1) + ((i + 1) * self.ocp.NX)
-                    F[begin:end]        = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.convert_s(s)[i + 1, :]
+                    begin           = (self.ocp.NC + 1) + (i * self.ocp.NX)
+                    end             = (self.ocp.NC + 1) + ((i + 1) * self.ocp.NX)
+                    F[begin:end]    = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.convert_s(s)[i + 1, :]
 
             if needG[0] != 0:
 
-                pass
-
-                # # integrate and build derivatives for q and x0
+                # integrate and build derivatives for q and x0
                 # xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                # xs_dot_x0       = self.ocp.integrate_ds(p, q, s)[1]
+                xs, xs_dot_x0       = self.ocp.integrate_ds(p, q, s)
 
-                # # calculate gradient of objective for current controls
+                print xs.shape
+                # print xs_dot_q.shape
+                print xs_dot_x0.shape
+
+                # calculate gradient of objective for current controls
                 # G[0:self.ocp.NQ]                                                        = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
-                # G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                                = self.ocp.obj_dx0(xs, xs_dot_x0, None, p, q, s)    # s[0]
-                # G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + self.ocp.NS * self.ocp.NX]    = 0                                                 # s[-1]
+                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX * self.ocp.NS]                    = self.ocp.obj_ds(xs, xs_dot_x0, None, p, q, s)    # s[0]
                 # l                                                                       = self.ocp.NQ + self.ocp.NS * self.ocp.NX           # save position in array G
 
             return 0

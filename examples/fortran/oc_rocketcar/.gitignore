@@ -1,16 +1,8 @@
 # blacklist
-*~
-*.f
-*.o
-*.so
-*.txt
-*.bak
-*.msg
-*.txt
-*.pdf
-*.png
-*.out
-Makefile
+output/*
+ffcn/*
+gfcn/*
 
 # whitelist
-!ffcn.f
+!ffcn/ffcn.f
+!gfcn/gfcn.f

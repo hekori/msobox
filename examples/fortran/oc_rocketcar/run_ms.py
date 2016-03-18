@@ -37,13 +37,13 @@ if __name__ == "__main__":
 
     # initialize an optimal control problem
     ts          = np.linspace(0, 1, 10)
-    bc          = np.array([0, 1], ndmin=2)
-    problem     = OCMS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="max", NX=2, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=5)
-    x0          = [1, 0]
-    xend        = [None, None]
-    p           = np.array([3.5])
+    bc          = np.array([-1, 1], ndmin=2)
+    problem     = OCMS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="min", NX=3, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=10)
+    x0          = [4, -1, None]
+    xend        = [0, 0, None]
+    p           = np.array([1])
     q0          = 0 * np.ones((problem.NQ,))
-    s0          = np.array([1, 0] * problem.NS)
+    s0          = np.array([4, -1, 0] * problem.NS)
 
     # solve the problem
     solver      = OCMS_snopt(problem)

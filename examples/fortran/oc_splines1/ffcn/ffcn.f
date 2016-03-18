@@ -5,12 +5,12 @@ C
 C 	x1_dot = x2
 C 	x2_dot = u
 C 	x3_dot = u ** 2
-C 
+C
 C 	x1 < 0.1
-C 
+C
 C ===============================================================================
 
-	subroutine ffcn(t, x, f, p, u)
+	subroutine ffcn(f, t, x, p, u)
 
 		implicit none
 

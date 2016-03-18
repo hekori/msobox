@@ -4,12 +4,12 @@ C fortran ffcn for the chemical reaction example
 C
 C 	x1_dot = - u * x1 + u ** 2 * x2
 C 	x2_dot = u * x1 - p * u ** 2 * x2
-C   
-C 	0 < u < 1 
-C 
+C
+C 	0 < u < 1
+C
 C ===============================================================================
 
-	subroutine ffcn(t, x, f, p, u)
+	subroutine ffcn(f, t, x, p, u)
 
 		implicit none
 

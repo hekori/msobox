@@ -36,7 +36,7 @@ if __name__ == "__main__":
     """
 
     # initialize an optimal control problem
-    ts          = np.linspace(0, 1, 10)
+    ts          = np.linspace(0, 1, 5)
     bc          = np.array([0, 1], ndmin=2)
     problem     = OCMS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="max", NX=2, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=5)
     x0          = [1, 0]
