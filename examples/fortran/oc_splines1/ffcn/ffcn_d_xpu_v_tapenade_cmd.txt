@@ -1,1 +1,0 @@
-tapenade -forward -fixinterface -nooptim "deadcontrol"  -multi -inputlanguage "fortran" -outputlanguage "fortran" -root "ffcn" -vars "x p u" -outvars "f" -output "ffcn" -difffuncname "_d_xpu_" -diffvarname "_d" \/home/jherold/projects/msobox/examples/fortran/oc_splines1/ffcn/ffcn.f -O "/home/jherold/projects/msobox/examples/fortran/oc_splines1/ffcn"   
