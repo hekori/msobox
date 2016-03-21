@@ -34,7 +34,7 @@ DISCRETIZATION:
 ts 		time steps
 NTS		number of time steps
 s 		shooting variables
-NS 		number of shooting variables (= NTS)
+NS 		number of shooting intervals (= NTS)
 tsi 	time steps in shooting intervals
 NTSI 	number of time steps in shooting intervals
 q		control variables

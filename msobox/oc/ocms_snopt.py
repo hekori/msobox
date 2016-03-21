@@ -167,17 +167,33 @@ class OCMS_snopt(object):
             if needG[0] != 0:
 
                 # integrate and build derivatives for q and x0
-                # xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                xs, xs_dot_x0       = self.ocp.integrate_ds(p, q, s)
+                xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
+                xs_dot_s        = self.ocp.integrate_ds(p, q, s)[1]
 
-                print xs.shape
-                # print xs_dot_q.shape
-                print xs_dot_x0.shape
+                # calculate gradient of objective
+                G[0:self.ocp.NQ]                                        = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
+                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX * self.ocp.NS]  = self.ocp.obj_ds(xs, xs_dot_s, None, p, q, s)      # shooting variables
+                l                                                       = self.ocp.NQ + self.ocp.NS * self.ocp.NX           # save position in array G
 
-                # calculate gradient of objective for current controls
-                # G[0:self.ocp.NQ]                                                        = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
-                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX * self.ocp.NS]                    = self.ocp.obj_ds(xs, xs_dot_x0, None, p, q, s)    # s[0]
-                # l                                                                       = self.ocp.NQ + self.ocp.NS * self.ocp.NX           # save position in array G
+                # calculate derivatives for constraints
+                for i in xrange(0, self.ocp.NC):
+                    G[l:l + self.ocp.NQ]                                                = self.ocp.c_dq(xs, xs_dot_q, None, p, q, s)[i, :]      # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX * self.ocp.NS]      = self.ocp.c_ds(xs, xs_dot_s, None, p, q, s)[i, :]      # shooting variables
+                    l                                                                   = l + self.ocp.NQ + self.ocp.NX * self.ocp.NS           # update l
+
+                # calculate derivatives for matching conditions at boundary
+                for i in xrange(0, self.ocp.NS - 1):
+
+                    xs_dot_interval_dq  = self.ocp.integrate_interval_dq(i, p, q, s)[1]
+                    xs_dot_interval_dx0 = self.ocp.integrate_interval_dx0(i, p, q, s)[1]
+
+                    for j in xrange(0, self.ocp.NX):
+                        G[l:l + self.ocp.NQ]                                                            = 0                                             # controls
+                        G[l + i]                                                                        = xs_dot_interval_dq[-1, j]                     # controls
+                        G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NS * self.ocp.NX]                  = 0                                             # shooting variables
+                        G[l + self.ocp.NQ + i * self.ocp.NX:l + self.ocp.NQ + (i + 1) * self.ocp.NX]    = xs_dot_interval_dx0[-1, j, :]                 # shooting variables
+                        G[l + self.ocp.NQ + (i + 1) * self.ocp.NX + j]                                  = -1                                            # shooting variables
+                        l                                                                               = l + self.ocp.NQ + self.ocp.NS * self.ocp.NX   # update l
 
             return 0
 
@@ -262,7 +278,7 @@ class OCMS_snopt(object):
 
         # open output files using snfilewrappers.[ch] */
         specn  = self.ocp.path + "/snopt.spc"
-        printn = self.ocp.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
+        printn = self.ocp.path + "/output/ocms-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
         specname[:len(specn)]   = list(specn)
         printname[:len(printn)] = list(printn)
 
