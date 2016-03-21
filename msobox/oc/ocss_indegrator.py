@@ -69,14 +69,14 @@ class OCSS_indegrator(object):
 
         # build model functions and derivatives from fortran files and initialize INDegrator
         Differentiator(path + "/ffcn/ffcn.f")
-        self.backend_ffcn   = BackendFortran(path + "/ffcn/libproblem.so")
+        self.backend_ffcn   = BackendFortran(path + "/ffcn/gen/libproblem.so")
         self.integrator     = RK4Classic(self.backend_ffcn)
 
         # if necessary build constraint functions and derivatives from fortran files
         self.backend_gfcn   = None
         if NG > 0:
             Differentiator(path + "/gfcn/ffcn.f")
-            self.backend_gfcn = BackendFortran(path + "/gfcn/libproblem.so")
+            self.backend_gfcn = BackendFortran(path + "/gfcn/gen/libproblem.so")
 
     """
     ===============================================================================

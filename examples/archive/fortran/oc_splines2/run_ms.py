@@ -36,9 +36,9 @@ if __name__ == "__main__":
     """
 
     # initialize an optimal control problem
-    ts          = np.linspace(0, 1, 10)
+    ts          = np.linspace(0, 1, 20)
     bc          = np.array([-1e6, 1e6], ndmin=2)
-    problem     = OCMS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="max", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts, NTSI=5)
+    problem     = OCMS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts, NTSI=10)
     x0          = [0, 1, 0]
     xend        = [0, -1, None]
     p           = np.array([3])
@@ -135,8 +135,8 @@ if __name__ == "__main__":
     pl.title("solution of ocp")
     pl.grid(True)
     pl.legend(loc="upper right")
-    pl.savefig(problem.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
-    pl.savefig(problem.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
+    pl.savefig(problem.path + "/output/ocms-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
+    pl.savefig(problem.path + "/output/ocms-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
     pl.show()
 
 """

@@ -37,7 +37,7 @@ if __name__ == "__main__":
     """
 
     # initialize an optimal control problem
-    ts          = np.linspace(0, 1, 100)
+    ts          = np.linspace(0, 1, 20)
     bc          = np.array([-1, 1], ndmin=2)
     problem     = OCSS_indegrator(path=os.path.dirname(os.path.abspath(__file__)), minormax="min", NX=3, NG=0, NP=1, NU=1, bc=bc, ts=ts)
     x0          = [4, -1, None]
@@ -68,9 +68,9 @@ if __name__ == "__main__":
 
     colors = ["blue", "red", "green", "yellow"]
     for i in xrange(0, problem.NU):
-        pl.plot(ts, q_opt[i], color=colors[i], linewidth=2, linestyle="dashed", label="control_" + str(i))
+        pl.plot(ts, q_opt[i], color=colors[i], linewidth=2, linestyle="dashed", label="u_" + str(i))
     for i in xrange(0, problem.NX):
-        pl.plot(np.linspace(0, 1, x_opt[:, i].size), x_opt[:, i], color=colors[i], linewidth=2, linestyle="solid", label="state_" + str(i))
+        pl.plot(np.linspace(0, 1, x_opt[:, i].size), x_opt[:, i], color=colors[i], linewidth=2, linestyle="solid", label="x_" + str(i))
 
     """
     ===============================================================================
@@ -136,8 +136,8 @@ if __name__ == "__main__":
     pl.title("solution of ocp")
     pl.grid(True)
     pl.legend(loc="upper right")
-    pl.savefig(problem.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
-    pl.savefig(problem.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
+    pl.savefig(problem.path + "/output/ocss-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
+    pl.savefig(problem.path + "/output/ocss-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
     pl.show()
 
 """
