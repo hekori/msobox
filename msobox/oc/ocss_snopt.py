@@ -271,7 +271,7 @@ class OCSS_snopt(object):
 
         # open output files using snfilewrappers.[ch] */
         specn  = self.ocp.path + "/snopt.spc"
-        printn = self.ocp.path + "/output/ocss-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
+        printn = self.ocp.path + "/output/" + self.ocp.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
         specname[:len(specn)]   = list(specn)
         printname[:len(printn)] = list(printn)
 

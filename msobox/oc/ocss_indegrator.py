@@ -32,7 +32,7 @@ class OCSS_indegrator(object):
     ===============================================================================
     """
 
-    def __init__(self, path, minormax, NX, NG, NP, NU, bc, ts):
+    def __init__(self, name, path, minormax, NX, NG, NP, NU, bc, ts):
 
         """
 
@@ -56,6 +56,7 @@ class OCSS_indegrator(object):
             self.sign = 1   # sign is positive for minimization
 
         # set attributes
+        self.name   = name
         self.path   = path
         self.ts     = ts
         self.NTS    = ts.size
@@ -68,15 +69,15 @@ class OCSS_indegrator(object):
         self.bc     = bc
 
         # build model functions and derivatives from fortran files and initialize INDegrator
-        Differentiator(path + "/ffcn/ffcn.f")
-        self.backend_ffcn   = BackendFortran(path + "/ffcn/gen/libproblem.so")
+        Differentiator(path + "ffcn.f")
+        self.backend_ffcn   = BackendFortran(path + "gen/libproblem.so")
         self.integrator     = RK4Classic(self.backend_ffcn)
 
         # if necessary build constraint functions and derivatives from fortran files
         self.backend_gfcn   = None
         if NG > 0:
-            Differentiator(path + "/gfcn/ffcn.f")
-            self.backend_gfcn = BackendFortran(path + "/gfcn/gen/libproblem.so")
+            Differentiator(path + "gfcn.f")
+            self.backend_gfcn = BackendFortran(path + "gen/libproblem.so")
 
     """
     ===============================================================================
