@@ -306,7 +306,7 @@ class RK4Classic(object):
         """
         Solve nominal differential equation and evaluate first-order as well as
         second-order forward sensitivities of the differential states w.r.t. x,
-        p and q. 
+        p and q.
 
         Parameters
         ----------
@@ -604,7 +604,7 @@ class RK4Classic(object):
         self.q_bar[:, i, 0] += self.u_bar[:]
         self.u_bar[:] = 0.
 
-    def update_u_ddot(self, i):
+    def update_u_ddot(self, i, t):
         """Update control discretization for step i."""
         self.u[:] = self.q[:, i, 0]
         self.u_dot1[:, :] = self.q_dot1[:, i, 0, :]
