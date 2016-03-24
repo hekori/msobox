@@ -12,9 +12,12 @@ optimal control problem discretized by INDegrator for single shooting ...
 import numpy as np
 
 # local imports
-from msobox.ind.rk4classic import RK4Classic
 from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
+
+from msobox.ind.explicit_euler import ExplicitEuler
+from msobox.ind.implicit_euler import ImplicitEuler
+from msobox.ind.rk4classic import RK4Classic
 
 """
 ===============================================================================
@@ -78,6 +81,40 @@ class OCSS_indegrator(object):
         if NG > 0:
             Differentiator(path + "gfcn.f")
             self.backend_gfcn = BackendFortran(path + "gen/libproblem.so")
+
+    """
+    ===============================================================================
+    """
+
+    def set_integrator(self, integrator):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        if integrator == "rk4":
+            self.integrator = RK4Classic(self.backend_ffcn)
+
+        elif integrator == "explicit_euler":
+            self.integrator = ExplicitEuler(self.backend_ffcn)
+
+        elif integrator == "implicit_euler":
+            self.integrator = ImplicitEuler(self.backend_ffcn)
+
+        else:
+            print "This integrator is not implemented. RK4 will be chosen instead."
+            self.integrator = RK4Classic(self.backend_ffcn)
 
     """
     ===============================================================================
