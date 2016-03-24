@@ -1,64 +1,96 @@
-import numpy
+# -*- coding: utf-8 -*-
+
+"""
+===============================================================================
+
+bimolkat example for first order forward derivative generation via IND
+
+===============================================================================
+"""
+
+# system imports
+import numpy as np
+import matplotlib.pyplot as pl
+
+# local imports
 from msobox.ind.explicit_euler import ExplicitEuler
+from msobox.ind.implicit_euler import ImplicitEuler
 from msobox.ind.rk4classic import RK4Classic
 
 from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
 
-d = Differentiator('./fortran/bimolkat/ffcn.f')
-backend_fortran = BackendFortran('./fortran/bimolkat/gen/libproblem.so')
-rk4 = RK4Classic(backend_fortran)
+# setting print options to print all array elements
+np.set_printoptions(threshold=np.nan)
 
-# =============================================
-# first order forward w.r.t. p
+"""
+===============================================================================
+"""
 
-ts          = numpy.linspace(0,2,500)
-x0          = numpy.ones(5)
-p           = numpy.ones(5)
-q           = numpy.zeros((4, ts.size, 2))
+# differentiate model functions
+Differentiator("./examples/fortran/bimolkat/ffcn.f")
+backend_fortran = BackendFortran("./examples/fortran/bimolkat/gen/libproblem.so")
+
+# choose an integrator
+integrator = RK4Classic(backend_fortran)
+# integrator = ExplicitEuler(backend_fortran)
+# integrator = ImplicitEuler(backend_fortran)
+
+"""
+===============================================================================
+"""
+
+# set parameters
+ts          = np.linspace(0, 2, 10)
+x0          = np.ones(5)
+p           = np.ones(5)
+q           = np.zeros((4, ts.size, 2))
 q[0, :, 0]  = 90.
 q[1:, :, 0] = 1.
 
+# set directions for first order forward differentiation w.r.t. p
 P           = p.size
-x0_dot      = numpy.zeros((x0.size, P))
-p_dot       = numpy.zeros((p.size, P))
-q_dot       = numpy.zeros(q.shape + (P,))
+x0_dot      = np.zeros(x0.shape + (P,))
+p_dot       = np.eye(P)
+q_dot       = np.zeros(q.shape + (P,))
 
-p_dot[:, :] = numpy.eye(P) 
+# integrate
+integrator.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
 
-rk4.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+# plot d/dp x2(t)
+pl.title("d/dp x2(t)")
+pl.plot(integrator.ts, integrator.xs_dot[:, 1, :])
+pl.xlabel("t")
+pl.show()
 
-from matplotlib import pyplot
-pyplot.figure(figsize=(3, 2))
-pyplot.title('d/dp x2(t)')
-pyplot.plot(rk4.ts, rk4.xs_dot[:,1,:])
-pyplot.xlabel('t')
-pyplot.tight_layout()
-pyplot.savefig('bimolkat_fo_forward_p.png')
+"""
+===============================================================================
+"""
 
-# =============================================
-# first order forward w.r.t. q
-
-ts          = numpy.linspace(0,2,20)
-x0          = numpy.ones(5)
-p           = numpy.ones(5)
-q           = numpy.zeros((4, ts.size, 1))
+# set parameters
+ts          = np.linspace(0, 2, 10)
+x0          = np.ones(5)
+p           = np.ones(5)
+q           = np.zeros((4, ts.size, 1))
 q[0, :]     = 90.
 q[1:, :]    = 1.
 
-P           = q.size
-x0_dot      = numpy.zeros((x0.size, P))
-p_dot       = numpy.zeros((p.size, P))
-q_dot       = numpy.zeros(q.shape + (P,))
+# set directions for first order forward differentiation w.r.t. q
+P           				= q.size
+x0_dot      				= np.zeros(x0.shape + (P,))
+p_dot       				= np.zeros(p.shape + (P,))
+q_dot       			    = np.zeros(q.shape + (P,))
+q_dot.reshape((P, P))[:, :] = np.eye(P)
 
-q_dot.reshape((P, P))[:, :] = numpy.eye(P) 
+# integrate
+integrator.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
 
-rk4.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+# plot d/dq1 x2(t)
+pl.title("d/dq1 x2(t)")
+pl.plot(integrator.ts, integrator.xs_dot[:, 1, :])
+pl.xlabel("t")
+pl.show()
 
-from matplotlib import pyplot
-pyplot.figure(figsize=(3, 2))
-pyplot.title('d/dq1 x2(t)')
-pyplot.plot(rk4.ts, rk4.xs_dot[:,1,:20])
-pyplot.tight_layout()
-pyplot.savefig('bimolkat_fo_forward_q.png')
-
+"""
+===============================================================================
+"""

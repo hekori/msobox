@@ -1,30 +1,61 @@
-import numpy
+# -*- coding: utf-8 -*-
+
+"""
+===============================================================================
+
+bimolkat example for integration
+
+===============================================================================
+"""
+
+# system imports
+import numpy as np
+import matplotlib.pyplot as pl
+
+# local imports
 from msobox.ind.explicit_euler import ExplicitEuler
+from msobox.ind.implicit_euler import ImplicitEuler
 from msobox.ind.rk4classic import RK4Classic
 
 from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
 
-d = Differentiator('./fortran/bimolkat/ffcn.f')
-backend_fortran = BackendFortran('./fortran/bimolkat/gen/libproblem.so')
-rk4 = RK4Classic(backend_fortran)
+# setting print options to print all array elements
+np.set_printoptions(threshold=np.nan)
 
-# =============================================
-# zeroth order forward
+"""
+===============================================================================
+"""
 
-ts          = numpy.linspace(0,2,50)
-x0          = numpy.ones(5)
-p           = numpy.ones(5)
-q           = numpy.zeros((4, ts.size, 2))
-q[0, :, 0]  = 90.
-q[1:, :, 0] = 1.
+# differentiate model functions
+Differentiator("./examples/fortran/bimolkat/ffcn.f")
+backend_fortran = BackendFortran("./examples/fortran/bimolkat/gen/libproblem.so")
 
-rk4.zo_forward(ts, x0, p, q)
+# choose an integrator
+integrator = RK4Classic(backend_fortran)
+# integrator = ExplicitEuler(backend_fortran)
+# integrator = ImplicitEuler(backend_fortran)
 
-from matplotlib import pyplot
-pyplot.figure(figsize=(3, 2))
-pyplot.plot(rk4.ts, rk4.xs)
-pyplot.xlabel('t')
-pyplot.tight_layout()
-pyplot.savefig('bimolkat_zo_forward.png')
-pyplot.show()
+"""
+===============================================================================
+"""
+
+# set parameters
+ts          = np.linspace(0, 2, 100)
+x0          = np.ones(5)
+p           = np.ones(5)
+q           = np.zeros((4, ts.size, 2))
+q[0, :, 0]  = 90
+q[1:, :, 0] = 1
+
+# integrate
+integrator.zo_forward(ts, x0, p, q)
+
+# plot results
+pl.plot(integrator.ts, integrator.xs)
+pl.xlabel("t")
+pl.show()
+
+"""
+===============================================================================
+"""

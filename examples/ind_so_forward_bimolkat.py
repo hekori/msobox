@@ -3,7 +3,7 @@
 """
 ===============================================================================
 
-bimolkat example for first order reverse derivative generation via IND
+bimolkat example for second order forward derivative generation via IND
 
 ===============================================================================
 """
@@ -34,6 +34,7 @@ backend_fortran = BackendFortran("./examples/fortran/bimolkat/gen/libproblem.so"
 # choose an integrator
 integrator = RK4Classic(backend_fortran)
 # integrator = ExplicitEuler(backend_fortran)
+# integrator = ImplicitEuler(backend_fortran)
 
 """
 ===============================================================================
@@ -47,20 +48,26 @@ q           = np.zeros((4, ts.size, 2))
 q[0, :, 0]  = 90
 q[1:, :, 0] = 1
 
-# necessary for reverse mode: integrate zeroth order
-integrator.zo_forward(ts, x0, p, q)
-
-# set directions for reverse differentation
-xs_bar 		  = np.zeros(integrator.xs.shape)
-xs_bar[-1, 1] = 1
+# set directions for second order forward differentiation w.r.t. p
+P           = p.size
+x0_dot1     = np.zeros(x0.shape + (P,))
+x0_dot2     = np.zeros(x0.shape + (P,))
+x0_ddot 	= np.zeros(x0_dot1.shape + (P,))
+p_dot1      = np.eye(P)
+p_dot2      = np.eye(P)
+p_ddot      = np.zeros(p_dot1.shape + (P,))
+q_dot1      = np.zeros(q.shape + (P,))
+q_dot2      = np.zeros(q.shape + (P,))
+q_ddot 		= np.zeros(q_dot1.shape + (P,))
 
 # integrate
-integrator.fo_reverse(xs_bar)
+integrator.so_forward_xpq_xpq(ts,
+							  x0, x0_dot2, x0_dot1, x0_ddot,
+							  p, p_dot2, p_dot1, p_ddot,
+							  q, q_dot2, q_dot1, q_ddot)
 
-# print results
-print "gradient of x(t=2; x0, p, q) w.r.t. p  = \n", integrator.p_bar, "\n"
-print "gradient of x(t=2; x0, p, q) w.r.t. q  = \n", integrator.q_bar, "\n"
-print "gradient of x(t=2; x0, p, q) w.r.t. x0 = \n", integrator.x0_bar
+# print d^2/dp^2 x(t=2)
+print integrator.xs_ddot[-1, :, :, :]
 
 """
 ===============================================================================

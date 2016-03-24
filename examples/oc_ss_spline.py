@@ -34,7 +34,7 @@ np.set_printoptions(threshold=np.nan)
 
 # initialize an optimal control problem
 name    = "oc-ss-spline"
-path    = os.path.dirname(os.path.abspath(__file__)) + "/fortran/spline/"
+path    = "./examples/fortran/spline/"
 ts      = np.linspace(0, 1, 20)
 bc      = np.array([-1e6, 1e6], ndmin=2)
 problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts)
@@ -43,6 +43,11 @@ xend    = [0, -1, None]
 p       = np.array([1])
 q0      = 0 * np.ones((problem.NQ,))
 s0      = np.array([0, 1, 0, 0, -1, 0])
+
+# choose an integrator
+problem.set_integrator("rk4")
+# problem.set_integrator("explict_euler")
+# problem.set_integrator("implicit_euler")
 
 # solve the problem
 solver  = OCSS_snopt(problem)

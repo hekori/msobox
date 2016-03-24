@@ -33,7 +33,7 @@ np.set_printoptions(threshold=np.nan)
 
 # initialize an optimal control problem
 name    = "oc-ms-chemistry"
-path    = os.path.dirname(os.path.abspath(__file__)) + "/fortran/chemistry/"
+path    = "./examples/fortran/chemistry/"
 ts      = np.linspace(0, 1, 20)
 bc      = np.array([0, 1], ndmin=2)
 problem = OCMS_indegrator(name=name, path=path, minormax="max", NX=2, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=10)
@@ -42,6 +42,11 @@ xend    = [None, None]
 p       = np.array([3.5])
 q0      = 0 * np.ones((problem.NQ,))
 s0      = np.array([1, 0] * problem.NS)
+
+# choose an integrator
+problem.set_integrator("rk4")
+# problem.set_integrator("explict_euler")
+# problem.set_integrator("implicit_euler")
 
 # solve the problem
 solver  = OCMS_snopt(problem)

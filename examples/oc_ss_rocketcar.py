@@ -33,7 +33,7 @@ np.set_printoptions(threshold=np.nan)
 
 # initialize an optimal control problem
 name    = "oc-ss-rocketcar"
-path    = os.path.dirname(os.path.abspath(__file__)) + "/fortran/rocketcar/"
+path    = "./examples/fortran/rocketcar/"
 ts      = np.linspace(0, 1, 50)
 bc      = np.array([-1, 1], ndmin=2)
 problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=0, NP=1, NU=1, bc=bc, ts=ts)
@@ -42,6 +42,11 @@ xend    = [0, 0, None]
 p       = np.array([1])
 q0      = 0 * np.ones((problem.NQ,))
 s0      = np.array([4, -1, 0, 0, 0, 1])
+
+# choose an integrator
+problem.set_integrator("rk4")
+# problem.set_integrator("explict_euler")
+# problem.set_integrator("implicit_euler")
 
 # solve the problem
 solver  = OCSS_snopt(problem)
