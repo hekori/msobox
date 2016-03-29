@@ -409,10 +409,10 @@ clean:
 
 '''
 
-    def __init__(self, path, ds):
-        self.path = os.path.abspath(path)
-        self.dir  = os.path.dirname(self.path)
-        self.outdir  = os.path.join(self.dir, 'gen')
+    def __init__(self, basedir, ds):
+
+        self.basedir = basedir
+        self.outdir  = os.path.join(self.basedir, 'gen')
         self.ds = ds
 
         # remove all generated files
@@ -424,8 +424,10 @@ clean:
 
         for f in ds['functions']:
 
-            # ffcn - zeroth order
-            # ./gen/ffcn/ffcn.f
+            path = os.path.join(basedir, f['type'] + '.f')
+
+            # *fcn - zeroth order
+            # ./gen/*fcn/*fcn.f
             dirpath0 = os.path.join(self.outdir, f['type'])
             path0 = os.path.join(dirpath0, f['type'] + '.f')
             os.mkdir(dirpath0)        
@@ -462,40 +464,6 @@ clean:
 
             diff(f.get('deriv', []), path0, dirpath0)
 
-            # while d:
-            #     d = d.get('deriv', False)
-
-
-            # for d in f['deriv']:
-            #     print f['type'], d['mode'], d['in'], d['out']
-        return
-
-
-        # print path0
-        # print dirpath0
-
-        # ffcn - first order forward
-        # ./gen/ffcn/d_xpu_v/ffcn_d_xpu_v.f
-        dirpath1 = os.path.join(dirpath0, 'd_xpu_v')
-        path1 = os.path.join(dirpath1, 'ffcn_d_xpu_v.f')
-        os.mkdir(dirpath1)
-        call_tapenade('forward', path0, dirpath1, 'ffcn', ['x', 'p', 'u'], ['f'], 'xpu')
-        change_tapenade_forward_generated_files(path1, ['f'], replace_nbdirxmax = True)
-
-        # ffcn - second order forward
-        # ./gen/ffcn/ffcn_d_xpu_v/ffcn_d_xpu_v_d_xpu_v/ffcn_d_xpu_v_d_xpu_v.f
-        dirpath2 = os.path.join(dirpath1, 'd_xpu_v')
-        path2 =  os.path.join(dirpath2, 'ffcn_d_xpu_v_d_xpu_v.f')
-        os.mkdir(dirpath2)
-        call_tapenade('forward', path1, dirpath2, 'ffcn_d_xpu_v', ['x', 'x_d', 'p', 'p_d', 'u', 'u_d'], ['f', 'f_d'], 'xpu')
-        change_tapenade_forward_generated_files(path2, ['f'], replace_nbdirxmax = True)
-        
-        # ./gen/ffcn/b_xpu/ffcn_b_xpu.f
-        dirpath1 = os.path.join(dirpath0, 'b_xpu')
-        path0 = os.path.join(dirpath0, 'ffcn.f')
-        os.mkdir(dirpath1)
-        call_tapenade('reverse', path0, dirpath1,  'ffcn', ['x', 'p', 'u'], ['f', 'x', 'p', 'u'], 'xpu')
-        change_tapenade_forward_generated_files(os.path.join(dirpath1, 'ffcn_b_xpu.f'), ['f'], replace_nbdirxmax = True)
 
         self.collect_fortran_files()
         self.make()
