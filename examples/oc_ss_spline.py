@@ -28,13 +28,18 @@ from msobox.oc.ocss_indegrator import OCSS_indegrator
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
 
+def get_dir_path():
+    """return script directory"""
+    import inspect, os
+    return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
 """
 ===============================================================================
 """
 
 # initialize an optimal control problem
 name    = "oc-ss-spline"
-path    = "./examples/fortran/spline/"
+path    = get_dir_path() + "/fortran/spline/"
 ts      = np.linspace(0, 1, 20)
 bc      = np.array([-1e6, 1e6], ndmin=2)
 problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts)
@@ -80,8 +85,8 @@ pl.ylabel("")
 pl.title("solution of ocp")
 pl.grid(True)
 pl.legend(loc="upper right")
-pl.savefig(problem.path + "output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
-pl.savefig(problem.path + "output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
+pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
+pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
 pl.show()
 
 """

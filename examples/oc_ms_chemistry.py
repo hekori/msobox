@@ -27,13 +27,18 @@ from msobox.oc.ocms_indegrator import OCMS_indegrator
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
 
+def get_dir_path():
+    """return script directory"""
+    import inspect, os
+    return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
 """
 ===============================================================================
 """
 
 # initialize an optimal control problem
 name    = "oc-ms-chemistry"
-path    = "./examples/fortran/chemistry/"
+path    = get_dir_path() + "/fortran/chemistry/"
 ts      = np.linspace(0, 1, 20)
 bc      = np.array([0, 1], ndmin=2)
 problem = OCMS_indegrator(name=name, path=path, minormax="max", NX=2, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=10)
@@ -79,8 +84,8 @@ pl.ylabel("")
 pl.title("solution of ocp")
 pl.grid(True)
 pl.legend(loc="upper right")
-pl.savefig(problem.path + "output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
-pl.savefig(problem.path + "output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
+pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
+pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
 pl.show()
 
 """

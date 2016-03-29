@@ -76,7 +76,7 @@ class OCMS_indegrator(object):
         # build model functions and derivatives from fortran files and initialize INDegrator
         Differentiator(path + "ffcn.f")
         self.backend_ffcn   = BackendFortran(path + "gen/libproblem.so")
-        self.integrator     = Integrator(self.backend_ffcn)
+        # self.integrator     = Integrator(self.backend_ffcn)
 
         # if necessary build constraint functions and derivatives from fortran files
         self.backend_gfcn   = None

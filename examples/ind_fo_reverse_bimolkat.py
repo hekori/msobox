@@ -23,13 +23,19 @@ from msobox.mf.fortran import BackendFortran
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
 
+def get_dir_path():
+    """return script directory"""
+    import inspect, os
+    return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
+
 """
 ===============================================================================
 """
 
 # differentiate model functions
-Differentiator("./examples/fortran/bimolkat/ffcn.f")
-backend_fortran = BackendFortran("./examples/fortran/bimolkat/gen/libproblem.so")
+Differentiator(get_dir_path() + "/fortran/bimolkat/ffcn.f")
+backend_fortran = BackendFortran(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so")
 
 # choose an integrator
 integrator = RK4Classic(backend_fortran)
