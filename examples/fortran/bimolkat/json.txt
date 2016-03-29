@@ -1,19 +1,17 @@
 {
     "dims": {"t": 1, "x": 5, "p": 5, "u": 4}, 
     "functions":[
-        {
-            "ffcn": {
-                "args": ["f", "t", "x", "p", "u"],
-                "deriv":[
-                    {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
-                    "next":
-                        [
-                            {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "q", "q_d"], "out": ["f", "f_d"]}
-                        ]
-                    },
-                    {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
-                ]
-            }
+        {"type": "ffcn",
+        "args": ["f", "t", "x", "p", "u"],
+        "deriv":[
+                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
+                "deriv":
+                    [
+                        {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "q", "q_d"], "out": ["f", "f_d"]}
+                    ]
+                },
+                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
+            ]   
         }
     ]
 }

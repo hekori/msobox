@@ -236,16 +236,16 @@ def tapenade_params(mode, path, outdir, functionname, filesuffix):
     path=path.split()
 
 
-    if mode == 'forward' or mode == 'forward_sd':
+    if mode == 'forward_vector' or mode == 'forward_single':
         method = '-forward'
         diffvarname = "_d" # appended to variable names
 
-        if mode == 'forward':
+        if mode == 'forward_vector':
             multi = '-multi'
             difffuncname="_d_" + filesuffix + "_"
             difffun = functionname + difffuncname + "v"
 
-        elif mode == 'forward_sd':
+        elif mode == 'forward_single':
             # print 'forward_sd mode'
             multi = ''
             difffuncname="_d_" + filesuffix
@@ -255,7 +255,7 @@ def tapenade_params(mode, path, outdir, functionname, filesuffix):
         optim = '-nooptim "deadcontrol" '
 
 
-    elif mode == 'reverse':
+    elif mode == 'reverse_single':
         method = '-reverse'
         multi  = ''
         diffvarname = "_b"                       # appended to variable names
@@ -265,7 +265,7 @@ def tapenade_params(mode, path, outdir, functionname, filesuffix):
         optim = '-nooptim "deadcontrol" -nooptim "adjointliveness"  '
 
     else:
-        raise ValueError('mode has to be "forward" or "reverse", \
+        raise NotImplementedError('mode has to be "forward_single", "forward_vector" or "reverse_single", \
                          but you provided "%s"'%mode)
 
     # print outdir
@@ -409,10 +409,11 @@ clean:
 
 '''
 
-    def __init__(self, path):
+    def __init__(self, path, ds):
         self.path = os.path.abspath(path)
         self.dir  = os.path.dirname(self.path)
         self.outdir  = os.path.join(self.dir, 'gen')
+        self.ds = ds
 
         # remove all generated files
         # print self.path
@@ -421,12 +422,55 @@ clean:
         # generate outdir
         os.mkdir(self.outdir)
 
-        # ffcn - zeroth order
-        # ./gen/ffcn/ffcn.f
-        dirpath0 = os.path.join(self.outdir, 'ffcn')
-        path0 = os.path.join(dirpath0, 'ffcn.f')
-        os.mkdir(dirpath0)        
-        shutil.copy(path, dirpath0)
+        for f in ds['functions']:
+
+            # ffcn - zeroth order
+            # ./gen/ffcn/ffcn.f
+            dirpath0 = os.path.join(self.outdir, f['type'])
+            path0 = os.path.join(dirpath0, f['type'] + '.f')
+            os.mkdir(dirpath0)        
+            shutil.copy(path, dirpath0)
+
+            # recurively differentiate
+
+            def diff(l, path, dirpath):
+                """l is list of differentations"""
+                for i in l:
+                    # print f['type'], dirpath, i['mode'],i['in'], i['out'], string.join(i['in'],'')
+                    
+                    if i['mode'] == 'forward_vector':
+                        suffix = 'd_%s_v' % string.join(i['in'],'')
+                    elif i['mode'] == 'forward_single':
+                        suffix = 'd_%s' % string.join(i['in'],'')
+                    elif i['mode'] == 'reverse_vector':
+                        raise NotImplementedError('reverse_vector not supported yet')
+                    elif i['mode'] == 'reverse_single':
+                        suffix = 'b_%s' % string.join(i['in'],'')
+                    else:
+                        raise ValueError('I do not know what to process mode ', i['mode'])
+
+                    newdirpath = os.path.join(dirpath, suffix)
+                    # newdirpath = os.path.join(dirpath, f['type'] + '_' + suffix + '.f')
+                    os.mkdir(newdirpath)
+                    tmp = call_tapenade(i['mode'], path, newdirpath, f['type'], i['in'], i['out'], string.join(i['in'],''))
+                    newpath = tmp[0]
+                    change_tapenade_forward_generated_files(newpath, i['out'], replace_nbdirxmax = True)
+
+                        # raise NotImplementedError('need to implement forward_single and reverse_{single,vector}')
+                    diff(i.get('deriv', []), newpath, newdirpath)
+
+
+            diff(f.get('deriv', []), path0, dirpath0)
+
+            # while d:
+            #     d = d.get('deriv', False)
+
+
+            # for d in f['deriv']:
+            #     print f['type'], d['mode'], d['in'], d['out']
+        return
+
+
         # print path0
         # print dirpath0
 
