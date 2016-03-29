@@ -168,7 +168,7 @@ class ExplicitEuler(object):
             # compute next state
             self.xs[i + 1, :] = self.xs[i,:] + h*self.f
 
-    def fo_forward_xpu(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
+    def fo_forward_xpq(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
         """
         Solve nominal differential equation and evaluate first-order forward
         sensitivities of the differential states using an explicit Euler scheme.
@@ -213,7 +213,7 @@ class ExplicitEuler(object):
             self.xs_dot[i + 1, :, :] += h*self.f_dot
             self.xs[i + 1, :] += h*self.f
 
-    def so_forward_xpu_xpu(self, ts,
+    def so_forward_xpq_xpq(self, ts,
                            x0, x0_dot2, x0_dot1, x0_ddot,
                            p,   p_dot2,  p_dot1, p_ddot,
                            q,   q_dot2,  q_dot1, q_ddot):
@@ -295,6 +295,8 @@ class ExplicitEuler(object):
         xs_bar : array-like (NX, Q)
             backward directions for evaluation of derivatives wrt. x0, p, q.
         """
+
+        t = numpy.zeros(1)
         self.xs_bar = xs_bar.copy()
 
         self.x0_bar = numpy.zeros(self.x0.shape)
@@ -305,21 +307,22 @@ class ExplicitEuler(object):
 
         for i in range(self.NTS-1)[::-1]:
             h = self.ts[i+1] - self.ts[i]
+
+            # reverse
+            t[0] = self.ts[i]
             self.update_u(i, self.ts[i])
-
             self.xs_bar[i, :] += self.xs_bar[i + 1, :]
-
             self.f_bar[:] = h*self.xs_bar[i+1, :]
             self.model.ffcn_bar(
                 self.f, self.f_bar,
-                self.ts[i:i+1],
+                t,
                 self.xs[i, :], self.xs_bar[i,:],
                 self.p, self.p_bar,
                 self.u, self.u_bar
             )
 
             self.xs_bar[i + 1, :] = 0
-            self.update_u_bar(i)
+            self.update_u_bar(i, t[0])
 
         self.x0_bar[:] += self.xs_bar[0, :]
         self.xs_bar[0, :] = 0.

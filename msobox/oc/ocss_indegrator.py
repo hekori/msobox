@@ -12,12 +12,12 @@ optimal control problem discretized by INDegrator for single shooting ...
 import numpy as np
 
 # local imports
-from indegrator.rk4 import RK4 as RK4Classic
-from indegrator.tapenade import Differentiator
-from indegrator.backend_fortran import BackendFortran as BackendTapenade
-# from msobox.ind.rk4classic import RK4Classic
-# from msobox.ad.tapenade import Differentiator
-# from msobox.mf.tapenade import BackendTapenade
+from msobox.mf.tapenade import Differentiator
+from msobox.mf.fortran import BackendFortran
+
+from msobox.ind.explicit_euler import ExplicitEuler
+from msobox.ind.implicit_euler import ImplicitEuler
+from msobox.ind.rk4classic import RK4Classic
 
 """
 ===============================================================================
@@ -35,7 +35,7 @@ class OCSS_indegrator(object):
     ===============================================================================
     """
 
-    def __init__(self, path, minormax, NX, NG, NP, NU, bc, ts):
+    def __init__(self, name, path, minormax, NX, NG, NP, NU, bc, ts):
 
         """
 
@@ -59,6 +59,7 @@ class OCSS_indegrator(object):
             self.sign = 1   # sign is positive for minimization
 
         # set attributes
+        self.name   = name
         self.path   = path
         self.ts     = ts
         self.NTS    = ts.size
@@ -71,15 +72,49 @@ class OCSS_indegrator(object):
         self.bc     = bc
 
         # build model functions and derivatives from fortran files and initialize INDegrator
-        Differentiator(path + "/ffcn/ffcn.f")
-        self.backend_ffcn   = BackendTapenade(path + "/ffcn/libproblem.so")
+        Differentiator(path + "ffcn.f")
+        self.backend_ffcn   = BackendFortran(path + "gen/libproblem.so")
         self.integrator     = RK4Classic(self.backend_ffcn)
 
         # if necessary build constraint functions and derivatives from fortran files
         self.backend_gfcn   = None
         if NG > 0:
-            Differentiator(path + "/gfcn/ffcn.f")
-            self.backend_gfcn = BackendTapenade(path + "/gfcn/libproblem.so")
+            Differentiator(path + "gfcn.f")
+            self.backend_gfcn = BackendFortran(path + "gen/libproblem.so")
+
+    """
+    ===============================================================================
+    """
+
+    def set_integrator(self, integrator):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        if integrator == "rk4":
+            self.integrator = RK4Classic(self.backend_ffcn)
+
+        elif integrator == "explicit_euler":
+            self.integrator = ExplicitEuler(self.backend_ffcn)
+
+        elif integrator == "implicit_euler":
+            self.integrator = ImplicitEuler(self.backend_ffcn)
+
+        else:
+            print "This integrator is not implemented. RK4 will be chosen instead."
+            self.integrator = RK4Classic(self.backend_ffcn)
 
     """
     ===============================================================================
@@ -208,7 +243,7 @@ class OCSS_indegrator(object):
         q_dot   = np.zeros(q.shape + (self.NP,))
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -250,7 +285,7 @@ class OCSS_indegrator(object):
         q_dot.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -261,7 +296,7 @@ class OCSS_indegrator(object):
     ===============================================================================
     """
 
-    def integrate_ds(self, p, q, s):
+    def integrate_dx0(self, p, q, s):
 
         """
 
@@ -291,7 +326,7 @@ class OCSS_indegrator(object):
         q_dot   = np.zeros(q.shape + (self.NX,))
 
         # integrate
-        self.integrator.fo_forward_xpu(self.ts,
+        self.integrator.fo_forward_xpq(self.ts,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q, q_dot)
@@ -336,7 +371,7 @@ class OCSS_indegrator(object):
         q_ddot                                  = np.zeros(q_dot.shape + (self.NQ,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot, x0_dot, x0_ddot,
                                            p, p_dot, p_dot, p_ddot,
                                            q, q_dot, q_dot, q_ddot)
@@ -380,7 +415,7 @@ class OCSS_indegrator(object):
         q_ddot  = np.zeros(q_dot.shape + (self.NP,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot, x0_dot, x0_ddot,
                                            p, p_dot, p_dot, p_ddot,
                                            q, q_dot, q_dot, q_ddot)
@@ -428,7 +463,7 @@ class OCSS_indegrator(object):
         q_ddot                                      = np.zeros(q_dot1.shape + (self.NP,))
 
         # integrate
-        self.integrator.so_forward_xpu_xpu(self.ts,
+        self.integrator.so_forward_xpq_xpq(self.ts,
                                            x0, x0_dot2, x0_dot1, x0_ddot,
                                            p, p_dot2, p_dot1, p_ddot,
                                            q, q_dot2, q_dot1, q_ddot)
@@ -478,7 +513,7 @@ class OCSS_indegrator(object):
                     u[k] = q[i + k * self.NTS]
 
                 # call fortran backend to calculate constraint functions for every control
-                self.backend_gfcn.ffcn(t, x, f, p, u)
+                self.backend_gfcn.ffcn(f, t, x, p, u)
 
                 # build constraints
                 for k in xrange(0, self.NG):
@@ -534,7 +569,7 @@ class OCSS_indegrator(object):
                     u[l] = q[i + l * self.NTS]
 
                 # call fortran backend to calculate derivatives of constraint functions
-                self.backend_gfcn.ffcn_dot(t, x, x_dot, f, f_dot, p, p_dot, u, u_dot)
+                self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
                 for j in xrange(0, self.NP):
@@ -597,7 +632,7 @@ class OCSS_indegrator(object):
                         u_dot = np.zeros((self.NU, self.NU))
 
                     # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_gfcn.ffcn_dot(t, x, x_dot, f, f_dot, p, p_dot, u, u_dot)
+                    self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                     # store gradient
                     for l in xrange(0, self.NU):
@@ -654,7 +689,7 @@ class OCSS_indegrator(object):
                         u[l] = q[i + l * self.NTS]
 
                     # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_gfcn.ffcn_dot(t, x, x_dot, f, f_dot, p, p_dot, u, u_dot)
+                    self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                     # store gradient
                     for j in xrange(0, self.NX):

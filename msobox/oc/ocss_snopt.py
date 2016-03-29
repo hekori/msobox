@@ -165,9 +165,9 @@ class OCSS_snopt(object):
 
                 # integrate and build derivatives for q and x0
                 xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                xs_dot_x0       = self.ocp.integrate_ds(p, q, s)[1]
+                xs_dot_x0       = self.ocp.integrate_dx0(p, q, s)[1]
 
-                # calculate gradient of objective for current controls
+                # calculate gradient of objective
                 G[0:self.ocp.NQ]                                            = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
                 G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                    = self.ocp.obj_dx0(xs, xs_dot_x0, None, p, q, s)    # s[0]
                 G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + 2 * self.ocp.NX]  = 0                                                 # s[-1]
@@ -271,7 +271,7 @@ class OCSS_snopt(object):
 
         # open output files using snfilewrappers.[ch] */
         specn  = self.ocp.path + "/snopt.spc"
-        printn = self.ocp.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
+        printn = self.ocp.path + "/output/" + self.ocp.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
         specname[:len(specn)]   = list(specn)
         printname[:len(printn)] = list(printn)
 

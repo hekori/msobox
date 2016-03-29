@@ -1,150 +1,515 @@
-"""Fortran back-end of indegrator."""
-
 import os
-import numpy
-from cffi import FFI
-
-ffi = FFI()
-ffi.cdef("""
-    void ffcn_(double *f, double *t, double *x, double *p, double *u);
-
-    void ffcn_d_xpu_v_(
-      double *f, double *f_dot,
-      double *t,
-      double *x, double *x_dot,
-      double *p, double *p_dot,
-      double *u, double *u_dot,
-      int *nbdirs
-    );
-
-    void ffcn_b_xpu_(
-      double *f, double *f_bar,
-      double *t,
-      double *x, double *x_bar,
-      double *p, double *p_bar,
-      double *u, double *u_bar
-    );
-
-    void ffcn_d_xpu_v_d_xpu_v_(
-      double *f, double *f_dot1, double *f_dot2, double *f_ddot,
-      double *t,
-      double *x, double *x_dot1, double *x_dot2, double *x_ddot,
-      double *p, double *p_dot1, double *p_dot2, double *p_ddot,
-      double *u, double *u_dot1, double *u_dot2, double *u_ddot,
-      int *nbdirs2, int *nbdirs1
-    );
-""")
+import re
+import glob
+import string
+import shutil
+import subprocess
+import fnmatch
 
 
-class BackendTapenade(object):
+import string, re, os, shutil
 
-    """."""
+def trim_trailing_whitespace(s):
+    t = ''
+    for line in s.splitlines():
+         t += line.rstrip() + os.linesep
+    return t
 
-    def __init__(self, path):
-        """."""
-        self.path = os.path.abspath(path)
-        self.dir = os.path.dirname(self.path)
-        # Load symbols from the current process (Python).
-        self.lib = ffi.dlopen(self.path)
-        print('Loaded lib {0}'.format(self.lib))
+def remove_exclamation_mark_comments(s):
+    """
+    removes comments of the type::
+        ``some code ! some comment``
+    """
+    # remove ! comments when followed by line continuation
+    s = re.sub(r"!.*", "", s)
+    s = trim_trailing_whitespace(s)
+    return s
 
-    def ffcn(self, f, t, x, p, u):
-        """."""
-        ffi_f = ffi.cast("double *", f.ctypes.data)
-        ffi_t = ffi.cast("double *", t.ctypes.data)
-        ffi_x = ffi.cast("double *", x.ctypes.data)
-        ffi_p = ffi.cast("double *", p.ctypes.data)
-        ffi_u = ffi.cast("double *", u.ctypes.data)
 
-        self.lib.ffcn_(ffi_f, ffi_t, ffi_x, ffi_p, ffi_u)
+def do_fortran_line_continuation(s, max_cols = 72):
+    """
+    out = do_fortran_line_continuation(s, max_cols = 72)
+    Splits lines with more than max_cols = 72 characters.
+    Parameters:
+    :s: string,
+        Fortran code
+    Returns:
+    :out: string,
+        modified Fortran code
+    """
 
-    def ffcn_dot(self, f, f_dot, t, x, x_dot, p, p_dot, u, u_dot):
-        """."""
-        nbdirs = numpy.array([x_dot.shape[1]], dtype=numpy.int32)
+    s = remove_exclamation_mark_comments(s)
+    lines = s.splitlines()
+    s = ""
 
-        ffi_f = ffi.cast("double *", f.ctypes.data)
-        ffi_t = ffi.cast("double *", t.ctypes.data)
-        ffi_x = ffi.cast("double *", x.ctypes.data)
-        ffi_p = ffi.cast("double *", p.ctypes.data)
-        ffi_u = ffi.cast("double *", u.ctypes.data)
+    for line in lines:
+        while len( line ) > max_cols and line[0] == ' ':
+           s += line[:max_cols] + os.linesep
+           line = "     *" + line[max_cols:]
+        s += line + os.linesep
 
-        ffi_f_dot = ffi.cast("double *", f_dot.ctypes.data)
-        ffi_x_dot = ffi.cast("double *", x_dot.ctypes.data)
-        ffi_p_dot = ffi.cast("double *", p_dot.ctypes.data)
-        ffi_u_dot = ffi.cast("double *", u_dot.ctypes.data)
+    return s
 
-        ffi_nbdirs = ffi.cast("int *", nbdirs.ctypes.data)
+def undo_fortran_line_continuation(s):
+    """
+    out = undo_fortran_line_continuation(s)
+    Write code spread over several lines into one line
+    Parameters:
+    :s: string,
+        Fortran code
+    Returns:
+    :out: string,
+        modified Fortran code
+    """
+    # return re.sub(r"(\r)?\n     [*+\S]", "", s)
 
-        self.lib.ffcn_d_xpu_v_(
-          ffi_f, ffi_f_dot,
-          ffi_t,
-          ffi_x, ffi_x_dot,
-          ffi_p, ffi_p_dot,
-          ffi_u, ffi_u_dot,
-          ffi_nbdirs
-        )
+    return re.sub(r"(\r)?\n     [*+\S]", "", s)
 
-    def ffcn_bar(self, f, f_bar, t, x, x_bar, p, p_bar, u, u_bar):
-        """."""
-        ffi_f = ffi.cast("double *", f.ctypes.data)
-        ffi_t = ffi.cast("double *", t.ctypes.data)
-        ffi_x = ffi.cast("double *", x.ctypes.data)
-        ffi_p = ffi.cast("double *", p.ctypes.data)
-        ffi_u = ffi.cast("double *", u.ctypes.data)
 
-        ffi_f_bar = ffi.cast("double *", f_bar.ctypes.data)
-        ffi_x_bar = ffi.cast("double *", x_bar.ctypes.data)
-        ffi_p_bar = ffi.cast("double *", p_bar.ctypes.data)
-        ffi_u_bar = ffi.cast("double *", u_bar.ctypes.data)
+def find_and_remove_lines(text, search_string):
+    """
+    out = find_and_remove_lines(text, search_string)
+    Deletes all lines in `text` that contain `search_string`
+    """
+    s = ""
+    for row in text.splitlines():
+        if row.find(search_string) == -1:
+            s += row + os.linesep
 
-        self.lib.ffcn_b_xpu_(
-          ffi_f, ffi_f_bar,
-          ffi_t,
-          ffi_x, ffi_x_bar,
-          ffi_p, ffi_p_bar,
-          ffi_u, ffi_u_bar
-        )
+    return s
 
-    def ffcn_ddot(self,
-      f, f_dot2, f_dot1, f_ddot,
-      t,
-      x, x_dot2, x_dot1, x_ddot,
-      p, p_dot2, p_dot1, p_ddot,
-      u, u_dot2, u_dot1, u_ddot
-    ):
-        """."""
-        nbdirs1 = numpy.array([x_dot1.shape[1]], dtype=numpy.int32)
-        nbdirs2 = numpy.array([x_dot2.shape[1]], dtype=numpy.int32)
+def read_file(path, line_continuation = False):
+    f = open( path, "r" )
+    out = f.read()
+    f.close()
 
-        ffi_f = ffi.cast("double *", f.ctypes.data)
-        ffi_t = ffi.cast("double *", t.ctypes.data)
-        ffi_x = ffi.cast("double *", x.ctypes.data)
-        ffi_p = ffi.cast("double *", p.ctypes.data)
-        ffi_u = ffi.cast("double *", u.ctypes.data)
+    if line_continuation:
+        out = undo_fortran_line_continuation(out)
 
-        ffi_f_dot1 = ffi.cast("double *", f_dot1.ctypes.data)
-        ffi_x_dot1 = ffi.cast("double *", x_dot1.ctypes.data)
-        ffi_p_dot1 = ffi.cast("double *", p_dot1.ctypes.data)
-        ffi_u_dot1 = ffi.cast("double *", u_dot1.ctypes.data)
+    return out
 
-        ffi_f_dot2 = ffi.cast("double *", f_dot2.ctypes.data)
-        ffi_x_dot2 = ffi.cast("double *", x_dot2.ctypes.data)
-        ffi_p_dot2 = ffi.cast("double *", p_dot2.ctypes.data)
-        ffi_u_dot2 = ffi.cast("double *", u_dot2.ctypes.data)
+def write_file(path, s, line_continuation = False):
+    if line_continuation:
+        s = do_fortran_line_continuation(s)
 
-        ffi_f_ddot = ffi.cast("double *", f_ddot.ctypes.data)
-        ffi_x_ddot = ffi.cast("double *", x_ddot.ctypes.data)
-        ffi_p_ddot = ffi.cast("double *", p_ddot.ctypes.data)
-        ffi_u_ddot = ffi.cast("double *", u_ddot.ctypes.data)
+    f = open( path, "w" )
+    f.write(s)
+    f.close()
 
-        ffi_nbdirs1 = ffi.cast("int *", nbdirs1.ctypes.data)
-        ffi_nbdirs2 = ffi.cast("int *", nbdirs2.ctypes.data)
 
-        self.lib.ffcn_d_xpu_v_d_xpu_v_(
-            ffi_f, ffi_f_dot2, ffi_f_dot1, ffi_f_ddot,
-            ffi_t,
-            ffi_x, ffi_x_dot2, ffi_x_dot1, ffi_x_ddot,
-            ffi_p, ffi_p_dot2, ffi_p_dot1, ffi_p_ddot,
-            ffi_u, ffi_u_dot2, ffi_u_dot1, ffi_u_ddot,
-            ffi_nbdirs1, ffi_nbdirs2
-        )
+
+def change_tapenade_forward_generated_files(path, retvals, replace_nbdirxmax = True):
+    """ set variables that tapenade requires and couldn't deduce from the file
+    Parameters:
+    :retvals:   list of strings,
+                The return value of a fucntion, e.g. in ffcn(f,t,x,p,u) it would be ['f']
+    """
+
+    # read file
+    s = read_file(path, line_continuation=True)
+
+    # change string
+    s = change_tapenade_forward_generated_code(s, retvals,  replace_nbdirxmax = replace_nbdirxmax)
+
+    # write file
+    write_file(path, s, line_continuation=True)
+
+
+
+def change_tapenade_forward_generated_code(s, retvals, replace_nbdirxmax = True):
+    """
+    s = change_tapenade_forward_generated_code(s, retval, dims, replace_nbdirxmax = True)
+    Parameters:
+    :s:         string
+                source code to be modified
+    :retvals:   list of strings
+                return value, e.g. 'f' for ffcn or 'g' for gfcn
+    :dims:      dict
+                dimensions of the variables
+    :replace_nbdirxmax:  bool
+                replace nbdirsmax with nbdirs?
+    Returns:
+    :s:         string
+                modified source code
+    """
+
+    def unique(items):
+        """ helper function to find and remove duplicate lines """
+        found = set([])
+        keep = []
+
+        for item in items:
+            if item in found and re.match(r'\s*INTEGER.*', item, flags=re.IGNORECASE) != None:
+                continue
+            found.add(item)
+            keep.append(item)
+
+        return keep
+
+    # all hints of the type
+    # C  Hint: ISIZE1OFmr_d_bINmess3_d_xp_v should be the value of nbdirs
+    results = re.findall('C  Hint: (\w+?) should be the value of (\w+)', s, re.IGNORECASE)
+    for result in results:
+        # remove hint
+        s = re.sub('C  Hint: %s should be the value of %s.*\n'%result, "", s)
+        # apply hint
+        s = re.sub( result[0], result[1], s)
+
+    # first all Hints concerning ISIZE20F
+    results = re.findall('C  Hint: ISIZE2OF(\w+?) should be the value of (\w+)', s, re.IGNORECASE)
+    for result in results:
+        # remove hint
+        s = re.sub('C  Hint: ISIZE2OF%s should be the value of %s.*\n'%result, "", s)
+        # apply hint
+        s = re.sub( 'ISIZE2OF' + result[0], result[1], s)
+
+
+    # assume that the first element of retvals is the appropriate dimension
+    # for the source transformation
+
+    # find all subroutines in s and treat them separately
+    subroutines = re.findall(r'\s*SUBROUTINE.*?\n\s*END[\s$](?!IF|DO)', s, re.S | re.IGNORECASE)
+    tmp = ''
+    for s in subroutines:
+
+        if replace_nbdirxmax:
+            # replace nbdirsmax with the last argument in subroutine ffcn(..,..,nbdirs)
+            nbdirsmax_replacement = re.match(r'\s*SUBROUTINE.*?,\s*(?P<nbdirs>\w+)\s*\)', s, re.IGNORECASE).group('nbdirs')
+            s = s.replace("nbdirsmax", nbdirsmax_replacement)
+            s = re.sub('C  Hint: \w+ should be the maximum number of differentiation directions.*\n', "", s)
+
+
+        # in the case when the function is empty, tapenade adds type declarations twice,
+        # e.g. INTEGER ii1  INTEGER ii1
+        # find and remove those duplicates
+        s = string.join( unique(s.split(os.linesep)), os.linesep)
+        tmp += s
+
+    s = tmp
+
+    # by default: do what Tapenade suggests in the Hints
+    # ##################################################
+
+    # find calls to external subroutines which are defined in the same file
+    subs = re.findall(r'\s*SUBROUTINE\s+(\w+?)\s*\(', s, flags=re.IGNORECASE)
+    if len(subs)>0:
+        top_function = subs[0].replace('_','')
+
+        ext_subs = re.findall(r'\s*CALL\s+(\w+)\s*\(', s, flags=re.IGNORECASE)
+        ext_subs_with_declaration = []
+        for sub in ext_subs:
+            # look for function declaration
+            if len(re.findall(r'\s*SUBROUTINE\s+%s\s*\('%sub, s, flags=re.IGNORECASE))>0:
+                ext_subs_with_declaration.append(sub)
+
+        # and rename these functions
+        for sub in ext_subs_with_declaration:
+            pattern = re.compile(r'(\s*SUBROUTINE\s*|\s*CALL\s*)(%s)'%sub,
+                      flags=re.IGNORECASE)
+            s = re.sub(pattern, r'\1%s'%(top_function+'_'+sub), s)
+
+        # print 'ext_subs',ext_subs
+        # print 'ext_subs_with_declaration', ext_subs_with_declaration
+
+    s = find_and_remove_lines(s, "INCLUDE 'DIFFSIZES.inc'")
+
+
+    return s
+
+
+
+def tapenade_params(mode, path, outdir, functionname, filesuffix):
+    """
+    build tapenade parameters
+    mode:       string
+                'forward', 'forward_sd', 'reverse'
+    path:       string or list of strings
+                paths to input files
+    outdir:     output directory
+    filesuffix: string
+                append string, e.g. _d_{filesuffix}
+    path are the files that tapenade considers during differentiation.
+    When there are external subroutines, then paths is either a list ['ffcn.f', 'myaux.f']
+    or a string 'ffcn.f myaux.f'.
+    """
+
+    path=path.split()
+
+
+    if mode == 'forward_vector' or mode == 'forward_single':
+        method = '-forward'
+        diffvarname = "_d" # appended to variable names
+
+        if mode == 'forward_vector':
+            multi = '-multi'
+            difffuncname="_d_" + filesuffix + "_"
+            difffun = functionname + difffuncname + "v"
+
+        elif mode == 'forward_single':
+            # print 'forward_sd mode'
+            multi = ''
+            difffuncname="_d_" + filesuffix
+            difffun = functionname + difffuncname
+
+        output_path = os.path.join(outdir, difffun + ".f")
+        optim = '-nooptim "deadcontrol" '
+
+
+    elif mode == 'reverse_single':
+        method = '-reverse'
+        multi  = ''
+        diffvarname = "_b"                       # appended to variable names
+        difffuncname = "_"+"b"+"_"+filesuffix   # appended to function name
+        difffun = functionname+ difffuncname
+        output_path = os.path.join(outdir, difffun + ".f")
+        optim = '-nooptim "deadcontrol" -nooptim "adjointliveness"  '
+
+    else:
+        raise NotImplementedError('mode has to be "forward_single", "forward_vector" or "reverse_single", \
+                         but you provided "%s"'%mode)
+
+    # print outdir
+    # print output_path
+    # raw_input('enter')
+
+    # print 'output_path', output_path
+    # print 'difffuncname', difffuncname
+    # print 'difffun', difffun
+
+    return method, multi, optim, difffun, difffuncname, diffvarname, output_path
+
+
+
+def call_tapenade(mode, path, outdir, functionname, x, y, filesuffix):
+    """
+
+    differentiate path and put output in folder outdir
+
+        differentiates function `functionname` in file `filename` w.r.t. to the
+        variables `x`
+        If the output file already exists, the differentiation is skipped.
+        the differentiated files are placed in the directory `self.outputdir`
+
+    INPUT:
+        mode                string      'forward', 'forward_sd' or 'reverse'
+                                        'forward' is by default the
+                                        multidirectional tangent propagation
+                                        mode whereas 'forward_sd' propagates
+                                        just one tangent direction
+        path                string      paths to the file,
+                                        e.g. `./examples/A/fortran/ffcn.f ./examples/A/fortran/myaux.f`
+        outdir              string      directory, where the tapenade output is stored
+                                        e.g. `./examples/A/fortran/gen`
+        function_name       string      function name to be differentiated,
+                                        e.g. ffcn
+        x                   dict        independent variables with dimension,
+                                        e.g. x = ['x1','x2']
+        y                   dict        y = fun(x), i.e. dependent variables,
+                                        e.g. y = 'y'
+        filesuffix          string      string that appears in the output
+                                        filename
+    OUTPUT:
+        output_path         string      name of the function as it appears in
+                                        the differentiated code
+        diff_function_name  string      name of the diff. subroutine
+     EXAMPLE:
+     tapenade_call('forward', /tmp/inputs/ffcn.f','ffcn, ['x1','x2'], 'y', 'A')
+     returns output_path = '/tmp/inputs/ffcn_d_A_v.f'
+    """
+
+    if isinstance(x, list):
+        independent_vars = string.join(x)
+    else:
+        independent_vars = x
+
+    if isinstance(y, list):
+        dependent_vars = string.join(y)
+    else:
+        dependent_vars = y
+
+    # print 'directory=', directory, 'Differentiating:' + path
+
+
+    method, multi, optim, difffun, difffuncname, diffvarname, output_path = tapenade_params(mode, path, outdir, functionname, filesuffix)
+
+    # print output_path
+    # raw_input('enter')
+
+    command = 'tapenade %s -fixinterface ' \
+              '%s %s ' \
+              '-inputlanguage "fortran" -outputlanguage "fortran" ' \
+              '-root "%s" -vars "%s" -outvars "%s" ' \
+              '-output "%s" -difffuncname "%s" -diffvarname "%s" ' \
+              '\%s -O "%s"   '\
+              % ( method, optim, multi, functionname, independent_vars, dependent_vars, functionname,
+                  difffuncname, diffvarname, path, os.path.dirname(output_path) )
+
+    if not os.path.exists(output_path):
+        # only call tapenade if the file doesn't exist
+        # print command
+        os.popen(command).close()
+    # else:
+    #     print("%s already exists: skipping"%functionname)
+
+    # write command to a file
+    cmd_file_path = os.path.join(outdir, difffun + "_tapenade_cmd.txt")
+    cmd_file = open(cmd_file_path, 'w')
+    cmd_file.write('%s\n'%command)
+    cmd_file.close()
+
+    # check that the desired file was created
+    if not os.path.exists(output_path):
+        err_str = 'Some error occurred when calling tapenade on the function %s\n'%output_path
+        err_str+= 'Tapenade reported the error:\n```\n'
+        with open (os.path.join(outdir, difffun + '.msg'), "r") as myfile:
+            err_str += myfile.read()
+        err_str+= '\n```'
+        raise Exception(err_str)
+
+    # create backup file for introspection
+    shutil.copy(output_path, output_path + ".bak")
+
+    return output_path, difffun
+
+
+class Differentiator(object):
+
+    Makefile = \
+'''
+all: CXXFLAGS += -O3
+all: CCFLAGS += -O3
+all: FFLAGS += -O3
+all: shlib
+
+debug: CXXFLAGS += -DDEBUG -g -O0
+debug: CCFLAGS += -DDEBUG -g -O0
+debug: FFLAGS += -DDEBUG -g -O0
+debug: shlib 
+
+FC         = gfortran
+LIB        = so
+MAKELIB    = $(CXX) -shared -o
+COMPILE_C  = $(CC) $(CXXFLAGS)    -c -o $@  -fPIC
+COMPILE_F  = $(FC) $(FFLAGS) -c -o $@ -fPIC -fno-second-underscore -frecursive -finit-local-zero -fdefault-real-8 -fdefault-double-8
+
+%.o : %.c
+	$(COMPILE_C) -fPIC $<
+%.o : %.f
+	$(COMPILE_F) $<
+
+CSRCS=$(wildcard *.c)
+COBJS=$(CSRCS:.c=.o)
+FSRCS=$(wildcard *.f)
+FOBJS=$(FSRCS:.f=.o)
+
+shlib: $(FOBJS) $(COBJS)
+	$(MAKELIB) libproblem.$(LIB) *.o -lgfortran
+
+clean:
+	rm -f *.o
+	rm -f *.so
+
+'''
+
+    def __init__(self, basedir, ds):
+
+        self.basedir = basedir
+        self.outdir  = os.path.join(self.basedir, 'gen')
+        self.ds = ds
+
+        # remove all generated files
+        # print self.path
+        # print self.dir
+        self.clean()
+        # generate outdir
+        os.mkdir(self.outdir)
+
+        for f in ds['functions']:
+
+            path = os.path.join(basedir, f['type'] + '.f')
+
+            # *fcn - zeroth order
+            # ./gen/*fcn/*fcn.f
+            dirpath0 = os.path.join(self.outdir, f['type'])
+            path0 = os.path.join(dirpath0, f['type'] + '.f')
+            os.mkdir(dirpath0)        
+            shutil.copy(path, dirpath0)
+
+            # recurively differentiate
+
+            def diff(l, path):
+                """
+                l is list of differentations
+                path to file containing which will be differentiated
+                """
+                dirpath = os.path.dirname(path)
+                function_name = os.path.basename(path).split('.')[0]
+
+
+                for i in l:
+                    # print f['type'], dirpath, i['mode'],i['in'], i['out'], string.join(i['in'],'')
+                    
+                    if i['mode'] == 'forward_vector':
+                        suffix = 'd_%s_v' % string.join(i['in'],'')
+                    elif i['mode'] == 'forward_single':
+                        suffix = 'd_%s' % string.join(i['in'],'')
+                    elif i['mode'] == 'reverse_vector':
+                        raise NotImplementedError('reverse_vector not supported yet')
+                    elif i['mode'] == 'reverse_single':
+                        suffix = 'b_%s' % string.join(i['in'],'')
+                    else:
+                        raise ValueError('I do not know what to process mode ', i['mode'])
+
+                    newdirpath = os.path.join(dirpath, suffix)
+
+
+                    os.mkdir(newdirpath)
+                    tmp = call_tapenade(i['mode'], path, newdirpath, function_name, i['in'], i['out'], string.join(i['in'],''))
+                    newpath = tmp[0]
+                    change_tapenade_forward_generated_files(newpath, i['out'], replace_nbdirxmax = True)
+
+                        # raise NotImplementedError('need to implement forward_single and reverse_{single,vector}')
+                    diff(i.get('deriv', []), newpath)
+
+
+            diff(f.get('deriv', []), path0)
+
+        self.collect_fortran_files()
+        self.make()
+     
+
+    def collect_fortran_files(self):
+
+        matches = []
+        for root, dirnames, filenames in os.walk(self.outdir):
+            for filename in fnmatch.filter(filenames, '*.f'):
+                matches.append(os.path.join(root, filename))
+
+        print matches
+        for match in matches:
+            print '%s to %s'%(match, self.outdir)
+            shutil.copy(match, self.outdir)
+
+    def clean(self):
+        # files = glob.glob(os.path.join(self.dir, 'ffcn[^_]*'))
+        # files +=  glob.glob(os.path.join(self.dir, '~'))
+        # files +=  glob.glob(os.path.join(self.dir, '.bak'))
+        # files +=  glob.glob(os.path.join(self.dir, 'libproblem.*'))
+        # for f in files:
+        #     os.remove(f)
+
+        # for f in glob.glob(os.path.join(self.dir, '*.o')): os.remove(f)
+        try:
+            shutil.rmtree(self.outdir)
+        except:
+            pass
+
+    def make(self):
+
+        with open( os.path.join(self.outdir, 'Makefile'), "w" ) as f:
+            f.write(self.Makefile)
+
+        cwd = os.getcwd()
+        os.chdir(self.outdir)
+        p = subprocess.check_output('make', stderr=subprocess.STDOUT)
+        os.chdir(cwd)

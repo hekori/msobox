@@ -1,0 +1,8 @@
+# blacklist
+output/*
+ffcn/*
+gfcn/*
+
+# whitelist
+!ffcn/ffcn.f
+!gfcn/gfcn.f

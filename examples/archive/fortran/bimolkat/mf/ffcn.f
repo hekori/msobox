@@ -69,4 +69,3 @@ c       computation of reaction rates
         f(5) = -lambda*Ckat + Ckat_feed
 
       end
- 
