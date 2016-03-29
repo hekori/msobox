@@ -272,6 +272,9 @@ def tapenade_params(mode, path, outdir, functionname, filesuffix):
     # print output_path
     # raw_input('enter')
 
+    # print 'output_path', output_path
+    # print 'difffuncname', difffuncname
+    # print 'difffun', difffun
 
     return method, multi, optim, difffun, difffuncname, diffvarname, output_path
 
@@ -285,8 +288,7 @@ def call_tapenade(mode, path, outdir, functionname, x, y, filesuffix):
         differentiates function `functionname` in file `filename` w.r.t. to the
         variables `x`
         If the output file already exists, the differentiation is skipped.
-        calls TAPENADE in the forward mode
-        the differentiated files lie in the directory `self.outputdir`
+        the differentiated files are placed in the directory `self.outputdir`
 
     INPUT:
         mode                string      'forward', 'forward_sd' or 'reverse'
@@ -342,9 +344,9 @@ def call_tapenade(mode, path, outdir, functionname, x, y, filesuffix):
               % ( method, optim, multi, functionname, independent_vars, dependent_vars, functionname,
                   difffuncname, diffvarname, path, os.path.dirname(output_path) )
 
-
     if not os.path.exists(output_path):
         # only call tapenade if the file doesn't exist
+        # print command
         os.popen(command).close()
     # else:
     #     print("%s already exists: skipping"%functionname)
@@ -435,8 +437,15 @@ clean:
 
             # recurively differentiate
 
-            def diff(l, path, dirpath):
-                """l is list of differentations"""
+            def diff(l, path):
+                """
+                l is list of differentations
+                path to file containing which will be differentiated
+                """
+                dirpath = os.path.dirname(path)
+                function_name = os.path.basename(path).split('.')[0]
+
+
                 for i in l:
                     # print f['type'], dirpath, i['mode'],i['in'], i['out'], string.join(i['in'],'')
                     
@@ -452,18 +461,18 @@ clean:
                         raise ValueError('I do not know what to process mode ', i['mode'])
 
                     newdirpath = os.path.join(dirpath, suffix)
-                    # newdirpath = os.path.join(dirpath, f['type'] + '_' + suffix + '.f')
+
+
                     os.mkdir(newdirpath)
-                    tmp = call_tapenade(i['mode'], path, newdirpath, f['type'], i['in'], i['out'], string.join(i['in'],''))
+                    tmp = call_tapenade(i['mode'], path, newdirpath, function_name, i['in'], i['out'], string.join(i['in'],''))
                     newpath = tmp[0]
                     change_tapenade_forward_generated_files(newpath, i['out'], replace_nbdirxmax = True)
 
                         # raise NotImplementedError('need to implement forward_single and reverse_{single,vector}')
-                    diff(i.get('deriv', []), newpath, newdirpath)
+                    diff(i.get('deriv', []), newpath)
 
 
-            diff(f.get('deriv', []), path0, dirpath0)
-
+            diff(f.get('deriv', []), path0)
 
         self.collect_fortran_files()
         self.make()

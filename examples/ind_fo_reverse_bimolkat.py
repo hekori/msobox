@@ -33,8 +33,12 @@ def get_dir_path():
 ===============================================================================
 """
 
+import json
+with open(get_dir_path() + "/fortran/bimolkat/json.txt", "r") as f:
+    ds = json.load(f)
+
 # differentiate model functions
-Differentiator(get_dir_path() + "/fortran/bimolkat/ffcn.f")
+Differentiator(get_dir_path() + "/fortran/bimolkat", ds=ds)
 backend_fortran = BackendFortran(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so")
 
 # choose an integrator
