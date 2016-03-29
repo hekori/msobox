@@ -25,7 +25,7 @@ ffi.cdef("""
       double *u, double *u_bar
     );
 
-    void ffcn_d_xpu_v_d_xx_dpp_dqq_d_v_(
+    void ffcn_d_xpu_v_d_xx_dpp_duu_d_v_(
       double *f, double *f_dot1, double *f_dot2, double *f_ddot,
       double *t,
       double *x, double *x_dot1, double *x_dot2, double *x_ddot,
@@ -140,7 +140,7 @@ class BackendFortran(object):
         ffi_nbdirs1 = ffi.cast("int *", nbdirs1.ctypes.data)
         ffi_nbdirs2 = ffi.cast("int *", nbdirs2.ctypes.data)
 
-        self.lib.ffcn_d_xpu_v_d_xx_dpp_dqq_d_v_(
+        self.lib.ffcn_d_xpu_v_d_xx_dpp_duu_d_v_(
             ffi_f, ffi_f_dot2, ffi_f_dot1, ffi_f_ddot,
             ffi_t,
             ffi_x, ffi_x_dot2, ffi_x_dot1, ffi_x_ddot,
