@@ -84,14 +84,14 @@ class OCSS_snopt(object):
             Prob[:3] = list('ocp')
 
             # assign the dimensions of the constraint Jacobian
-            neF[0]  = 1 + NC
-            n[0]    = NQ
+            neF[0] = 1 + NC
+            n[0]   = NQ
 
             # set the objective row
-            ObjRow[0]   = 1
-            ObjAdd[0]   = 0
-            Flow[0]     = -1e6
-            Fupp[0]     = 1e6
+            ObjRow[0] = 1
+            ObjAdd[0] = 0
+            Flow[0]   = -1e6
+            Fupp[0]   = 1e6
 
             # set the nonlinear constraints of the problem
             for i in xrange(1, self.ocp.NC + 1):
@@ -153,40 +153,40 @@ class OCSS_snopt(object):
                 xs = self.ocp.integrate(p, q, s)
 
                 # calculate objective for current controls
-                F[0]                                                = self.ocp.obj(xs, None, None, p, q, s)
+                F[0] = self.ocp.obj(xs, None, None, None, p, q, s)
 
                 # evaluate the constraints
-                F[1:self.ocp.NC + 1]                                = self.ocp.c(xs, None, None, p, q, s)
+                F[1:self.ocp.NC + 1] = self.ocp.c(xs, None, None, None, p, q, s)
 
                 # evaluate matching conditions at boundary
-                F[self.ocp.NC + 1:self.ocp.NC + 1 + self.ocp.NX]    = xs[-1, :] - self.ocp.convert_s(s)[-1, :]
+                F[self.ocp.NC + 1:self.ocp.NC + 1 + self.ocp.NX] = xs[-1, :] - self.ocp.s_array2ind(s)[-1, :]
 
             if needG[0] != 0:
 
                 # integrate and build derivatives for q and x0
-                xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                xs_dot_x0       = self.ocp.integrate_dx0(p, q, s)[1]
+                xs, xs_dot_q = self.ocp.integrate_dq(p, q, s)
+                xs_dot_x0    = self.ocp.integrate_dx0(p, q, s)[1]
 
                 # calculate gradient of objective
-                G[0:self.ocp.NQ]                                            = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
-                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                    = self.ocp.obj_dx0(xs, xs_dot_x0, None, p, q, s)    # s[0]
-                G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + 2 * self.ocp.NX]  = 0                                                 # s[-1]
-                l                                                           = self.ocp.NQ + 2 * self.ocp.NX                     # save position in array G
+                G[0:self.ocp.NQ]                                           = self.ocp.obj_dq(xs, xs_dot_q, None, None, p, q, s)    # controls
+                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                   = self.ocp.obj_dx0(xs, xs_dot_x0, None, None, p, q, s)  # s[0]
+                G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + 2 * self.ocp.NX] = 0                                                     # s[-1]
+                l                                                          = self.ocp.NQ + 2 * self.ocp.NX                         # save position in array G
 
                 # calculate derivatives for constraints
                 for i in xrange(0, self.ocp.NC):
-                    G[l:l + self.ocp.NQ]                                                = self.ocp.c_dq(xs, xs_dot_q, None, p, q, s)[i, :]      # controls
-                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                    = self.ocp.c_dx0(xs, xs_dot_x0, None, p, q, s)[i, :]    # s[0]
-                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX]  = 0                                                     # s[-1]
-                    l                                                                   = l + self.ocp.NQ + 2 * self.ocp.NX                     # update l
+                    G[l:l + self.ocp.NQ]                                               = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1][i, :]    # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                   = self.ocp.c_dx0(xs, xs_dot_x0, None, None, p, q, s)[1][i, :]  # s[0]
+                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX] = 0                                                            # s[-1]
+                    l                                                                  = l + self.ocp.NQ + 2 * self.ocp.NX                            # update l
 
                 # calculate derivatives for matching conditions at boundary
                 for i in xrange(0, self.ocp.NX):
-                    G[l:l + self.ocp.NQ]                                                = xs_dot_q[-1, i, :]                    # controls
-                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                    = xs_dot_x0[-1, i, :]                   # s[0]
-                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX]  = 0                                     # s[-1]
-                    G[l + self.ocp.NQ + self.ocp.NX + i]                                = -1                                    # s[-1]
-                    l                                                                   = l + self.ocp.NQ + 2 * self.ocp.NX     # update l
+                    G[l:l + self.ocp.NQ]                                               = xs_dot_q[-1, i, :]                 # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                   = xs_dot_x0[-1, i, :]                # s[0]
+                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX] = 0                                  # s[-1]
+                    G[l + self.ocp.NQ + self.ocp.NX + i]                               = -1                                 # s[-1]
+                    l                                                                  = l + self.ocp.NQ + 2 * self.ocp.NX  # update l
 
             return 0
 

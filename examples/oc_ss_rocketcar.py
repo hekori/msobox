@@ -70,7 +70,7 @@ mul   = results[4]
 
 # plot controls and states
 x_opt = problem.integrate(p, q_opt, s_opt)
-q_opt = problem.convert_q(q_opt)[:, :, 0]
+q_opt = problem.q_array2ind(q_opt)[:, :, 0]
 
 colors = ["blue", "red", "green", "yellow"]
 for i in xrange(0, problem.NU):
@@ -84,8 +84,8 @@ pl.ylabel("")
 pl.title("solution of ocp")
 pl.grid(True)
 pl.legend(loc="upper right")
-pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
-pl.savefig(get_dir_path() + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
+pl.savefig(problem.path + "/output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.png", bbox_inches="tight")
+pl.savefig(problem.path + "/output/" + problem.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-plot.pdf", bbox_inches="tight")
 pl.show()
 
 """

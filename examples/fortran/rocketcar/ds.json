@@ -1,0 +1,17 @@
+{
+    "dims": {"t": 1, "x": 3, "p": 1, "u": 1},
+    "functions":[
+        {"type": "ffcn",
+        "args": ["f", "t", "x", "p", "u"],
+        "deriv":[
+                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
+                "deriv":
+                    [
+                        {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "u", "u_d"], "out": ["f", "f_d"]}
+                    ]
+                },
+                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
+            ]
+        }
+    ]
+}
