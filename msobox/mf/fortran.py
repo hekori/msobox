@@ -33,6 +33,34 @@ ffi.cdef("""
       double *u, double *u_dot1, double *u_dot2, double *u_ddot,
       int *nbdirs2, int *nbdirs1
     );
+
+    void gfcn_(double *g, double *t, double *x, double *p, double *u);
+
+    void gfcn_d_xpu_v_(
+      double *g, double *g_dot,
+      double *t,
+      double *x, double *x_dot,
+      double *p, double *p_dot,
+      double *u, double *u_dot,
+      int *nbdirs
+    );
+
+    void gfcn_b_xpu_(
+      double *g, double *g_bar,
+      double *t,
+      double *x, double *x_bar,
+      double *p, double *p_bar,
+      double *u, double *u_bar
+    );
+
+    void gfcn_d_xpu_v_d_xx_dpp_duu_d_v_(
+      double *g, double *g_dot1, double *g_dot2, double *g_ddot,
+      double *t,
+      double *x, double *x_dot1, double *x_dot2, double *x_ddot,
+      double *p, double *p_dot1, double *p_dot2, double *p_ddot,
+      double *u, double *u_dot1, double *u_dot2, double *u_ddot,
+      int *nbdirs2, int *nbdirs1
+    );
 """)
 
 
@@ -142,6 +170,107 @@ class BackendFortran(object):
 
         self.lib.ffcn_d_xpu_v_d_xx_dpp_duu_d_v_(
             ffi_f, ffi_f_dot2, ffi_f_dot1, ffi_f_ddot,
+            ffi_t,
+            ffi_x, ffi_x_dot2, ffi_x_dot1, ffi_x_ddot,
+            ffi_p, ffi_p_dot2, ffi_p_dot1, ffi_p_ddot,
+            ffi_u, ffi_u_dot2, ffi_u_dot1, ffi_u_ddot,
+            ffi_nbdirs1, ffi_nbdirs2
+        )
+
+    def gfcn(self, g, t, x, p, u):
+        """."""
+        ffi_g = ffi.cast("double *", g.ctypes.data)
+        ffi_t = ffi.cast("double *", t.ctypes.data)
+        ffi_x = ffi.cast("double *", x.ctypes.data)
+        ffi_p = ffi.cast("double *", p.ctypes.data)
+        ffi_u = ffi.cast("double *", u.ctypes.data)
+
+        self.lib.gfcn_(ffi_g, ffi_t, ffi_x, ffi_p, ffi_u)
+
+    def gfcn_dot(self, g, g_dot, t, x, x_dot, p, p_dot, u, u_dot):
+        """."""
+        nbdirs = numpy.array([x_dot.shape[1]], dtype=numpy.int32)
+
+        ffi_g = ffi.cast("double *", g.ctypes.data)
+        ffi_t = ffi.cast("double *", t.ctypes.data)
+        ffi_x = ffi.cast("double *", x.ctypes.data)
+        ffi_p = ffi.cast("double *", p.ctypes.data)
+        ffi_u = ffi.cast("double *", u.ctypes.data)
+
+        ffi_g_dot = ffi.cast("double *", g_dot.ctypes.data)
+        ffi_x_dot = ffi.cast("double *", x_dot.ctypes.data)
+        ffi_p_dot = ffi.cast("double *", p_dot.ctypes.data)
+        ffi_u_dot = ffi.cast("double *", u_dot.ctypes.data)
+
+        ffi_nbdirs = ffi.cast("int *", nbdirs.ctypes.data)
+
+        self.lib.gfcn_d_xpu_v_(
+          ffi_g, ffi_g_dot,
+          ffi_t,
+          ffi_x, ffi_x_dot,
+          ffi_p, ffi_p_dot,
+          ffi_u, ffi_u_dot,
+          ffi_nbdirs
+        )
+
+    def gfcn_bar(self, g, g_bar, t, x, x_bar, p, p_bar, u, u_bar):
+        """."""
+        ffi_g = ffi.cast("double *", g.ctypes.data)
+        ffi_t = ffi.cast("double *", t.ctypes.data)
+        ffi_x = ffi.cast("double *", x.ctypes.data)
+        ffi_p = ffi.cast("double *", p.ctypes.data)
+        ffi_u = ffi.cast("double *", u.ctypes.data)
+
+        ffi_g_bar = ffi.cast("double *", g_bar.ctypes.data)
+        ffi_x_bar = ffi.cast("double *", x_bar.ctypes.data)
+        ffi_p_bar = ffi.cast("double *", p_bar.ctypes.data)
+        ffi_u_bar = ffi.cast("double *", u_bar.ctypes.data)
+
+        self.lib.gfcn_b_xpu_(
+          ffi_g, ffi_g_bar,
+          ffi_t,
+          ffi_x, ffi_x_bar,
+          ffi_p, ffi_p_bar,
+          ffi_u, ffi_u_bar
+        )
+
+    def gfcn_ddot(self,
+      g, g_dot2, g_dot1, g_ddot,
+      t,
+      x, x_dot2, x_dot1, x_ddot,
+      p, p_dot2, p_dot1, p_ddot,
+      u, u_dot2, u_dot1, u_ddot
+    ):
+        """."""
+        nbdirs1 = numpy.array([x_dot1.shape[1]], dtype=numpy.int32)
+        nbdirs2 = numpy.array([x_dot2.shape[1]], dtype=numpy.int32)
+
+        ffi_g = ffi.cast("double *", g.ctypes.data)
+        ffi_t = ffi.cast("double *", t.ctypes.data)
+        ffi_x = ffi.cast("double *", x.ctypes.data)
+        ffi_p = ffi.cast("double *", p.ctypes.data)
+        ffi_u = ffi.cast("double *", u.ctypes.data)
+
+        ffi_g_dot1 = ffi.cast("double *", g_dot1.ctypes.data)
+        ffi_x_dot1 = ffi.cast("double *", x_dot1.ctypes.data)
+        ffi_p_dot1 = ffi.cast("double *", p_dot1.ctypes.data)
+        ffi_u_dot1 = ffi.cast("double *", u_dot1.ctypes.data)
+
+        ffi_g_dot1 = ffi.cast("double *", g_dot1.ctypes.data)
+        ffi_x_dot2 = ffi.cast("double *", x_dot2.ctypes.data)
+        ffi_p_dot2 = ffi.cast("double *", p_dot2.ctypes.data)
+        ffi_u_dot2 = ffi.cast("double *", u_dot2.ctypes.data)
+
+        ffi_g_ddot = ffi.cast("double *", g_ddot.ctypes.data)
+        ffi_x_ddot = ffi.cast("double *", x_ddot.ctypes.data)
+        ffi_p_ddot = ffi.cast("double *", p_ddot.ctypes.data)
+        ffi_u_ddot = ffi.cast("double *", u_ddot.ctypes.data)
+
+        ffi_nbdirs1 = ffi.cast("int *", nbdirs1.ctypes.data)
+        ffi_nbdirs2 = ffi.cast("int *", nbdirs2.ctypes.data)
+
+        self.lib.gfcn_d_xpu_v_d_xx_dpp_duu_d_v_(
+            ffi_g, ffi_g_dot2, ffi_g_dot1, ffi_g_ddot,
             ffi_t,
             ffi_x, ffi_x_dot2, ffi_x_dot1, ffi_x_ddot,
             ffi_p, ffi_p_dot2, ffi_p_dot1, ffi_p_ddot,

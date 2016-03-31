@@ -10,6 +10,7 @@ optimal control problem discretized by INDegrator for multiple shooting ...
 
 # system imports
 import numpy as np
+import json
 
 # local imports
 from msobox.mf.tapenade import Differentiator
@@ -73,16 +74,13 @@ class OCMS_indegrator(object):
         self.NTSI   = NTSI
         self.NS     = self.NTS
 
-        # build model functions and derivatives from fortran files and initialize INDegrator
-        Differentiator(path + "ffcn.f")
-        self.backend_ffcn   = BackendFortran(path + "gen/libproblem.so")
-        # self.integrator     = Integrator(self.backend_ffcn)
+        # load json containing data structure for differentiator
+        with open(path + "ds.json", "r") as f:
+            ds = json.load(f)
 
-        # if necessary build constraint functions and derivatives from fortran files
-        self.backend_gfcn   = None
-        if NG > 0:
-            Differentiator(path + "gfcn.f")
-            self.backend_gfcn = BackendFortran(path + "gen/libproblem.so")
+        # differentiate model functions
+        Differentiator(path, ds=ds)
+        self.backend_fortran = BackendFortran(path + "gen/libproblem.so")
 
     """
     ===============================================================================
@@ -106,23 +104,22 @@ class OCMS_indegrator(object):
         """
 
         if integrator == "rk4":
-            self.integrator = RK4Classic(self.backend_ffcn)
+            self.integrator = RK4Classic(self.backend_fortran)
 
         elif integrator == "explicit_euler":
-            self.integrator = ExplicitEuler(self.backend_ffcn)
+            self.integrator = ExplicitEuler(self.backend_fortran)
 
         elif integrator == "implicit_euler":
-            self.integrator = ImplicitEuler(self.backend_ffcn)
+            self.integrator = ImplicitEuler(self.backend_fortran)
 
         else:
-            print "This integrator is not implemented. RK4 will be chosen instead."
-            self.integrator = RK4Classic(self.backend_ffcn)
+            raise NotImplementedError
 
     """
     ===============================================================================
     """
 
-    def convert_q(self, q):
+    def q_array2ind(self, q):
 
         """
 
@@ -140,19 +137,19 @@ class OCMS_indegrator(object):
         """
 
         # set up array
-        q_indegrator = np.zeros((self.NU, self.NTS, 1))
+        q_ind = np.zeros((self.NU, self.NTS, 1))
 
         # convert controls from one-dimensional array to INDegrator specific format
         for i in xrange(0, self.NU):
-            q_indegrator[i, :, 0] = q[i * self.NTS:(i + 1) * self.NTS]
+            q_ind[i, :, 0] = q[i * self.NTS:(i + 1) * self.NTS]
 
-        return q_indegrator
+        return q_ind
 
     """
     ===============================================================================
     """
 
-    def convert_s(self, s):
+    def s_array2ind(self, s):
 
         """
 
@@ -170,13 +167,13 @@ class OCMS_indegrator(object):
         """
 
         # set up array
-        s_indegrator = np.zeros((self.NS, self.NX))
+        s_ind = np.zeros((self.NS, self.NX))
 
         # convert shooting variables from one-dimensional array to INDegrator specific format
         for i in xrange(0, self.NS):
-            s_indegrator[i, :] = s[i * self.NX:(i + 1) * self.NX]
+            s_ind[i, :] = s[i * self.NX:(i + 1) * self.NX]
 
-        return s_indegrator
+        return s_ind
 
     """
     ===============================================================================
@@ -200,8 +197,8 @@ class OCMS_indegrator(object):
         """
 
         # convert controls and shooting variables to INDegrator specific format
-        q = self.convert_q(q)
-        s = self.convert_s(s)
+        q = self.q_array2ind(q)
+        s = self.s_array2ind(s)
 
         # allocate memory
         q_interval = np.zeros((self.NU, self.NTSI, 1))
@@ -239,8 +236,8 @@ class OCMS_indegrator(object):
         """
 
         # convert controls and shooting variables to INDegrator specific format
-        q = self.convert_q(q)
-        s = self.convert_s(s)
+        q = self.q_array2ind(q)
+        s = self.s_array2ind(s)
 
         # set initial conditions
         x0 = s[interval, :]
@@ -289,8 +286,8 @@ class OCMS_indegrator(object):
         """
 
         # convert controls and shooting variables to INDegrator specific format
-        q = self.convert_q(q)
-        s = self.convert_s(s)
+        q = self.q_array2ind(q)
+        s = self.s_array2ind(s)
 
         # set initial conditions
         x0 = s[interval, :]
@@ -346,8 +343,8 @@ class OCMS_indegrator(object):
         """
 
         # convert controls and shooting variables to INDegrator specific format
-        q = self.convert_q(q)
-        s = self.convert_s(s)
+        q = self.q_array2ind(q)
+        s = self.s_array2ind(s)
 
         # set initial conditions
         x0 = s[interval, :]
@@ -625,7 +622,7 @@ class OCMS_indegrator(object):
             c = np.zeros((self.NC,))
             t = np.zeros((1,))
             x = np.zeros((self.NX,))
-            f = np.zeros((self.NG,))
+            g = np.zeros((self.NG,))
             u = np.zeros((self.NU,))
 
             # loop through all time steps
@@ -639,11 +636,11 @@ class OCMS_indegrator(object):
                     u[k] = q[i + k * self.NTS]
 
                 # call fortran backend to calculate constraint functions for every control
-                self.backend_gfcn.ffcn(f, t, x, p, u)
+                self.backend_fortran.gfcn(g, t, x, p, u)
 
                 # build constraints
                 for k in xrange(0, self.NG):
-                    c[i + k * self.NTS] = f[k]
+                    c[i + k * self.NTS] = g[k]
 
         return c
 
@@ -677,8 +674,8 @@ class OCMS_indegrator(object):
             t       = np.zeros((1,))
             x       = np.zeros((self.NX,))
             x_dot   = np.zeros((self.NX, self.NP))
-            f       = np.zeros((self.NG,))
-            f_dot   = np.zeros((self.NG, self.NP))
+            g       = np.zeros((self.NG,))
+            g_dot   = np.zeros((self.NG, self.NP))
             p_dot   = np.zeros((self.NP, self.NP))
             u       = np.zeros((self.NU,))
             u_dot   = np.zeros((self.NU, self.NP))
@@ -695,12 +692,12 @@ class OCMS_indegrator(object):
                     u[l] = q[i + l * self.NTS]
 
                 # call fortran backend to calculate derivatives of constraint functions
-                self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
                 for j in xrange(0, self.NP):
                     for k in xrange(0, self.NG):
-                        dp[i + k * self.NP, j] = f_dot[k, j]
+                        dp[i + k * self.NP, j] = g_dot[k, j]
 
         return dp
 
@@ -734,8 +731,8 @@ class OCMS_indegrator(object):
             t       = np.zeros((1,))
             x       = np.zeros((self.NX,))
             x_dot   = np.zeros((self.NX, self.NU))
-            f       = np.zeros((self.NG,))
-            f_dot   = np.zeros((self.NG, self.NU))
+            g       = np.zeros((self.NG,))
+            g_dot   = np.zeros((self.NG, self.NU))
             p_dot   = np.zeros((self.NP, self.NU))
             u       = np.zeros((self.NU,))
             u_dot   = np.zeros((self.NU, self.NU))
@@ -758,12 +755,12 @@ class OCMS_indegrator(object):
                         u_dot = np.zeros((self.NU, self.NU))
 
                     # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                     # store gradient
                     for l in xrange(0, self.NU):
                         for m in xrange(0, self.NG):
-                            dq[i + m * self.NTS, j + l * self.NTS] = f_dot[m, l]
+                            dq[i + m * self.NTS, j + l * self.NTS] = g_dot[m, l]
 
         return dq
 
@@ -797,8 +794,8 @@ class OCMS_indegrator(object):
             t       = np.zeros((1,))
             x       = np.zeros((self.NX,))
             x_dot   = np.zeros((self.NX, self.NX))
-            f       = np.zeros((self.NG,))
-            f_dot   = np.zeros((self.NG, self.NX))
+            g       = np.zeros((self.NG,))
+            g_dot   = np.zeros((self.NG, self.NX))
             p_dot   = np.zeros((self.NP, self.NX))
             u       = np.zeros((self.NU,))
             u_dot   = np.zeros((self.NU, self.NX))
@@ -816,12 +813,12 @@ class OCMS_indegrator(object):
                         u[l] = q[i + l * self.NTS]
 
                     # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_gfcn.ffcn_dot(f, f_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
 
                     # store gradient
                     for l in xrange(0, self.NX):
                         for m in xrange(0, self.NG):
-                            ds[i + m * self.NTS, l + j * self.NX] = f_dot[m, l]
+                            ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
 
         return ds
 

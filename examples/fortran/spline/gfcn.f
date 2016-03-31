@@ -10,13 +10,13 @@ C 	x1 < 0.1
 C
 C ===============================================================================
 
-	subroutine gfcn(f, t, x, p, u)
+	subroutine gfcn(g, t, x, p, u)
 
 		implicit none
 
-		double precision x(3), f(1), p(1), u(1), t
+		double precision g(1), t, x(3), p(1), u(1)
 
-		f(1) = x(1) - 0.1
+		g(1) = x(1) - 0.1
 
 	end
 

@@ -162,7 +162,7 @@ class OCMS_snopt(object):
                 for i in xrange(0, self.ocp.NS - 1):
                     begin           = (self.ocp.NC + 1) + (i * self.ocp.NX)
                     end             = (self.ocp.NC + 1) + ((i + 1) * self.ocp.NX)
-                    F[begin:end]    = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.convert_s(s)[i + 1, :]
+                    F[begin:end]    = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.s_array2ind(s)[i + 1, :]
 
             if needG[0] != 0:
 
