@@ -597,7 +597,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -648,7 +648,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_dp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_dp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -705,7 +705,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_dq(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_dq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -768,7 +768,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_ds(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -826,7 +826,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_dqdq(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -851,7 +851,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_dqdp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_dqdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -876,7 +876,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def c_dpdp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def c_dpdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -901,7 +901,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def obj(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -924,7 +924,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def obj_dp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_dp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -941,13 +941,13 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
     """
 
-    def obj_dq(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_dq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -964,13 +964,13 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
     """
 
-    def obj_ds(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -987,13 +987,13 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
     """
 
-    def obj_dqdq(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -1010,13 +1010,13 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
     """
 
-    def obj_dpdp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_dpdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -1033,13 +1033,13 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
     """
 
-    def obj_dqdp(self, xs, xs_dot, xs_ddot, p, q, s):
+    def obj_dqdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -1056,7 +1056,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
 
 """

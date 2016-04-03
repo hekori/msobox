@@ -88,10 +88,10 @@ class OCMS_snopt(object):
             n[0]    = NQ
 
             # set the objective row
-            ObjRow[0]   = 1
-            ObjAdd[0]   = 0
-            Flow[0]     = -1e6
-            Fupp[0]     = 1e6
+            ObjRow[0] = 1
+            ObjAdd[0] = 0
+            Flow[0]   = -1e6
+            Fupp[0]   = 1e6
 
             # set the nonlinear constraints of the problem
             for i in xrange(1, self.ocp.NC + 1):
@@ -153,33 +153,33 @@ class OCMS_snopt(object):
                 xs = self.ocp.integrate(p, q, s)
 
                 # calculate objective for current controls
-                F[0]                    = self.ocp.obj(xs, None, None, p, q, s)
+                F[0] = self.ocp.obj(xs, None, None, None, p, q, s)
 
                 # evaluate the nonlinear constraints
-                F[1:self.ocp.NC + 1]    = self.ocp.c(xs, None, None, p, q, s)
+                F[1:self.ocp.NC + 1] = self.ocp.c(xs, None, None, None, p, q, s)
 
                 # add the matching conditions for multiple shooting
                 for i in xrange(0, self.ocp.NS - 1):
-                    begin           = (self.ocp.NC + 1) + (i * self.ocp.NX)
-                    end             = (self.ocp.NC + 1) + ((i + 1) * self.ocp.NX)
-                    F[begin:end]    = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.s_array2ind(s)[i + 1, :]
+                    begin        = (self.ocp.NC + 1) + (i * self.ocp.NX)
+                    end          = (self.ocp.NC + 1) + ((i + 1) * self.ocp.NX)
+                    F[begin:end] = self.ocp.integrate_interval(i, p, q, s)[-1, :] - self.ocp.s_array2ind(s)[i + 1, :]
 
             if needG[0] != 0:
 
                 # integrate and build derivatives for q and x0
-                xs, xs_dot_q    = self.ocp.integrate_dq(p, q, s)
-                xs_dot_s        = self.ocp.integrate_ds(p, q, s)[1]
+                xs, xs_dot_q = self.ocp.integrate_dq(p, q, s)
+                xs_dot_s     = self.ocp.integrate_ds(p, q, s)[1]
 
                 # calculate gradient of objective
-                G[0:self.ocp.NQ]                                        = self.ocp.obj_dq(xs, xs_dot_q, None, p, q, s)      # controls
-                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX * self.ocp.NS]  = self.ocp.obj_ds(xs, xs_dot_s, None, p, q, s)      # shooting variables
-                l                                                       = self.ocp.NQ + self.ocp.NS * self.ocp.NX           # save position in array G
+                G[0:self.ocp.NQ]                                       = self.ocp.obj_dq(xs, xs_dot_q, None, None, p, q, s)[1]  # controls
+                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX * self.ocp.NS] = self.ocp.obj_ds(xs, xs_dot_s, None, None, p, q, s)[1]  # shooting variables
+                l                                                      = self.ocp.NQ + self.ocp.NS * self.ocp.NX                # save position in array G
 
                 # calculate derivatives for constraints
                 for i in xrange(0, self.ocp.NC):
-                    G[l:l + self.ocp.NQ]                                                = self.ocp.c_dq(xs, xs_dot_q, None, p, q, s)[i, :]      # controls
-                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX * self.ocp.NS]      = self.ocp.c_ds(xs, xs_dot_s, None, p, q, s)[i, :]      # shooting variables
-                    l                                                                   = l + self.ocp.NQ + self.ocp.NX * self.ocp.NS           # update l
+                    G[l:l + self.ocp.NQ]                                           = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1][i, :]  # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX * self.ocp.NS] = self.ocp.c_ds(xs, xs_dot_s, None, None, p, q, s)[1][i, :]  # shooting variables
+                    l                                                              = l + self.ocp.NQ + self.ocp.NX * self.ocp.NS                # update l
 
                 # calculate derivatives for matching conditions at boundary
                 for i in xrange(0, self.ocp.NS - 1):
@@ -188,12 +188,12 @@ class OCMS_snopt(object):
                     xs_dot_interval_dx0 = self.ocp.integrate_interval_dx0(i, p, q, s)[1]
 
                     for j in xrange(0, self.ocp.NX):
-                        G[l:l + self.ocp.NQ]                                                            = 0                                             # controls
-                        G[l + i]                                                                        = xs_dot_interval_dq[-1, j]                     # controls
-                        G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NS * self.ocp.NX]                  = 0                                             # shooting variables
-                        G[l + self.ocp.NQ + i * self.ocp.NX:l + self.ocp.NQ + (i + 1) * self.ocp.NX]    = xs_dot_interval_dx0[-1, j, :]                 # shooting variables
-                        G[l + self.ocp.NQ + (i + 1) * self.ocp.NX + j]                                  = -1                                            # shooting variables
-                        l                                                                               = l + self.ocp.NQ + self.ocp.NS * self.ocp.NX   # update l
+                        G[l:l + self.ocp.NQ]                                                         = 0                                            # controls
+                        G[l + i]                                                                     = xs_dot_interval_dq[-1, j]                    # controls
+                        G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NS * self.ocp.NX]               = 0                                            # shooting variables
+                        G[l + self.ocp.NQ + i * self.ocp.NX:l + self.ocp.NQ + (i + 1) * self.ocp.NX] = xs_dot_interval_dx0[-1, j, :]                # shooting variables
+                        G[l + self.ocp.NQ + (i + 1) * self.ocp.NX + j]                               = -1                                           # shooting variables
+                        l                                                                            = l + self.ocp.NQ + self.ocp.NS * self.ocp.NX  # update l
 
             return 0
 
@@ -240,9 +240,9 @@ class OCMS_snopt(object):
         iAfun = np.zeros((lenA[0],), dtype=np.int32)
         jAvar = np.zeros((lenA[0],), dtype=np.int32)
 
-        A     = np.zeros((lenA[0],), dtype=np.float64)
+        A = np.zeros((lenA[0],), dtype=np.float64)
 
-        lenG   = np.zeros((1,), dtype=np.int32)
+        lenG    = np.zeros((1,), dtype=np.int32)
         lenG[0] = NQ * (1 + NC)
 
         iGfun = np.zeros((lenG[0],), dtype=np.int32)
@@ -261,9 +261,9 @@ class OCMS_snopt(object):
         Fnames = np.zeros((1 * 8,), dtype=np.character)
         Prob   = np.zeros((200 * 8,), dtype=np.character)
 
-        iSpecs  = np.zeros((1,), dtype=np.int32)
-        iSumm   = np.zeros((1,), dtype=np.int32)
-        iPrint  = np.zeros((1,), dtype=np.int32)
+        iSpecs = np.zeros((1,), dtype=np.int32)
+        iSumm  = np.zeros((1,), dtype=np.int32)
+        iPrint = np.zeros((1,), dtype=np.int32)
 
         iSpecs[0] = 4
         iSumm [0] = 6
@@ -323,7 +323,7 @@ class OCMS_snopt(object):
         snopt.snclose(iPrint)
         snopt.snclose(iSpecs)
 
-        return x[:self.ocp.NQ], x[self.ocp.NQ:], F[0], F[1:], -Fmul[1:]
+        return x[:self.ocp.NQ], x[self.ocp.NQ:], F[0], F[1:self.ocp.NC + 1], -Fmul[1:self.ocp.NC + 1], F[self.ocp.NC + 1:], -Fmul[self.ocp.NC + 1:]
 
 """
 ===============================================================================
