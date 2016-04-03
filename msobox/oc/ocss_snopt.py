@@ -168,10 +168,10 @@ class OCSS_snopt(object):
                 xs_dot_x0    = self.ocp.integrate_dx0(p, q, s)[1]
 
                 # calculate gradient of objective
-                G[0:self.ocp.NQ]                                           = self.ocp.obj_dq(xs, xs_dot_q, None, None, p, q, s)    # controls
-                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                   = self.ocp.obj_dx0(xs, xs_dot_x0, None, None, p, q, s)  # s[0]
-                G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + 2 * self.ocp.NX] = 0                                                     # s[-1]
-                l                                                          = self.ocp.NQ + 2 * self.ocp.NX                         # save position in array G
+                G[0:self.ocp.NQ]                                           = self.ocp.obj_dq(xs, xs_dot_q, None, None, p, q, s)[1]    # controls
+                G[self.ocp.NQ:self.ocp.NQ + self.ocp.NX]                   = self.ocp.obj_dx0(xs, xs_dot_x0, None, None, p, q, s)[1]  # s[0]
+                G[self.ocp.NQ + self.ocp.NX:self.ocp.NQ + 2 * self.ocp.NX] = 0                                                        # s[-1]
+                l                                                          = self.ocp.NQ + 2 * self.ocp.NX                            # save position in array G
 
                 # calculate derivatives for constraints
                 for i in xrange(0, self.ocp.NC):
@@ -316,7 +316,7 @@ class OCSS_snopt(object):
         snopt.snclose(iPrint)
         snopt.snclose(iSpecs)
 
-        return x[:self.ocp.NQ], x[self.ocp.NQ:], F[0], F[1:], -Fmul[1:]
+        return x[:self.ocp.NQ], x[self.ocp.NQ:], F[0], F[1:self.ocp.NC + 1], -Fmul[1:self.ocp.NC + 1], F[self.ocp.NC + 1:], -Fmul[self.ocp.NC + 1:]
 
 """
 ===============================================================================

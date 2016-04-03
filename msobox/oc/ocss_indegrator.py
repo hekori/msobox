@@ -634,7 +634,6 @@ class OCSS_indegrator(object):
             # allocate memory
             c = np.zeros((self.NC,))
 
-            t = np.zeros((1,))
             x = np.zeros((self.NX,))
             g = np.zeros((self.NG,))
             u = np.zeros((self.NU,))
@@ -642,15 +641,14 @@ class OCSS_indegrator(object):
             # loop through all time steps
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0] = self.ts[i]
-                x    = xs[i, :]
+                # state and controls for this time step
+                x  = xs[i, :]
 
                 for k in xrange(0, self.NU):
                     u[k] = q[i + k * self.NTS]
 
                 # call fortran backend to calculate constraint functions for every control
-                self.backend_fortran.gfcn(g, t, x, p, u)
+                self.backend_fortran.gfcn(g, self.ts[i:i + 1], x, p, u)
 
                 # build constraints
                 for k in xrange(0, self.NG):
@@ -687,7 +685,6 @@ class OCSS_indegrator(object):
             c     = np.zeros((self.NC,))
             dx0   = np.zeros((self.NC, self.NX))
 
-            t     = np.zeros((1,))
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NX))
             g     = np.zeros((self.NG,))
@@ -699,8 +696,7 @@ class OCSS_indegrator(object):
             # loop through all time step
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]  = self.ts[i]
+                # state and controls for this time step
                 x     = xs[i, :]
                 x_dot = np.reshape(xs_dot1[i, :, :], x_dot.shape)
 
@@ -708,7 +704,7 @@ class OCSS_indegrator(object):
                     u[l] = q[i + l * self.NTS]
 
                 # call fortran backend to calculate derivatives of constraint functions
-                self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
                 for k in xrange(0, self.NG):
@@ -746,7 +742,6 @@ class OCSS_indegrator(object):
             c     = np.zeros((self.NC,))
             dp    = np.zeros((self.NC, self.NP))
 
-            t     = np.zeros((1,))
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NP))
             g     = np.zeros((self.NG,))
@@ -758,8 +753,7 @@ class OCSS_indegrator(object):
             # loop through all time steps
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]  = self.ts[i]
+                # state and controls for this time step
                 x     = xs[i, :]
                 x_dot = np.reshape(xs_dot1[i, :, :], x_dot.shape)
 
@@ -767,7 +761,7 @@ class OCSS_indegrator(object):
                     u[l] = q[i + l * self.NTS]
 
                 # call fortran backend to calculate derivatives of constraint functions
-                self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
                 for k in xrange(0, self.NG):
@@ -805,7 +799,6 @@ class OCSS_indegrator(object):
             c     = np.zeros((self.NC,))
             dq    = np.zeros((self.NC, self.NQ))
 
-            t     = np.zeros((1,))
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NU))
             g     = np.zeros((self.NG,))
@@ -818,8 +811,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
                 for j in xrange(0, self.NTS):
 
-                    # set time, state and controls for this time step
-                    t[0]  = self.ts[i]
+                    # state and controls for this time step
                     x     = xs[i, :]
                     x_dot = np.reshape(xs_dot1[i, :, j], x_dot.shape)
 
@@ -832,7 +824,7 @@ class OCSS_indegrator(object):
                         u_dot = np.zeros((self.NU, self.NU))
 
                     # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                    self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
 
                     # store gradient
                     for k in xrange(0, self.NG):
@@ -874,7 +866,6 @@ class OCSS_indegrator(object):
             dx02   = np.zeros((self.NC, self.NX))
             dx0dx0 = np.zeros((self.NC, self.NX, self.NX))
 
-            t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NX))
             x_dot2 = np.zeros((self.NX, self.NX))
@@ -882,7 +873,7 @@ class OCSS_indegrator(object):
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NX))
             g_dot2 = np.zeros((self.NG, self.NX))
-            g_ddot = np.zeros(f_dot1.shape + (self.NX,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NX,))
             p_dot  = np.zeros((self.NP, self.NX))
             p_ddot = np.zeros(p_dot.shape + (self.NX,))
             u      = np.zeros((self.NU,))
@@ -892,8 +883,7 @@ class OCSS_indegrator(object):
             # loop through all time step
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]   = self.ts[i]
+                # state and controls for this time step
                 x      = xs[i, :]
                 x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
                 x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
@@ -904,7 +894,7 @@ class OCSS_indegrator(object):
 
                 # call fortran backend to calculate derivatives of constraint functions
                 self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                               t,
+                                               self.ts[i:i + 1],
                                                x, x_dot2, x_dot1, x_ddot,
                                                p, p_dot, p_dot, p_ddot,
                                                u, u_dot, u_dot, u_ddot)
@@ -957,7 +947,7 @@ class OCSS_indegrator(object):
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NP))
             g_dot2 = np.zeros((self.NG, self.NP))
-            g_ddot = np.zeros(f_dot1.shape + (self.NP,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NP,))
             p_dot  = np.eye(self.NP)
             p_ddot = np.zeros(p_dot.shape + (self.NP,))
             u      = np.zeros((self.NU,))
@@ -967,8 +957,7 @@ class OCSS_indegrator(object):
             # loop through all time step
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]   = self.ts[i]
+                # state and controls for this time step
                 x      = xs[i, :]
                 x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
                 x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
@@ -979,7 +968,7 @@ class OCSS_indegrator(object):
 
                 # call fortran backend to calculate derivatives of constraint functions
                 self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                               t,
+                                               self.ts[i:i + 1],
                                                x, x_dot2, x_dot1, x_ddot,
                                                p, p_dot, p_dot, p_ddot,
                                                u, u_dot, u_dot, u_ddot)
@@ -1024,7 +1013,6 @@ class OCSS_indegrator(object):
             dq2    = np.zeros((self.NC, self.NQ))
             dqdq   = np.zeros((self.NC, self.NQ, self.NQ))
 
-            t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NU))
             x_dot2 = np.zeros((self.NX, self.NU))
@@ -1032,7 +1020,7 @@ class OCSS_indegrator(object):
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NU))
             g_dot2 = np.zeros((self.NG, self.NU))
-            g_ddot = np.zeros(f_dot1.shape + (self.NU,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NU,))
             p_dot  = np.zeros((self.NP, self.NU))
             p_ddot = np.zeros(p_dot.shape + (self.NU,))
             u      = np.zeros((self.NU,))
@@ -1044,8 +1032,7 @@ class OCSS_indegrator(object):
                 for j in xrange(0, self.NTS):
                     for m in xrange(0, self.NTS):
 
-                        # set time, state and controls for this time step
-                        t[0]   = self.ts[i]
+                        # state and controls for this time step
                         x      = xs[i, :]
                         x_dot1 = np.reshape(xs_dot1[i, :, j], x_dot1.shape)
                         x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
@@ -1061,7 +1048,7 @@ class OCSS_indegrator(object):
 
                         # call fortran backend to calculate derivatives of constraint functions
                         self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                                       t,
+                                                       self.ts[i:i + 1],
                                                        x, x_dot2, x_dot1, x_ddot,
                                                        p, p_dot, p_dot, p_ddot,
                                                        u, u_dot, u_dot, u_ddot)
@@ -1109,15 +1096,14 @@ class OCSS_indegrator(object):
             dp     = np.zeros((self.NC, self.NP))
             dx0dp  = np.zeros((self.NC, self.NX, self.NP))
 
-            t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros(self.NX, self.NX)
             x_dot2 = np.zeros(self.NX, self.NP)
-            x_ddot = np.zeros(x_dot.shape + (self.NP,))
+            x_ddot = np.zeros(x_dot1.shape + (self.NP,))
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NX))
             g_dot2 = np.zeros((self.NG, self.NP))
-            g_ddot = np.zeros(f_dot1.shape + (self.NP,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NP,))
             p_dot1 = np.zeros((self.NP, self.NX))
             p_dot2 = np.eye(self.NP)
             p_ddot = np.zeros(p_dot1.shape + (self.NP,))
@@ -1128,8 +1114,7 @@ class OCSS_indegrator(object):
             # loop through all time step
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]   = self.ts[i]
+                # state and controls for this time step
                 x      = xs[i, :]
                 x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
                 x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
@@ -1140,7 +1125,7 @@ class OCSS_indegrator(object):
 
                 # call fortran backend to calculate derivatives of constraint functions
                 self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                               t,
+                                               self.ts[i:i + 1],
                                                x, x_dot2, x_dot1, x_ddot,
                                                p, p_dot2, p_dot1, p_ddot,
                                                u, u_dot, u_dot, u_ddot)
@@ -1189,11 +1174,11 @@ class OCSS_indegrator(object):
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros(self.NX, self.NX)
             x_dot2 = np.zeros(self.NX, self.NP)
-            x_ddot = np.zeros(x_dot.shape + (self.NP,))
+            x_ddot = np.zeros(x_dot1.shape + (self.NP,))
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NX))
             g_dot2 = np.zeros((self.NG, self.NP))
-            g_ddot = np.zeros(f_dot1.shape + (self.NP,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NP,))
             p_dot  = np.zeros((self.NP, self.NX))
             p_ddot = np.zeros(p_dot.shape + (self.NP,))
             u      = np.zeros((self.NU,))
@@ -1205,8 +1190,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
                 for j in xrange(0, self.NTS):
 
-                    # set time, state and controls for this time step
-                    t[0]   = self.ts[i]
+                    # state and controls for this time step
                     x      = xs[i, :]
                     x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
                     x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
@@ -1222,7 +1206,7 @@ class OCSS_indegrator(object):
 
                     # call fortran backend to calculate derivatives of constraint functions
                     self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                                   t,
+                                                   self.ts[i:i + 1],
                                                    x, x_dot2, x_dot1, x_ddot,
                                                    p, p_dot, p_dot, p_ddot,
                                                    u, u_dot2, u_dot1, u_ddot)
@@ -1268,17 +1252,16 @@ class OCSS_indegrator(object):
             c    = np.zeros((self.NC,))
             dp   = np.zeros((self.NC, self.NP))
             dq   = np.zeros((self.NC, self.NQ))
-            dpdq = np.zeros((self.NC, self.NX, self.NQ))
+            dpdq = np.zeros((self.NC, self.NP, self.NQ))
 
-            t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
-            x_dot1 = np.zeros(self.NX, self.NP)
-            x_dot2 = np.zeros(self.NX, self.NU)
-            x_ddot = np.zeros(x_dot.shape + (self.NU,))
+            x_dot1 = np.zeros((self.NX, self.NP))
+            x_dot2 = np.zeros((self.NX, self.NU))
+            x_ddot = np.zeros(x_dot1.shape + (self.NU,))
             g      = np.zeros((self.NG,))
             g_dot1 = np.zeros((self.NG, self.NP))
             g_dot2 = np.zeros((self.NG, self.NU))
-            g_ddot = np.zeros(f_dot1.shape + (self.NU,))
+            g_ddot = np.zeros(g_dot1.shape + (self.NU,))
             p_dot1 = np.eye(self.NP)
             p_dot2 = np.zeros((self.NP, self.NU))
             p_ddot = np.zeros(p_dot1.shape + (self.NU,))
@@ -1291,8 +1274,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
                 for j in xrange(0, self.NTS):
 
-                    # set time, state and controls for this time step
-                    t[0]   = self.ts[i]
+                    # state and controls for this time step
                     x      = xs[i, :]
                     x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
                     x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
@@ -1308,9 +1290,9 @@ class OCSS_indegrator(object):
 
                     # call fortran backend to calculate derivatives of constraint functions
                     self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
-                                                   t,
+                                                   self.ts[i:i + 1],
                                                    x, x_dot2, x_dot1, x_ddot,
-                                                   p, p_dot, p_dot, p_ddot,
+                                                   p, p_dot2, p_dot1, p_ddot,
                                                    u, u_dot2, u_dot1, u_ddot)
 
                     # store gradient
@@ -1320,7 +1302,7 @@ class OCSS_indegrator(object):
 
                         for l in xrange(0, self.NU):
                             dpdq[i + k * self.NTS, :, j + l * self.NTS] = g_ddot[k, :, l]
-                            dxq[i + k * self.NTS, j + l * self.NTS]     = g_dot2[k, l]
+                            dq[i + k * self.NTS, j + l * self.NTS]      = g_dot2[k, l]
 
 
         return c, dp, dq, dpdq
@@ -1369,7 +1351,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
@@ -1392,7 +1374,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
@@ -1415,7 +1397,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
 
     """
     ===============================================================================
@@ -1438,7 +1420,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
@@ -1461,7 +1443,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
@@ -1484,7 +1466,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
@@ -1507,7 +1489,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
@@ -1530,7 +1512,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
     """
     ===============================================================================
@@ -1553,7 +1535,7 @@ class OCSS_indegrator(object):
 
         """
 
-        return self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
 
 """
 ===============================================================================

@@ -45,7 +45,7 @@ bc      = np.array([-1e6, 1e6], ndmin=2)
 problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts)
 x0      = [0, 1, 0]
 xend    = [0, -1, None]
-p       = np.array([1])
+p       = np.array([1.])
 q0      = 0 * np.ones((problem.NQ,))
 s0      = np.array([0, 1, 0, 0, -1, 0])
 
@@ -59,15 +59,17 @@ solver  = OCSS_snopt(problem)
 results = solver.solve(x0=x0, xend=xend, p=p, q0=q0, s0=s0)
 
 # print results
-print "\n" + "optimal controls:",   results[0]
-print "shooting variables:",        results[1]
-print "objective:",                 results[2]
-print "constraints:",               results[3]
-print "multipliers:",               results[4]
+print "\n" + "optimal controls:", 		  results[0]
+print "shooting variables:",      	      results[1]
+print "objective:",               		  results[2]
+print "constraints:",             		  results[3]
+print "multipliers:",               	  results[4]
+print "matching conditions:", 			  results[5]
+print "multipliers matching conditions:", results[6]
 
-q_opt = results[0]
-s_opt = results[1]
-mul   = results[4]
+q_opt   = results[0]
+s_opt   = results[1]
+mul_opt = results[4]
 
 # plot controls and states
 x_opt = problem.integrate(p, q_opt, s_opt)
