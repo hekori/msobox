@@ -3,7 +3,7 @@
 """
 ===============================================================================
 
-spline example for optimal control with single shooting
+spline example for optimal control and sensitivity analysis with single shooting
 http://www.math.uni-bremen.de/zetem/alt/optimmedia/webcontrol/spline2.html
 
 x1_dot = x2
@@ -29,16 +29,22 @@ from msobox.oc.ocss_sensitivity import OCSS_sensitivity
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
 
+def get_dir_path():
+    """return script directory"""
+    import inspect, os
+    return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
 """
 ===============================================================================
 """
 
 # initialize an optimal control problem
 name    = "oc-ss-spline"
-path    = "./examples/fortran/spline/"
-ts      = np.linspace(0, 1, 50)
-bc      = np.array([-1e6, 1e6], ndmin=2)
-problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts)
+path    = get_dir_path() + "/fortran/spline/"
+ts      = np.linspace(0, 1, 20)
+bcq     = np.array([-1e6, 1e6], ndmin=2)
+bcg     = np.array([-1e6, 0], ndmin=2)
+problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bcq=bcq, bcg=bcg, ts=ts)
 x0      = [0, 1, 0]
 xend    = [0, -1, None]
 p       = np.array([1.])
@@ -96,7 +102,7 @@ print "sensitivities for multipliers:", sensitivity.mul_dp
 print "sensitivities for objective:",   sensitivity.F_dp
 
 # give approximations for new parameter values
-p_new = np.array([1.1])
+p_new = np.array([1.05])
 sensitivity.calculate_approximations(x_opt, p, q_opt, s_opt, mul_opt, p_new)
 print "first-order approximation for controls:",       sensitivity.q_approx
 print "first-order approximation for multipliers:",    sensitivity.mul_approx

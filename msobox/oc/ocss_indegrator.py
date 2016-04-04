@@ -36,7 +36,7 @@ class OCSS_indegrator(object):
     ===============================================================================
     """
 
-    def __init__(self, name, path, minormax, NX, NG, NP, NU, bc, ts):
+    def __init__(self, name, path, minormax, NX, NG, NP, NU, bcq, bcg, ts):
 
         """
 
@@ -70,7 +70,8 @@ class OCSS_indegrator(object):
         self.NC   = NG * self.NTS
         self.NU   = NU
         self.NQ   = NU * self.NTS
-        self.bc   = bc
+        self.bcq  = bcq
+        self.bcg  = bcg
 
         # load json containing data structure for differentiator
         with open(path + "ds.json", "r") as f:
@@ -677,6 +678,7 @@ class OCSS_indegrator(object):
 
         """
 
+        c   = None
         dx0 = None
 
         if self.NG > 0:
@@ -734,6 +736,7 @@ class OCSS_indegrator(object):
 
         """
 
+        c  = None
         dp = None
 
         if self.NG > 0:
@@ -791,6 +794,7 @@ class OCSS_indegrator(object):
 
         """
 
+        c  = None
         dq = None
 
         if self.NG > 0:
@@ -856,6 +860,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c      = None
+        dx01   = None
+        dx02   = None
         dx0dx0 = None
 
         if self.NG > 0:
@@ -929,6 +936,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c    = None
+        dp1  = None
+        dp2  = None
         dpdp = None
 
         if self.NG > 0:
@@ -1003,6 +1013,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c    = None
+        dq1  = None
+        dq2  = None
         dqdq = None
 
         if self.NG > 0:
@@ -1086,6 +1099,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c     = None
+        dx0   = None
+        dp    = None
         dx0dp = None
 
         if self.NG > 0:
@@ -1160,6 +1176,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c     = None
+        dx0   = None
+        dq    = None
         dx0dq = None
 
         if self.NG > 0:
@@ -1244,6 +1263,9 @@ class OCSS_indegrator(object):
 
         """
 
+        c    = None
+        dp   = None
+        dq   = None
         dpdq = None
 
         if self.NG > 0:

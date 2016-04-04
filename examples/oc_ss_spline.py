@@ -41,8 +41,9 @@ def get_dir_path():
 name    = "oc-ss-spline"
 path    = get_dir_path() + "/fortran/spline/"
 ts      = np.linspace(0, 1, 20)
-bc      = np.array([-1e6, 1e6], ndmin=2)
-problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bc=bc, ts=ts)
+bcq     = np.array([-1e6, 1e6], ndmin=2)
+bcg     = np.array([-1e6, 0], ndmin=2)
+problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bcq=bcq, bcg=bcg, ts=ts)
 x0      = [0, 1, 0]
 xend    = [0, -1, None]
 p       = np.array([1.])

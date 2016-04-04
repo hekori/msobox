@@ -40,8 +40,10 @@ def get_dir_path():
 name    = "oc-ms-chemistry"
 path    = get_dir_path() + "/fortran/chemistry/"
 ts      = np.linspace(0, 1, 20)
-bc      = np.array([0, 1], ndmin=2)
-problem = OCMS_indegrator(name=name, path=path, minormax="max", NX=2, NG=0, NP=1, NU=1, bc=bc, ts=ts, NTSI=10)
+bcq     = np.array([0, 1], ndmin=2)
+bcs     = np.array([[-1e6, 1e6],
+				    [-1e6, 1e6]], ndmin=2)
+problem = OCMS_indegrator(name=name, path=path, minormax="max", NX=2, NG=0, NP=1, NU=1, bcq=bcq, bcs=bcs, bcg=None, ts=ts, NTSI=10)
 x0      = [1, 0]
 xend    = [None, None]
 p       = np.array([3.5])

@@ -97,11 +97,22 @@ class OCSS_sensitivity(object):
             c_dqdq = np.reshape(c_dqdq[self.ca, :, :], (self.NCA, self.ocp.NQ, self.ocp.NQ))
             c_dpdq = np.reshape(c_dpdq[self.ca, :, :], (self.NCA, self.ocp.NP, self.ocp.NQ))
 
+            ########################
+
+            # POSSIBLE HACK 1: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
+            # lagrange_dqdq[-1, -1] = 1
+
+            # POSSIBLE HACK 2: manually trim last q out of matrices
+            lagrange_dq   = np.delete(lagrange_dq, self.ocp.NTS - 1, 0)
+            lagrange_dpdq = np.delete(lagrange_dpdq, self.ocp.NTS - 1, 1)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 0)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 1)
+            c_dq          = np.delete(c_dq, self.ocp.NTS - 1, 1)
+
+            ########################
+
             lagrange_dqdp = lagrange_dpdq.transpose()
             c_dqdp        = c_dpdq.transpose()
-
-            # HACK: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
-            lagrange_dqdq[-1, -1] = 1
 
             # concatenate matrices to kkt matrix and rhs
             kkt1 = np.concatenate((lagrange_dqdq, c_dq.transpose()), axis=1)
@@ -114,18 +125,24 @@ class OCSS_sensitivity(object):
 
             # set sensitivities of mul
             mul_dp          = np.zeros((self.ocp.NC, self.ocp.NP))
-            mul_dp[self.ca] = combined_dp[self.ocp.NQ:, :]
+            mul_dp[self.ca] = combined_dp[self.ocp.NQ - 1:, :]
 
             # set sensitivities of q
-            q_dp = np.zeros((self.ocp.NQ, self.ocp.NP))
-            q_dp = combined_dp[:self.ocp.NQ, :]
+            q_dp = np.zeros((self.ocp.NQ - 1, self.ocp.NP))
+            q_dp = combined_dp[:self.ocp.NQ - 1, :]
 
             # calculate first and second order sensitivites of the optimal value
             F_dp   = lagrange_dp
             F_dpdp = np.dot(q_dp.transpose(), lagrange_dqdq)
             F_dpdp = np.dot(F_dpdp, q_dp) + 2 * np.dot(lagrange_dpdq, q_dp).transpose() + lagrange_dpdp
 
-            q_dp_full = q_dp
+            ########################
+
+            # FOR HACK 2: add last q again
+            q_dp_full                    = np.zeros((self.ocp.NQ, self.ocp.NP))
+            q_dp_full[:self.ocp.NTS - 1] = q_dp
+
+            ########################
 
         else:
 
@@ -136,17 +153,23 @@ class OCSS_sensitivity(object):
             lagrange_dqdq = self.ocp.obj_dqdq(x_opt, x_opt_dq, x_opt_dq, x_opt_dqdq, p, q_opt, s_opt)[3]
             lagrange_dpdq = self.ocp.obj_dpdq(x_opt, x_opt_dp, x_opt_dq, x_opt_dpdq, p, q_opt, s_opt)[3]
 
+            ########################
+
+            # POSSIBLE HACK 1: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
+            # lagrange_dqdq[-1, -1] = 1
+
+            # POSSIBLE HACK 2: manually trim last q out of matrices
+            lagrange_dq   = np.delete(lagrange_dq, self.ocp.NTS - 1, 0)
+            lagrange_dpdq = np.delete(lagrange_dpdq, self.ocp.NTS - 1, 1)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 0)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 1)
+
+            ########################
+
             lagrange_dqdp = lagrange_dpdq.transpose()
 
-            # HACK: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
-            lagrange_dqdq[-1, -1] = 1
-
-            # # HACK: manually trim last q out of matrices
-            # for i in xrange(0, self.ocp.NU):
-            #     lagrange_dq   = np.delete(lagrange_dq, self.ocp.NTS * (i + 1) - (1 + i), 0)
-            #     lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS * (i + 1) - (1 + i), 0)
-            #     lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS * (i + 1) - (1 + i), 1)
-            #     lagrange_dpdq = np.delete(lagrange_dpdq, self.ocp.NTS * (i + 1) - (1 + i), 0)
+            print lagrange_dqdq
+            print lagrange_dqdp
 
             # calculate first order sensitivites of q and set mul to None
             q_dp   = -np.linalg.solve(lagrange_dqdq, lagrange_dqdp)
@@ -159,11 +182,13 @@ class OCSS_sensitivity(object):
 
             q_dp_full = q_dp
 
-            # # HACK: add last q again
-            # q_dp_full = np.zeros((self.ocp.NQ, self.ocp.NP))
+            ########################
 
-            # for i in xrange(0, self.ocp.NU):
-            #     q_dp_full[self.ocp.NTS * i:self.ocp.NTS * (i + 1) - 1] = q_dp[(self.ocp.NTS - 1) * i:(self.ocp.NTS - 1) * (i + 1)]
+            # FOR HACK 2: add last q again
+            q_dp_full                    = np.zeros((self.ocp.NQ, self.ocp.NP))
+            q_dp_full[:self.ocp.NTS - 1] = q_dp
+
+            ########################
 
         # set results as attributes
         self.q_dp   = q_dp_full
@@ -189,25 +214,20 @@ class OCSS_sensitivity(object):
 
         """
 
-        mul_approx = mul_opt + np.dot(self.mul_dp, (p_new - p))
-        q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
-        F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
-                     1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
+        # use taylor approximations to estimate the new values
+        if self.NCA > 0:
 
-        # # use taylor approximations to estimate the new values
-        # if self.NCA > 0:
+            mul_approx = mul_opt + np.dot(self.mul_dp, (p_new - p))
+            q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
+            F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
+                         1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
 
-        #     mul_approx = mul_opt + np.dot(self.mul_dp, (p_new - p))
-        #     q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
-        #     F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
-        #                  1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
+        else:
 
-        # else:
-
-        #     mul_approx = None
-        #     q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
-        #     F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
-        #                  1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
+            mul_approx = None
+            q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
+            F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
+                         1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
 
         # set results as attributes
         self.q_approx   = q_approx

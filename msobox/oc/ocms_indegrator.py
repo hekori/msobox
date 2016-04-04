@@ -36,7 +36,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def __init__(self, name, path, minormax, NX, NG, NP, NU, bc, ts, NTSI):
+    def __init__(self, name, path, minormax, NX, NG, NP, NU, bcq, bcs, bcg, ts, NTSI):
 
         """
 
@@ -70,7 +70,9 @@ class OCMS_indegrator(object):
         self.NC     = NG * self.NTS
         self.NU     = NU
         self.NQ     = NU * self.NTS
-        self.bc     = bc
+        self.bcq    = bcq
+        self.bcs    = bcs
+        self.bcg    = bcg
         self.NTSI   = NTSI
         self.NS     = self.NTS
 
@@ -114,6 +116,43 @@ class OCMS_indegrator(object):
 
         else:
             raise NotImplementedError
+
+    """
+    ===============================================================================
+    """
+
+    def initial_s0(self, x0, xend):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        s0 = np.zeros((self.NS * self.NX,))
+
+        # approximate shooting variables by linear interpolation if possible
+        for j in xrange(0, self.NTS):
+            for i in xrange(0, self.NX):
+
+                # set all shooting variables to x0
+                s0[j * self.NX + i] = x0[i]
+
+                # interpolate from x0 to xend if possible
+                if xend[i] is not None:
+                    s0[j * self.NX + i] = x0[i] + float(j) / (self.NTS - 1) * (xend[i] - x0[i]) / (self.ts[-1] - self.ts[0])
+
+        return s0
 
     """
     ===============================================================================
@@ -648,6 +687,67 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
+    def c_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        c  = None
+        ds = None
+
+        if self.NG > 0:
+
+            # allocate memory
+            c     = np.zeros((self.NC,))
+            ds      = np.zeros((self.NC, self.NX * self.NS))
+
+            t       = np.zeros((1,))
+            x       = np.zeros((self.NX,))
+            x_dot   = np.zeros((self.NX, self.NX))
+            g       = np.zeros((self.NG,))
+            g_dot   = np.zeros((self.NG, self.NX))
+            p_dot   = np.zeros((self.NP, self.NX))
+            u       = np.zeros((self.NU,))
+            u_dot   = np.zeros((self.NU, self.NX))
+
+            # loop through all time steps and shooting nodes
+            for i in xrange(0, self.NTS):
+                for j in xrange(0, self.NS):
+
+                    # set time, state and controls for this time step
+                    t[0]    = self.ts[i]
+                    x       = xs[i * (self.NTSI - 1), :]
+                    x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+
+                    for l in xrange(0, self.NU):
+                        u[l] = q[i + l * self.NTS]
+
+                    # call fortran backend to calculate derivatives of constraint functions
+                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+
+                    # store gradient
+                    for l in xrange(0, self.NX):
+                        for m in xrange(0, self.NG):
+                            ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
+
+        return c, ds
+
+    """
+    ===============================================================================
+    """
+
     def c_dp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
@@ -665,6 +765,7 @@ class OCMS_indegrator(object):
 
         """
 
+        c  = None
         dp = None
 
         if self.NG > 0:
@@ -686,7 +787,7 @@ class OCMS_indegrator(object):
                 # set time, state and controls for this time step
                 t[0]    = self.ts[i]
                 x       = xs[i * (self.NTSI - 1), :]
-                x_dot   = np.reshape(xs_dot[i * (self.NTSI - 1), :, :], x_dot.shape)
+                x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, :], x_dot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -699,7 +800,7 @@ class OCMS_indegrator(object):
                     for k in xrange(0, self.NG):
                         dp[i + k * self.NP, j] = g_dot[k, j]
 
-        return dp
+        return c, dp
 
     """
     ===============================================================================
@@ -722,6 +823,7 @@ class OCMS_indegrator(object):
 
         """
 
+        c  = None
         dq = None
 
         if self.NG > 0:
@@ -744,7 +846,7 @@ class OCMS_indegrator(object):
                     # set time, state and controls for this time step
                     t[0]    = self.ts[i]
                     x       = xs[i * (self.NTSI - 1), :]
-                    x_dot   = np.reshape(xs_dot[i * (self.NTSI - 1), :, j], x_dot.shape)
+                    x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j], x_dot.shape)
 
                     for k in xrange(0, self.NU):
                         u[k] = q[i + k * self.NTS]
@@ -762,71 +864,13 @@ class OCMS_indegrator(object):
                         for m in xrange(0, self.NG):
                             dq[i + m * self.NTS, j + l * self.NTS] = g_dot[m, l]
 
-        return dq
+        return c, dq
 
     """
     ===============================================================================
     """
 
-    def c_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
-
-        """
-
-        description ...
-
-        input:
-            ...
-
-        output:
-            ...
-
-        TODO:
-            ...
-
-        """
-
-        ds = None
-
-        if self.NG > 0:
-
-            # allocate memory
-            ds      = np.zeros((self.NC, self.NX * self.NS))
-            t       = np.zeros((1,))
-            x       = np.zeros((self.NX,))
-            x_dot   = np.zeros((self.NX, self.NX))
-            g       = np.zeros((self.NG,))
-            g_dot   = np.zeros((self.NG, self.NX))
-            p_dot   = np.zeros((self.NP, self.NX))
-            u       = np.zeros((self.NU,))
-            u_dot   = np.zeros((self.NU, self.NX))
-
-            # loop through all time steps and shooting nodes
-            for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NS):
-
-                    # set time, state and controls for this time step
-                    t[0]    = self.ts[i]
-                    x       = xs[i * (self.NTSI - 1), :]
-                    x_dot   = np.reshape(xs_dot[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
-
-                    for l in xrange(0, self.NU):
-                        u[l] = q[i + l * self.NTS]
-
-                    # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
-
-                    # store gradient
-                    for l in xrange(0, self.NX):
-                        for m in xrange(0, self.NG):
-                            ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
-
-        return ds
-
-    """
-    ===============================================================================
-    """
-
-    def c_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+    def c_dsds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
 
         """
 
@@ -840,37 +884,12 @@ class OCMS_indegrator(object):
 
         """
 
-        dqdq = None
+        c     = None
+        ds1   = None
+        ds2   = None
+        dsds  = None
 
-        if self.NG > 0:
-            dqdq = np.zeros((self.NC, self.NQ, self.NQ))
-
-        return dqdq
-
-    """
-    ===============================================================================
-    """
-
-    def c_dqdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
-
-        """
-
-        ...
-
-        input:
-
-        output:
-
-        TODO:
-
-        """
-
-        dqdp = None
-
-        if self.NG > 0:
-            dqdp = np.zeros((self.NC, self.NQ, self.NP))
-
-        return dqdp
+        return c, ds1, ds2, dsds
 
     """
     ===============================================================================
@@ -890,12 +909,111 @@ class OCMS_indegrator(object):
 
         """
 
+        c    = None
+        dp1  = None
+        dp2  = None
         dpdp = None
 
-        if self.NG > 0:
-            dpdp = np.zeros((self.NC, self.NP, self.NP))
+        return c, dp1, dp2, dpdp
 
-        return dpdp
+    """
+    ===============================================================================
+    """
+
+    def c_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        ...
+
+        input:
+
+        output:
+
+        TODO:
+
+        """
+
+        c    = None
+        dq1  = None
+        dq2  = None
+        dqdq = None
+
+        return c, dq1, dq2, dqdq
+
+    """
+    ===============================================================================
+    """
+
+    def c_dsdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        ...
+
+        input:
+
+        output:
+
+        TODO:
+
+        """
+        c    = None
+        ds   = None
+        dp   = None
+        dsdp = None
+
+        return c, ds, dp, dsdp
+
+    """
+    ===============================================================================
+    """
+
+    def c_dsdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        ...
+
+        input:
+
+        output:
+
+        TODO:
+
+        """
+
+        c    = None
+        ds   = None
+        dq   = None
+        dsdq = None
+
+        return c, ds, dq, dsdq
+
+    """
+    ===============================================================================
+    """
+
+    def c_dpdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        ...
+
+        input:
+
+        output:
+
+        TODO:
+
+        """
+
+        c    = None
+        dp   = None
+        dq   = None
+        dpdq = None
+
+        return c, dp, dq, dpdq
 
     """
     ===============================================================================

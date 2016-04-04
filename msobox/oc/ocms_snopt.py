@@ -94,9 +94,9 @@ class OCMS_snopt(object):
             Fupp[0]   = 1e6
 
             # set the nonlinear constraints of the problem
-            for i in xrange(1, self.ocp.NC + 1):
-                Flow[i] = -1e6
-                Fupp[i] = 0
+            for i in xrange(0, self.ocp.NG):
+                Flow[1 + i * self.ocp.NTS:1 + (i + 1) * self.ocp.NTS] = self.ocp.bcg[i, 0]
+                Fupp[1 + i * self.ocp.NTS:1 + (i + 1) * self.ocp.NTS] = self.ocp.bcg[i, 1]
 
             # set the equality constraints for the matching conditions
             for i in xrange(self.ocp.NC + 1, NC + 1):
@@ -104,13 +104,15 @@ class OCMS_snopt(object):
                 Fupp[i] = 0
 
             # set the upper and lower bounds for the controls q
-            for j in xrange(0, self.ocp.NU):
-                xlow[j * self.ocp.NTS:(j + 1) * self.ocp.NTS] = self.ocp.bc[j, 0]
-                xupp[j * self.ocp.NTS:(j + 1) * self.ocp.NTS] = self.ocp.bc[j, 1]
+            for i in xrange(0, self.ocp.NU):
+                xlow[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bcq[i, 0]
+                xupp[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bcq[i, 1]
 
             # set the upper and lower bounds for the shooting variables s
-            xlow[self.ocp.NQ:] = -1e6
-            xupp[self.ocp.NQ:] = 1e6
+            for j in xrange(0, self.ocp.NTS):
+                for i in xrange(0, self.ocp.NX):
+                    xlow[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 0]
+                    xupp[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 1]
 
             # fix the shooting variables s at the boundaries if necessary
             for i in xrange(0, self.ocp.NX):
