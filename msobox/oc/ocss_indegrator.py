@@ -811,9 +811,11 @@ class OCSS_indegrator(object):
             u     = np.zeros((self.NU,))
             u_dot = np.zeros((self.NU, self.NU))
 
-            # loop through all time steps and controls
+            # loop through all time steps
             for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NTS):
+
+                # loop through all previous controls including the current one
+                for j in xrange(0, i):
 
                     # state and controls for this time step
                     x     = xs[i, :]
@@ -1037,34 +1039,44 @@ class OCSS_indegrator(object):
             p_dot  = np.zeros((self.NP, self.NU))
             p_ddot = np.zeros(p_dot.shape + (self.NU,))
             u      = np.zeros((self.NU,))
-            u_dot  = np.zeros((self.NU, self.NU))
-            u_ddot = np.zeros(u_dot.shape + (self.NU,))
+            u_dot1 = np.zeros((self.NU, self.NU))
+            u_dot2 = np.zeros((self.NU, self.NU))
+            u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
             # loop through all time steps three times
             for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NTS):
-                    for m in xrange(0, self.NTS):
+
+                # loop through all previous controls including the current one
+                for j in xrange(0, i):
+
+                    # loop through all previous controls including the current one
+                    for m in xrange(0, i):
 
                         # state and controls for this time step
                         x      = xs[i, :]
                         x_dot1 = np.reshape(xs_dot1[i, :, j], x_dot1.shape)
-                        x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
+                        x_dot2 = np.reshape(xs_dot2[i, :, m], x_dot2.shape)
                         x_ddot = np.reshape(xs_ddot[i, :, j, m], x_ddot.shape)
 
                         for k in xrange(0, self.NU):
                             u[k] = q[i + k * self.NTS]
 
-                        if i == j and i == m:
-                            u_dot = np.eye(self.NU)
+                        if i == j:
+                            u_dot1 = np.eye(self.NU)
                         else:
-                            u_dot = np.zeros((self.NU, self.NU))
+                            u_dot1 = np.zeros((self.NU, self.NU))
+
+                        if i == m:
+                            u_dot2 = np.eye(self.NU)
+                        else:
+                            u_dot2 = np.zeros((self.NU, self.NU))
 
                         # call fortran backend to calculate derivatives of constraint functions
                         self.backend_fortran.gfcn_ddot(g, g_dot2, g_dot1, g_ddot,
                                                        self.ts[i:i + 1],
                                                        x, x_dot2, x_dot1, x_ddot,
                                                        p, p_dot, p_dot, p_ddot,
-                                                       u, u_dot, u_dot, u_ddot)
+                                                       u, u_dot2, u_dot1, u_ddot)
 
                         # store gradient
                         for k in xrange(0, self.NG):
@@ -1205,9 +1217,11 @@ class OCSS_indegrator(object):
             u_dot2 = np.zeros((self.NU, self.NU))
             u_ddot = np.zeros(u_dot1.shape + (self.NP,))
 
-            # loop through all time step
+            # loop through all time steps
             for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NTS):
+
+                # loop through all time steps including the current one
+                for j in xrange(0, i):
 
                     # state and controls for this time step
                     x      = xs[i, :]
@@ -1294,7 +1308,9 @@ class OCSS_indegrator(object):
 
             # loop through all time step
             for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NTS):
+
+                # loop through all time steps including the current one
+                for j in xrange(0, i):
 
                     # state and controls for this time step
                     x      = xs[i, :]
