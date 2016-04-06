@@ -438,8 +438,8 @@ class OCMS_indegrator(object):
         for i in xrange(0, self.NS - 1):
 
             # integrate and save data
-            xs_interval                                             = self.integrate_interval(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]    = xs_interval[:-1, :]
+            xs_interval                                          = self.integrate_interval(i, p, q, s)
+            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :] = xs_interval[:-1, :]
 
         # set last time step
         xs[-1, :] = xs_interval[-1, :]
@@ -475,9 +475,9 @@ class OCMS_indegrator(object):
         for i in xrange(0, self.NS - 1):
 
             # integrate and save data
-            xs_interval, xs_dot_interval                                    = self.integrate_interval_dp(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]            = xs_interval[:-1, :]
-            xs_dot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, :]     = xs_dot_interval[:-1, :, :]
+            xs_interval, xs_dot_interval                                 = self.integrate_interval_dp(i, p, q, s)
+            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]         = xs_interval[:-1, :]
+            xs_dot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, :]  = xs_dot_interval[:-1, :, :]
 
         # set last time step
         xs[-1, :]           = xs_interval[-1, :]
@@ -711,36 +711,69 @@ class OCMS_indegrator(object):
 
             # allocate memory
             c     = np.zeros((self.NC,))
-            ds      = np.zeros((self.NC, self.NX * self.NS))
+            ds    = np.zeros((self.NC, self.NX * self.NS))
 
-            t       = np.zeros((1,))
-            x       = np.zeros((self.NX,))
-            x_dot   = np.zeros((self.NX, self.NX))
-            g       = np.zeros((self.NG,))
-            g_dot   = np.zeros((self.NG, self.NX))
-            p_dot   = np.zeros((self.NP, self.NX))
-            u       = np.zeros((self.NU,))
-            u_dot   = np.zeros((self.NU, self.NX))
+            x     = np.zeros((self.NX,))
+            x_dot = np.zeros((self.NX, self.NX))
+            g     = np.zeros((self.NG,))
+            g_dot =  np.zeros((self.NG, self.NX))
+            p_dot = np.zeros((self.NP, self.NX))
+            u     = np.zeros((self.NU,))
+            u_dot = np.zeros((self.NU, self.NX))
 
-            # loop through all time steps and shooting nodes
-            for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NS):
+            # # loop through all time steps and shooting nodes
+            # for i in xrange(0, self.NTS):
+            #     for j in xrange(0, self.NS):
 
-                    # set time, state and controls for this time step
-                    t[0]    = self.ts[i]
-                    x       = xs[i * (self.NTSI - 1), :]
-                    x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+            #         # set state and controls for this time step
+            #         x       = xs[i * (self.NTSI - 1), :]
+            #         x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
 
-                    for l in xrange(0, self.NU):
-                        u[l] = q[i + l * self.NTS]
+            #         for l in xrange(0, self.NU):
+            #             u[l] = q[i + l * self.NTS]
 
-                    # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+            #         # call fortran backend to calculate derivatives of constraint functions
+            #         self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
 
-                    # store gradient
-                    for l in xrange(0, self.NX):
-                        for m in xrange(0, self.NG):
-                            ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
+            #         # store gradient
+            #         for l in xrange(0, self.NX):
+            #             for m in xrange(0, self.NG):
+            #                 ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
+
+            # loop through all time steps but the last one
+            for i in xrange(0, self.NTS - 1):
+
+                # set state and controls for this time step
+                x       = xs[i * (self.NTSI - 1), :]
+                x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, i * self.NX:(i + 1) * self.NX], x_dot.shape)
+
+                for l in xrange(0, self.NU):
+                    u[l] = q[i + l * self.NTS]
+
+                # call fortran backend to calculate derivatives of constraint functions
+                self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+
+                # store gradient
+                for l in xrange(0, self.NX):
+                    for m in xrange(0, self.NG):
+                        ds[i + m * self.NTS, l + i * self.NX] = g_dot[m, l]
+
+            # set last time step separately
+            i = self.NTS - 1
+            j = self.NTS - 2
+
+            x       = xs[i * (self.NTSI - 1), :]
+            x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+
+            for l in xrange(0, self.NU):
+                u[l] = q[i + l * self.NTS]
+
+            # call fortran backend to calculate derivatives of constraint functions
+            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+
+            for l in xrange(0, self.NX):
+                for m in xrange(0, self.NG):
+                    ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
 
         return c, ds
 
@@ -771,21 +804,21 @@ class OCMS_indegrator(object):
         if self.NG > 0:
 
             # allocate memory
-            dp      = np.zeros((self.NC, self.NP))
-            t       = np.zeros((1,))
-            x       = np.zeros((self.NX,))
-            x_dot   = np.zeros((self.NX, self.NP))
-            g       = np.zeros((self.NG,))
-            g_dot   = np.zeros((self.NG, self.NP))
-            p_dot   = np.zeros((self.NP, self.NP))
-            u       = np.zeros((self.NU,))
-            u_dot   = np.zeros((self.NU, self.NP))
+            c     = np.zeros((self.NC,))
+            dp    = np.zeros((self.NC, self.NP))
+
+            x     = np.zeros((self.NX,))
+            x_dot = np.zeros((self.NX, self.NP))
+            g     = np.zeros((self.NG,))
+            g_dot = np.zeros((self.NG, self.NP))
+            p_dot = np.zeros((self.NP, self.NP))
+            u     = np.zeros((self.NU,))
+            u_dot = np.zeros((self.NU, self.NP))
 
             # loop through all time steps
             for i in xrange(0, self.NTS):
 
-                # set time, state and controls for this time step
-                t[0]    = self.ts[i]
+                # set state and controls for this time step
                 x       = xs[i * (self.NTSI - 1), :]
                 x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, :], x_dot.shape)
 
@@ -793,7 +826,7 @@ class OCMS_indegrator(object):
                     u[l] = q[i + l * self.NTS]
 
                 # call fortran backend to calculate derivatives of constraint functions
-                self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+                self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
                 for j in xrange(0, self.NP):
@@ -829,40 +862,60 @@ class OCMS_indegrator(object):
         if self.NG > 0:
 
             # allocate memory
-            dq      = np.zeros((self.NC, self.NQ))
-            t       = np.zeros((1,))
-            x       = np.zeros((self.NX,))
-            x_dot   = np.zeros((self.NX, self.NU))
-            g       = np.zeros((self.NG,))
-            g_dot   = np.zeros((self.NG, self.NU))
-            p_dot   = np.zeros((self.NP, self.NU))
-            u       = np.zeros((self.NU,))
-            u_dot   = np.zeros((self.NU, self.NU))
+            c     = np.zeros((self.NC,))
+            dq    = np.zeros((self.NC, self.NQ))
 
-            # loop through all time steps and controls
-            for i in xrange(0, self.NTS):
-                for j in xrange(0, self.NTS):
+            x     = np.zeros((self.NX,))
+            x_dot = np.zeros((self.NX, self.NU))
+            g     = np.zeros((self.NG,))
+            g_dot = np.zeros((self.NG, self.NU))
+            p_dot = np.zeros((self.NP, self.NU))
+            u     = np.zeros((self.NU,))
+            u_dot = np.zeros((self.NU, self.NU))
 
-                    # set time, state and controls for this time step
-                    t[0]    = self.ts[i]
-                    x       = xs[i * (self.NTSI - 1), :]
-                    x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j], x_dot.shape)
+            # # loop through all time steps and controls
+            # for i in xrange(0, self.NTS):
+            #     for j in xrange(0, self.NTS):
 
-                    for k in xrange(0, self.NU):
-                        u[k] = q[i + k * self.NTS]
+            #         # set state and controls for this time step
+            #         x     = xs[i * (self.NTSI - 1), :]
+            #         x_dot = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j], x_dot.shape)
 
-                    if i == j:
-                        u_dot = np.eye(self.NU)
-                    else:
-                        u_dot = np.zeros((self.NU, self.NU))
+            #         for k in xrange(0, self.NU):
+            #             u[k] = q[i + k * self.NTS]
 
-                    # call fortran backend to calculate derivatives of constraint functions
-                    self.backend_fortran.gfcn_dot(g, g_dot, t, x, x_dot, p, p_dot, u, u_dot)
+            #         if i == j:
+            #             u_dot = np.eye(self.NU)
+            #         else:
+            #             u_dot = np.zeros((self.NU, self.NU))
 
-                    # store gradient
-                    for l in xrange(0, self.NU):
-                        for m in xrange(0, self.NG):
-                            dq[i + m * self.NTS, j + l * self.NTS] = g_dot[m, l]
+            #         # call fortran backend to calculate derivatives of constraint functions
+            #         self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+
+            #         # store gradient
+            #         for k in xrange(0, self.NG):
+            #             for l in xrange(0, self.NU):
+            #                 dq[i + k * self.NTS, j + l * self.NTS] = g_dot[k, l]
+
+            # set gradient for constraints of last time step
+            i = self.NTS - 1
+            j = self.NTS - 2
+
+            x     = xs[i * (self.NTSI - 1), :]
+            x_dot = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j], x_dot.shape)
+
+            for k in xrange(0, self.NU):
+                u[k] = q[i + k * self.NTS]
+
+            u_dot = np.zeros((self.NU, self.NU))
+
+            # call fortran backend to calculate derivatives of constraint functions
+            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+
+            # store gradient
+            for l in xrange(0, self.NU):
+                for m in xrange(0, self.NG):
+                    dq[i + m * self.NTS, j + l * self.NTS] = g_dot[m, l]
 
         return c, dq
 
@@ -884,10 +937,10 @@ class OCMS_indegrator(object):
 
         """
 
-        c     = None
-        ds1   = None
-        ds2   = None
-        dsds  = None
+        c    = None
+        ds1  = None
+        ds2  = None
+        dsds = None
 
         return c, ds1, ds2, dsds
 

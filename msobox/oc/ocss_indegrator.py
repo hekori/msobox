@@ -815,7 +815,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # loop through all previous controls including the current one
-                for j in xrange(0, i):
+                for j in xrange(0, i + 1):
 
                     # state and controls for this time step
                     x     = xs[i, :]
@@ -1047,10 +1047,10 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # loop through all previous controls including the current one
-                for j in xrange(0, i):
+                for j in xrange(0, i + 1):
 
                     # loop through all previous controls including the current one
-                    for m in xrange(0, i):
+                    for m in xrange(0, i + 1):
 
                         # state and controls for this time step
                         x      = xs[i, :]
@@ -1221,7 +1221,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # loop through all time steps including the current one
-                for j in xrange(0, i):
+                for j in xrange(0, i + 1):
 
                     # state and controls for this time step
                     x      = xs[i, :]
@@ -1310,7 +1310,7 @@ class OCSS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # loop through all time steps including the current one
-                for j in xrange(0, i):
+                for j in xrange(0, i + 1):
 
                     # state and controls for this time step
                     x      = xs[i, :]

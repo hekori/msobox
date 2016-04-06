@@ -132,6 +132,7 @@ class OCSS_snopt(object):
 
             for i in xrange(0, NC + 1):
                 for j in xrange(0, NQ):
+
                     iGfun[l + j] = i + 1
                     jGvar[l + j] = j + 1
 
@@ -174,11 +175,14 @@ class OCSS_snopt(object):
                 l                                                          = self.ocp.NQ + 2 * self.ocp.NX                            # save position in array G
 
                 # calculate derivatives for constraints
+                c_dq  = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1]
+                c_dx0 = self.ocp.c_dx0(xs, xs_dot_x0, None, None, p, q, s)[1]
+
                 for i in xrange(0, self.ocp.NC):
-                    G[l:l + self.ocp.NQ]                                               = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1][i, :]    # controls
-                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                   = self.ocp.c_dx0(xs, xs_dot_x0, None, None, p, q, s)[1][i, :]  # s[0]
-                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX] = 0                                                            # s[-1]
-                    l                                                                  = l + self.ocp.NQ + 2 * self.ocp.NX                            # update l
+                    G[l:l + self.ocp.NQ]                                               = c_dq[i, :]                         # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX]                   = c_dx0[i, :]                        # s[0]
+                    G[l + self.ocp.NQ + self.ocp.NX:l + self.ocp.NQ + 2 * self.ocp.NX] = 0                                  # s[-1]
+                    l                                                                  = l + self.ocp.NQ + 2 * self.ocp.NX  # update l
 
                 # calculate derivatives for matching conditions at boundary
                 for i in xrange(0, self.ocp.NX):

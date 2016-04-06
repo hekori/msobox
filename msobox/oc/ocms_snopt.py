@@ -111,6 +111,7 @@ class OCMS_snopt(object):
             # set the upper and lower bounds for the shooting variables s
             for j in xrange(0, self.ocp.NTS):
                 for i in xrange(0, self.ocp.NX):
+
                     xlow[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 0]
                     xupp[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 1]
 
@@ -134,6 +135,7 @@ class OCMS_snopt(object):
 
             for i in xrange(0, NC + 1):
                 for j in xrange(0, NQ):
+
                     iGfun[l + j] = i + 1
                     jGvar[l + j] = j + 1
 
@@ -178,14 +180,18 @@ class OCMS_snopt(object):
                 l                                                      = self.ocp.NQ + self.ocp.NS * self.ocp.NX                # save position in array G
 
                 # calculate derivatives for constraints
+                c_dq  = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1]
+                c_ds = self.ocp.c_ds(xs, xs_dot_s, None, None, p, q, s)[1]
+
                 for i in xrange(0, self.ocp.NC):
-                    G[l:l + self.ocp.NQ]                                           = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1][i, :]  # controls
-                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX * self.ocp.NS] = self.ocp.c_ds(xs, xs_dot_s, None, None, p, q, s)[1][i, :]  # shooting variables
-                    l                                                              = l + self.ocp.NQ + self.ocp.NX * self.ocp.NS                # update l
+                    G[l:l + self.ocp.NQ]                                           = c_dq[i, :]                                   # controls
+                    G[l + self.ocp.NQ:l + self.ocp.NQ + self.ocp.NX * self.ocp.NS] = c_ds[i, :]                                   # shooting variables
+                    l                                                              = l + self.ocp.NQ + self.ocp.NX * self.ocp.NS  # update l
 
                 # calculate derivatives for matching conditions at boundary
                 for i in xrange(0, self.ocp.NS - 1):
 
+                    # integrate and build derivatives for q and x0 on the intervals
                     xs_dot_interval_dq  = self.ocp.integrate_interval_dq(i, p, q, s)[1]
                     xs_dot_interval_dx0 = self.ocp.integrate_interval_dx0(i, p, q, s)[1]
 
