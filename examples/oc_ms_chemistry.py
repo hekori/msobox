@@ -48,7 +48,7 @@ x0      = [1, 0]
 xend    = [None, None]
 p       = np.array([3.5])
 q0      = 0 * np.ones((problem.NQ,))
-s0      = np.array([1, 0] * problem.NS)
+s0      = np.array([1, 0] * problem.NTS)
 
 # choose an integrator
 problem.set_integrator("rk4")
@@ -74,6 +74,7 @@ mul_opt = results[4]
 
 # plot controls and states
 x_opt = problem.integrate(p, q_opt, s_opt)
+x_opt = problem.x_intervals2plot(x_opt)
 q_opt = problem.q_array2ind(q_opt)[:, :, 0]
 
 colors = ["blue", "red", "green", "yellow"]

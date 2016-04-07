@@ -109,9 +109,8 @@ print "first-order approximation for multipliers:",    sensitivity.mul_approx
 print "second-order approximation for optimal value:", sensitivity.F_approx
 
 # plot approximated controls
-q_plot = problem.q_array2ind(sensitivity.q_approx)[:, :, 0]
 for i in xrange(0, problem.NU):
-    pl.plot(ts, q_plot[i], color = colors[i], linewidth = 2, linestyle = "dashed", label = "u_approx_" + str(i))
+    pl.plot(ts, problem.q_array2ind(sensitivity.q_approx)[i, :, 0], color = colors[i], linewidth = 2, linestyle = "dashed", label = "u_approx_" + str(i))
 
 # calculate real solution
 results_new = solver.solve(x0=x0, xend=xend, p=p_new, q0=q0, s0=s0)
@@ -125,10 +124,18 @@ print "multipliers:",               	  results_new[4]
 print "matching conditions:", 			  results_new[5]
 print "multipliers matching conditions:", results_new[6]
 
+q_new   = results_new[0]
+s_new   = results_new[1]
+mul_new = results_new[4]
+x_new   = problem.integrate(p_new, q_new, s_new)
+
+# evaluate the active constraints
+sensitivity.determine_active_constraints(x_new, p_new, q_new, s_new)
+print "active constraints:", sensitivity.ca, "\n"
+
 # plot new controls
-q_plot  = problem.q_array2ind(results_new[0])[:, :, 0]
 for i in xrange(0, problem.NU):
-    pl.plot(ts, q_plot[i], color = colors[i], linewidth = 2, linestyle = "dotted", label = "u_new_" + str(i))
+    pl.plot(ts, problem.q_array2ind(q_new)[i, :, 0], color = colors[i], linewidth = 2, linestyle = "dotted", label = "u_new_" + str(i))
 
 # print differences
 print "\n" + "diff optimal controls:", abs((results_new[0] - sensitivity.q_approx))

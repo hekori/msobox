@@ -74,7 +74,7 @@ class OCMS_indegrator(object):
         self.bcs    = bcs
         self.bcg    = bcg
         self.NTSI   = NTSI
-        self.NS     = self.NTS
+        self.NS     = self.NTS * self.NX
 
         # load json containing data structure for differentiator
         with open(path + "ds.json", "r") as f:
@@ -139,7 +139,7 @@ class OCMS_indegrator(object):
         """
 
         # allocate memory
-        s0 = np.zeros((self.NS * self.NX,))
+        s0 = np.zeros((self.NTS * self.NX,))
 
         # approximate shooting variables by linear interpolation if possible
         for j in xrange(0, self.NTS):
@@ -206,13 +206,67 @@ class OCMS_indegrator(object):
         """
 
         # set up array
-        s_ind = np.zeros((self.NS, self.NX))
+        s_ind = np.zeros((self.NTS, self.NX))
 
         # convert shooting variables from one-dimensional array to INDegrator specific format
-        for i in xrange(0, self.NS):
+        for i in xrange(0, self.NTS):
             s_ind[i, :] = s[i * self.NX:(i + 1) * self.NX]
 
         return s_ind
+
+    """
+    ===============================================================================
+    """
+
+    def x_intervals2plot(self, x):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # differentiate between states and derivatives
+        if len(x.shape) == 3:
+
+            # set up array
+            x_plot = np.zeros((self.NTS + (self.NTSI - 2) * (self.NTS - 1), x.shape[2]))
+
+            # copy data
+            for i in xrange(0, x.shape[0]):
+                x_plot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :] = x[i, :-1, :]
+
+            # set last time step
+            x_plot[-1, :] = x[-1, -1, :]
+
+        elif len(x.shape) == 4:
+
+            # set up array
+            x_plot = np.zeros((self.NTS + (self.NTSI - 2) * (self.NTS - 1), x.shape[2], x.shape[3]))
+
+            # copy data
+            for i in xrange(0, x.shape[0]):
+                x_plot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, :] = x[i, :-1, :, :]
+
+            # set last time step
+            x_plot[-1, :] = x[-1, -1, :]
+
+        else:
+
+            # print error message
+            print "Error: Format of the array is unknown."
+            x_plot = None
+
+        return x_plot
 
     """
     ===============================================================================
@@ -228,7 +282,7 @@ class OCMS_indegrator(object):
             ...
 
         output:
-            ...
+            ...integr
 
         TODO:
             ...
@@ -291,9 +345,9 @@ class OCMS_indegrator(object):
         q_interval[:, :, :] = q[:, interval, :]
 
         # set up directions for differentation
-        x0_dot  = np.zeros((self.NX, self.NP))
-        p_dot   = np.eye(self.NP)
-        q_dot   = np.zeros(q_interval.shape + (self.NP,))
+        x0_dot = np.zeros((self.NX, self.NP))
+        p_dot  = np.eye(self.NP)
+        q_dot  = np.zeros(q_interval.shape + (self.NP,))
 
         # integrate
         self.integrator.fo_forward_xpq(tsi,
@@ -332,8 +386,8 @@ class OCMS_indegrator(object):
         x0 = s[interval, :]
 
         # allocate memory
-        q_interval  = np.zeros((self.NU, self.NTSI, 1))
-        xs_dot      = np.zeros((self.NTSI, self.NX))
+        q_interval = np.zeros((self.NU, self.NTSI, 1))
+        xs_dot     = np.zeros((self.NTSI, self.NX))
 
         # set time steps for this interval
         tsi = np.linspace(self.ts[interval], self.ts[interval + 1], self.NTSI)
@@ -398,9 +452,9 @@ class OCMS_indegrator(object):
         q_interval[:, :, :] = q[:, interval, :]
 
         # set up directions for differentation
-        x0_dot  = np.eye(self.NX)
-        p_dot   = np.zeros((self.NP, self.NX))
-        q_dot   = np.zeros(q_interval.shape + (self.NX,))
+        x0_dot = np.eye(self.NX)
+        p_dot  = np.zeros((self.NP, self.NX))
+        q_dot  = np.zeros(q_interval.shape + (self.NX,))
 
         # integrate
         self.integrator.fo_forward_xpq(tsi,
@@ -432,17 +486,13 @@ class OCMS_indegrator(object):
         """
 
         # allocate memory
-        xs = np.zeros((self.NTS + (self.NTSI - 2) * (self.NTS - 1), self.NX))
+        xs = np.zeros((self.NTS - 1, self.NTSI, self.NX))
 
         # integrate on shooting intervals
-        for i in xrange(0, self.NS - 1):
+        for i in xrange(0, self.NTS - 1):
 
             # integrate and save data
-            xs_interval                                          = self.integrate_interval(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :] = xs_interval[:-1, :]
-
-        # set last time step
-        xs[-1, :] = xs_interval[-1, :]
+            xs[i, :, :] = self.integrate_interval(i, p, q, s)
 
         return xs
 
@@ -468,20 +518,14 @@ class OCMS_indegrator(object):
         """
 
         # allocate memory
-        xs      = np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX))
-        xs_dot  = np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX, self.NP))
+        xs_    = np.zeros((self.NTS - 1, self.NTSI, self.NX))
+        xs_dot = np.zeros((self.NTS - 1, self.NTSI, self.NX, self.NP))
 
         # integrate on shooting intervals
-        for i in xrange(0, self.NS - 1):
+        for i in xrange(0, self.NTS - 1):
 
             # integrate and save data
-            xs_interval, xs_dot_interval                                 = self.integrate_interval_dp(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]         = xs_interval[:-1, :]
-            xs_dot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, :]  = xs_dot_interval[:-1, :, :]
-
-        # set last time step
-        xs[-1, :]           = xs_interval[-1, :]
-        xs_dot[-1, :, :]    = xs_dot_interval[-1, :, :]
+            xs[i, :, :], xs_dot[i, :, :, :] = self.integrate_interval_dp(i, p, q, s)
 
         return xs, xs_dot
 
@@ -507,20 +551,14 @@ class OCMS_indegrator(object):
         """
 
         # allocate memory
-        xs      	= np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX))
-        xs_dot  	= np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX, self.NQ))
+        xs     = np.zeros((self.NTS - 1, self.NTSI, self.NX))
+        xs_dot = np.zeros((self.NTS - 1, self.NTSI, self.NX, self.NQ))
 
         # integrate on shooting intervals
-        for i in xrange(0, self.NS - 1):
+        for i in xrange(0, self.NTS - 1):
 
         	# integrate and save data
-            xs_interval, xs_dot_interval                                = self.integrate_interval_dq(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]        = xs_interval[:-1, :]
-            xs_dot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, i] = xs_dot_interval[:-1, :]
-
-        # set last time step
-        xs[-1, :]            = xs_interval[-1, :]
-        xs_dot[-1, :, -2]    = xs_dot_interval[-1, :]
+            xs[i, :, :], xs_dot[i, :, :, i] = self.integrate_interval_dq(i, p, q, s)
 
         return xs, xs_dot
 
@@ -546,20 +584,14 @@ class OCMS_indegrator(object):
         """
 
         # allocate memory
-        xs      = np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX))
-        xs_dot  = np.zeros((self.NTS + (self.NTSI - 2) * (self.NS - 1), self.NX, self.NS * self.NX))
+        xs     = np.zeros((self.NTS - 1, self.NTSI, self.NX))
+        xs_dot = np.zeros((self.NTS - 1, self.NTSI, self.NX, self.NS))
 
         # integrate on shooting intervals
-        for i in xrange(0, self.NS - 1):
+        for i in xrange(0, self.NTS - 1):
 
             # integrate and save data
-            xs_interval, xs_dot_interval                                                            = self.integrate_interval_dx0(i, p, q, s)
-            xs[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :]                                    = xs_interval[:-1, :]
-            xs_dot[i * (self.NTSI - 1):(i + 1) * (self.NTSI - 1), :, i * self.NX:(i + 1) * self.NX] = xs_dot_interval[:-1, :, :]
-
-        # set last time step
-        xs[-1, :]                                   = xs_interval[-1, :]
-        xs_dot[-1, :, -(2 * self.NX):-(self.NX)]    = xs_dot_interval[-1, :, :]
+            xs[i, :, :], xs_dot[i, :, :, i * self.NX:(i + 1) * self.NX] = self.integrate_interval_dx0(i, p, q, s)
 
         return xs, xs_dot
 
@@ -668,14 +700,17 @@ class OCMS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # set time, state and controls for this time step
-                t[0]    = self.ts[i]
-                x       = xs[i * (self.NTSI - 1), :]
+                if i == self.NTS - 1:
+                    x = xs[i - 1, -1, :]
+
+                else:
+                    x = xs[i, 0, :]
 
                 for k in xrange(0, self.NU):
                     u[k] = q[i + k * self.NTS]
 
                 # call fortran backend to calculate constraint functions for every control
-                self.backend_fortran.gfcn(g, t, x, p, u)
+                self.backend_fortran.gfcn(g, self.ts[i:i + 1], x, p, u)
 
                 # build constraints
                 for k in xrange(0, self.NG):
@@ -711,7 +746,7 @@ class OCMS_indegrator(object):
 
             # allocate memory
             c     = np.zeros((self.NC,))
-            ds    = np.zeros((self.NC, self.NX * self.NS))
+            ds    = np.zeros((self.NC, self.NS))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NX))
@@ -723,11 +758,20 @@ class OCMS_indegrator(object):
 
             # # loop through all time steps and shooting nodes
             # for i in xrange(0, self.NTS):
-            #     for j in xrange(0, self.NS):
+            #     for j in xrange(0, self.NTS):
 
             #         # set state and controls for this time step
-            #         x       = xs[i * (self.NTSI - 1), :]
-            #         x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+            #         # x       = xs[i * (self.NTSI - 1), :]
+            #         # x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+
+            #         # set state and controls for this time step
+            #         if i == self.NTS - 1:
+            #             x     = xs[i - 1, -1, :]
+            #             x_dot = np.reshape(xs_dot1[i - 1, -1, :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+
+            #         else:
+            #             x     = xs[i, 0, :]
+            #             x_dot = np.reshape(xs_dot1[i, 0, :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
 
             #         for l in xrange(0, self.NU):
             #             u[l] = q[i + l * self.NTS]
@@ -743,9 +787,8 @@ class OCMS_indegrator(object):
             # loop through all time steps but the last one
             for i in xrange(0, self.NTS - 1):
 
-                # set state and controls for this time step
-                x       = xs[i * (self.NTSI - 1), :]
-                x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, i * self.NX:(i + 1) * self.NX], x_dot.shape)
+                x     = xs[i, 0, :]
+                x_dot = np.reshape(xs_dot1[i, 0, :, i * self.NX:(i + 1) * self.NX], x_dot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -759,21 +802,18 @@ class OCMS_indegrator(object):
                         ds[i + m * self.NTS, l + i * self.NX] = g_dot[m, l]
 
             # set last time step separately
-            i = self.NTS - 1
-            j = self.NTS - 2
-
-            x       = xs[i * (self.NTSI - 1), :]
-            x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j * self.NX:(j + 1) * self.NX], x_dot.shape)
+            x     = xs[self.NTS - 2, -1, :]
+            x_dot = np.reshape(xs_dot1[self.NTS - 2, -1, :, (self.NTS - 2) * self.NX:(self.NTS - 1) * self.NX], x_dot.shape)
 
             for l in xrange(0, self.NU):
-                u[l] = q[i + l * self.NTS]
+                u[l] = q[self.NTS - 1 + l * self.NTS]
 
             # call fortran backend to calculate derivatives of constraint functions
-            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[self.NTS - 1:self.NTS], x, x_dot, p, p_dot, u, u_dot)
 
             for l in xrange(0, self.NX):
                 for m in xrange(0, self.NG):
-                    ds[i + m * self.NTS, l + j * self.NX] = g_dot[m, l]
+                    ds[self.NTS - 1 + m * self.NTS, l + (self.NTS - 2) * self.NX] = g_dot[m, l]
 
         return c, ds
 
@@ -819,8 +859,13 @@ class OCMS_indegrator(object):
             for i in xrange(0, self.NTS):
 
                 # set state and controls for this time step
-                x       = xs[i * (self.NTSI - 1), :]
-                x_dot   = np.reshape(xs_dot1[i * (self.NTSI - 1), :, :], x_dot.shape)
+                if i == self.NTS - 1:
+                    x     = xs[i - 1, -1, :]
+                    x_dot = np.reshape(xs_dot1[i - 1, -1, :, :], x_dot.shape)
+
+                else:
+                    x     = xs[i, 0, :]
+                    x_dot = np.reshape(xs_dot1[i, 0, :, :], x_dot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -898,24 +943,21 @@ class OCMS_indegrator(object):
             #                 dq[i + k * self.NTS, j + l * self.NTS] = g_dot[k, l]
 
             # set gradient for constraints of last time step
-            i = self.NTS - 1
-            j = self.NTS - 2
-
-            x     = xs[i * (self.NTSI - 1), :]
-            x_dot = np.reshape(xs_dot1[i * (self.NTSI - 1), :, j], x_dot.shape)
+            x     = xs[self.NTS - 2, -1, :]
+            x_dot = np.reshape(xs_dot1[self.NTS - 2, -1, :, self.NTS - 2], x_dot.shape)
 
             for k in xrange(0, self.NU):
-                u[k] = q[i + k * self.NTS]
+                u[k] = q[self.NTS - 1 + k * self.NTS]
 
             u_dot = np.zeros((self.NU, self.NU))
 
             # call fortran backend to calculate derivatives of constraint functions
-            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[i:i + 1], x, x_dot, p, p_dot, u, u_dot)
+            self.backend_fortran.gfcn_dot(g, g_dot, self.ts[self.NTS - 1:self.NTS], x, x_dot, p, p_dot, u, u_dot)
 
             # store gradient
             for l in xrange(0, self.NU):
                 for m in xrange(0, self.NG):
-                    dq[i + m * self.NTS, j + l * self.NTS] = g_dot[m, l]
+                    dq[self.NTS - 1 + m * self.NTS, self.NTS - 2 + l * self.NTS] = g_dot[m, l]
 
         return c, dq
 
@@ -1089,7 +1131,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1]
+        return self.sign * xs[-1, -1, -1]
 
     """
     ===============================================================================
@@ -1112,7 +1154,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :]
 
     """
     ===============================================================================
@@ -1135,7 +1177,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :]
 
     """
     ===============================================================================
@@ -1158,7 +1200,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :]
 
     """
     ===============================================================================
@@ -1181,7 +1223,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :], self.sign * xs_dot2[-1, -1, -1, :], self.sign * xs_ddot[-1, -1, -1, :, :]
 
     """
     ===============================================================================
@@ -1204,7 +1246,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :], self.sign * xs_dot2[-1, -1, -1, :], self.sign * xs_ddot[-1, -1, -1, :, :]
 
     """
     ===============================================================================
@@ -1227,7 +1269,7 @@ class OCMS_indegrator(object):
 
         """
 
-        return self.sign * xs[-1, -1], self.sign * xs_dot1[-1, -1, :], self.sign * xs_dot2[-1, -1, :], self.sign * xs_ddot[-1, -1, :, :]
+        return self.sign * xs[-1, -1, -1], self.sign * xs_dot1[-1, -1, -1, :], self.sign * xs_dot2[-1, -1, -1, :], self.sign * xs_ddot[-1, -1, -1, :, :]
 
 
 """
