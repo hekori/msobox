@@ -3,13 +3,14 @@
 """
 ===============================================================================
 
-rocketcar example for optimal control with single shooting taken from
-http://www.math.uni-bremen.de/zetem/alt/optimmedia/webcontrol/rakete.html
+spline example for optimal control with multiple shooting
+http://www.math.uni-bremen.de/zetem/alt/optimmedia/webcontrol/spline2.html
 
 x1_dot = x2
 x2_dot = u
+x3_dot = u ** 2
 
--1 < u < 1
+x1 < 0.1
 
 ===============================================================================
 """
@@ -21,8 +22,8 @@ import numpy as np
 import matplotlib.pyplot as pl
 
 # local imports
-from msobox.oc.ocss_snopt import OCSS_snopt
-from msobox.oc.ocss_indegrator import OCSS_indegrator
+from msobox.oc.ocms_snopt import OCMS_snopt
+from msobox.oc.ocms_indegrator import OCMS_indegrator
 
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
@@ -37,16 +38,21 @@ def get_dir_path():
 """
 
 # initialize an optimal control problem
-name    = "oc-ss-rocketcar"
-path    = get_dir_path() + "/fortran/rocketcar/"
-ts      = np.linspace(0, 1, 50)
-bcq     = np.array([-1, 1], ndmin=2)
-problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=0, NP=1, NU=1, bcq=bcq, bcg=None, ts=ts)
-x0      = [4, -1, None]
-xend    = [0, 0, None]
+name    = "oc-ms-spline"
+path    = get_dir_path() + "/fortran/spline/"
+ts      = np.linspace(0, 1, 20)
+bcq     = np.array([-1e6, 1e6], ndmin=2)
+bcs     = np.array([[-1e6, 1e6],
+				    [-1e6, 1e6],
+				    [-1e6, 1e6]], ndmin=2)
+bcg     = np.array([-1e6, 0], ndmin=2)
+problem = OCMS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bcq=bcq, bcs=bcs, bcg=bcg, ts=ts, NTSI=10)
+x0      = [0, 1, 0]
+xend    = [0, -1, None]
 p       = np.array([1.])
 q0      = 0 * np.ones((problem.NQ,))
-s0      = np.array([4, -1, 0, 0, 0, 1])
+s0      = np.array([0] * problem.NS)
+# s0      = problem.initial_s0(x0, xend)
 
 # choose an integrator
 problem.set_integrator("rk4")
@@ -54,7 +60,7 @@ problem.set_integrator("rk4")
 # problem.set_integrator("implicit_euler")
 
 # solve the problem
-solver  = OCSS_snopt(problem)
+solver  = OCMS_snopt(problem)
 results = solver.solve(x0=x0, xend=xend, p=p, q0=q0, s0=s0)
 
 # print results
@@ -72,6 +78,7 @@ mul_opt = results[4]
 
 # plot controls and states
 x_opt = problem.integrate(p, q_opt, s_opt)
+x_opt = problem.x_intervals2plot(x_opt)
 q_opt = problem.q_array2ind(q_opt)[:, :, 0]
 
 colors = ["blue", "red", "green", "yellow"]

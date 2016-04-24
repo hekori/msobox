@@ -256,7 +256,7 @@ class BackendFortran(object):
         ffi_p_dot1 = ffi.cast("double *", p_dot1.ctypes.data)
         ffi_u_dot1 = ffi.cast("double *", u_dot1.ctypes.data)
 
-        ffi_g_dot1 = ffi.cast("double *", g_dot1.ctypes.data)
+        ffi_g_dot2 = ffi.cast("double *", g_dot2.ctypes.data)
         ffi_x_dot2 = ffi.cast("double *", x_dot2.ctypes.data)
         ffi_p_dot2 = ffi.cast("double *", p_dot2.ctypes.data)
         ffi_u_dot2 = ffi.cast("double *", u_dot2.ctypes.data)

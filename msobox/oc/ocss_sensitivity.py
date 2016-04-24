@@ -9,14 +9,7 @@ sensitivity analysis of optimal control problems discretized for single shooting
 """
 
 # system imports
-from __future__ import division
 import numpy as np
-
-# local imports
-pass
-
-# setting options
-np.set_printoptions(threshold=np.nan)  # print all array elements
 
 """
 ===============================================================================
@@ -58,7 +51,9 @@ class OCSS_sensitivity(object):
     ===============================================================================
     """
 
-    def dp(self, x0, p, q, mul):
+    def calculate_sensitivities(self, x_opt, x_opt_dp, x_opt_dq,
+                                x_opt_dpdp, x_opt_dqdq, x_opt_dpdq,
+                                p, q_opt, s_opt, mul_opt):
 
         """
 
@@ -72,102 +67,140 @@ class OCSS_sensitivity(object):
 
         """
 
-        NQ  = self.ocp.NQ
-        NP  = self.ocp.NP
-        NC  = self.ocp.NC
-        NTS = self.ocp.NTS
-
-        if NC > 0:
-            # evaluate the active constraints
-            NCA, ca = self.active(x0, p, q)
-            print ca, NCA
-
-            # apply some reshaping for concatenation later on
-            multi = np.reshape(mul[ca], (NCA,))
+        if self.ocp.NC > 0:
 
             # calculate all desired derivatives
-            c_dq    = np.reshape(self.ocp.c_dq(x0, p, q)[ca, :], (NCA, NQ))
-            c_dp    = np.reshape(self.ocp.c_dp(x0, p, q)[ca, :], (NCA, NP))
-            c_dqdq  = np.reshape(self.ocp.c_dqdq(x0, p, q)[ca, :, :], (NCA, NQ, NQ))
-            c_dqdp  = np.reshape(self.ocp.c_dqdp(x0, p, q)[ca, :, :], (NCA, NQ, NP))
-            c_dpdp  = np.reshape(self.ocp.c_dpdp(x0, p, q)[ca, :, :], (NCA, NP, NP))
+            c_dp   = self.ocp.c_dp(x_opt, x_opt_dp, None, None, p, q_opt, s_opt)[1]
+            c_dq   = self.ocp.c_dq(x_opt, x_opt_dq, None, None, p, q_opt, s_opt)[1]
+            c_dpdp = self.ocp.c_dpdp(x_opt, x_opt_dp, x_opt_dp, x_opt_dpdp, p, q_opt, s_opt)[3]
+            c_dqdq = self.ocp.c_dqdq(x_opt, x_opt_dq, x_opt_dq, x_opt_dqdq, p, q_opt, s_opt)[3]
+            c_dpdq = self.ocp.c_dpdq(x_opt, x_opt_dp, x_opt_dq, x_opt_dpdq, p, q_opt, s_opt)[3]
 
             # build up derivatives of the lagrange function by looping through active constraints
-            lagrange_dp     = self.ocp.obj_dp(x0, p, q)
-            lagrange_dq     = self.ocp.obj_dq(x0, p, q)
-            lagrange_dpdp   = self.ocp.obj_dpdp(x0, p, q)
-            lagrange_dqdq   = self.ocp.obj_dqdq(x0, p, q)
-            lagrange_dqdp   = self.ocp.obj_dqdp(x0, p, q)
+            lagrange_dp   = self.ocp.obj_dp(x_opt, x_opt_dp, None, None, p, q_opt, s_opt)[1]
+            lagrange_dq   = self.ocp.obj_dq(x_opt, x_opt_dq, None, None, p, q_opt, s_opt)[1]
+            lagrange_dpdp = self.ocp.obj_dpdp(x_opt, x_opt_dp, x_opt_dp, x_opt_dpdp, p, q_opt, s_opt)[3]
+            lagrange_dqdq = self.ocp.obj_dqdq(x_opt, x_opt_dq, x_opt_dq, x_opt_dqdq, p, q_opt, s_opt)[3]
+            lagrange_dpdq = self.ocp.obj_dpdq(x_opt, x_opt_dp, x_opt_dq, x_opt_dpdq, p, q_opt, s_opt)[3]
 
-            for i in xrange(0, NCA):
-                lagrange_dp     = lagrange_dp + multi[i] * c_dp[i, :]
-                lagrange_dq     = lagrange_dq + multi[i] * c_dq[i, :]
-                lagrange_dpdp   = lagrange_dpdp + multi[i] * c_dpdp[i, :, :]
-                lagrange_dqdq   = lagrange_dqdq + multi[i] * c_dqdq[i, :, :]
-                lagrange_dqdp   = lagrange_dqdp + multi[i] * c_dqdp[i, :, :]
+            for i in self.ca:
+                lagrange_dp   = lagrange_dp + mul_opt[i] * c_dp[i, :]
+                lagrange_dq   = lagrange_dq + mul_opt[i] * c_dq[i, :]
+                lagrange_dpdp = lagrange_dpdp + mul_opt[i] * c_dpdp[i, :, :]
+                lagrange_dqdq = lagrange_dqdq + mul_opt[i] * c_dqdq[i, :, :]
+                lagrange_dpdq = lagrange_dpdq + mul_opt[i] * c_dpdq[i, :, :]
+
+            # trim and reshape matrices for concatenation
+            c_dp   = np.reshape(c_dp[self.ca, :], (self.NCA, self.ocp.NP))
+            c_dq   = np.reshape(c_dq[self.ca, :], (self.NCA, self.ocp.NQ))
+            c_dpdp = np.reshape(c_dpdp[self.ca, :, :], (self.NCA, self.ocp.NP, self.ocp.NP))
+            c_dqdq = np.reshape(c_dqdq[self.ca, :, :], (self.NCA, self.ocp.NQ, self.ocp.NQ))
+            c_dpdq = np.reshape(c_dpdq[self.ca, :, :], (self.NCA, self.ocp.NP, self.ocp.NQ))
+
+            ########################
+
+            # POSSIBLE HACK 1: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
+            # lagrange_dqdq[-1, -1] = 1
+
+            # POSSIBLE HACK 2: manually trim last q out of matrices
+            lagrange_dq   = np.delete(lagrange_dq, self.ocp.NTS - 1, 0)
+            lagrange_dpdq = np.delete(lagrange_dpdq, self.ocp.NTS - 1, 1)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 0)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 1)
+            c_dq          = np.delete(c_dq, self.ocp.NTS - 1, 1)
+
+            ########################
+
+            lagrange_dqdp = lagrange_dpdq.transpose()
+            c_dqdp        = c_dpdq.transpose()
 
             # concatenate matrices to kkt matrix and rhs
-            kkt1    = np.concatenate((lagrange_dqdq, c_dq.transpose()), axis=1)
-            kkt2    = np.concatenate((c_dq, np.zeros((NCA, NCA))), axis=1)
-            kkt     = np.concatenate((kkt1, kkt2), axis=0)
-            rhs     = np.concatenate((lagrange_dqdp, c_dp), axis=0)
+            kkt1 = np.concatenate((lagrange_dqdq, c_dq.transpose()), axis=1)
+            kkt2 = np.concatenate((c_dq, np.zeros((self.NCA, self.NCA))), axis=1)
+            kkt  = np.concatenate((kkt1, kkt2), axis=0)
+            rhs  = np.concatenate((lagrange_dqdp, c_dp), axis=0)
 
             # calculate first order sensitivites of q and mul
-            combined_dp = - np.dot(np.linalg.inv(kkt), rhs)
+            combined_dp = -np.linalg.solve(kkt, rhs)
 
-            # set sensitivites of mul
-            mul_dp      = np.zeros((NC, NP))
-            mul_dp[ca]  = combined_dp[NQ:, :]
+            # set sensitivities of mul
+            mul_dp          = np.zeros((self.ocp.NC, self.ocp.NP))
+            mul_dp[self.ca] = combined_dp[self.ocp.NQ - 1:, :]
 
             # set sensitivities of q
-            q_dp    = np.zeros((NQ, NP))
-            q_dp    = combined_dp[:NQ, :]
+            q_dp = np.zeros((self.ocp.NQ - 1, self.ocp.NP))
+            q_dp = combined_dp[:self.ocp.NQ - 1, :]
 
             # calculate first and second order sensitivites of the optimal value
-            sol_dp       = lagrange_dp
-            sol_dpdp     = np.dot(q_dp.transpose(), lagrange_dqdq)
-            sol_dpdp     = np.dot(sol_dpdp, q_dp) + 2 * np.dot(lagrange_dqdp.transpose(), q_dp).transpose() + lagrange_dpdp
+            F_dp   = lagrange_dp
+            F_dpdp = np.dot(q_dp.transpose(), lagrange_dqdq)
+            F_dpdp = np.dot(F_dpdp, q_dp) + 2 * np.dot(lagrange_dpdq, q_dp).transpose() + lagrange_dpdp
+
+            ########################
+
+            # FOR HACK 2: add last q again
+            q_dp_full                    = np.zeros((self.ocp.NQ, self.ocp.NP))
+            q_dp_full[:self.ocp.NTS - 1] = q_dp
+
+            ########################
+
+        else:
+
+            # build up derivatives of the lagrange function
+            lagrange_dp   = self.ocp.obj_dp(x_opt, x_opt_dp, None, None, p, q_opt, s_opt)[1]
+            lagrange_dq   = self.ocp.obj_dq(x_opt, x_opt_dq, None, None, p, q_opt, s_opt)[1]
+            lagrange_dpdp = self.ocp.obj_dpdp(x_opt, x_opt_dp, x_opt_dp, x_opt_dpdp, p, q_opt, s_opt)[3]
+            lagrange_dqdq = self.ocp.obj_dqdq(x_opt, x_opt_dq, x_opt_dq, x_opt_dqdq, p, q_opt, s_opt)[3]
+            lagrange_dpdq = self.ocp.obj_dpdq(x_opt, x_opt_dp, x_opt_dq, x_opt_dpdq, p, q_opt, s_opt)[3]
+
+            ########################
+
+            # POSSIBLE HACK 1: set lagrange_dqdq[-1, -1] = 1 to avoid singular matrix
+            # lagrange_dqdq[-1, -1] = 1
+
+            # POSSIBLE HACK 2: manually trim last q out of matrices
+            lagrange_dq   = np.delete(lagrange_dq, self.ocp.NTS - 1, 0)
+            lagrange_dpdq = np.delete(lagrange_dpdq, self.ocp.NTS - 1, 1)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 0)
+            lagrange_dqdq = np.delete(lagrange_dqdq, self.ocp.NTS - 1, 1)
+
+            ########################
+
+            lagrange_dqdp = lagrange_dpdq.transpose()
+
+            print lagrange_dqdq
+            print lagrange_dqdp
+
+            # calculate first order sensitivites of q and set mul to None
+            q_dp   = -np.linalg.solve(lagrange_dqdq, lagrange_dqdp)
+            mul_dp = None
+
+            # calculate first and second order sensitivites of the solution
+            F_dp   = lagrange_dp
+            F_dpdp = np.dot(q_dp.transpose(), lagrange_dqdq)
+            F_dpdp = np.dot(F_dpdp, q_dp) + 2 * np.dot(lagrange_dpdq, q_dp).transpose() + lagrange_dpdp
 
             q_dp_full = q_dp
 
-        else:
-            # build up derivatives of the lagrange function
-            lagrange_dp     = self.ocp.obj_dp(x0, p, q)
-            lagrange_dq     = self.ocp.obj_dq(x0, p, q)
-            lagrange_dpdp   = self.ocp.obj_dpdp(x0, p, q)
-            lagrange_dqdq   = self.ocp.obj_dqdq(x0, p, q)
-            lagrange_dqdp   = self.ocp.obj_dqdp(x0, p, q)
+            ########################
 
-            # HACK: manually trim last q out of matrices
-            for i in xrange(0, self.ocp.NU):
-                lagrange_dq     = np.delete(lagrange_dq, NTS * (i + 1) - (1 + i), 0)
-                lagrange_dqdq   = np.delete(lagrange_dqdq, NTS * (i + 1) - (1 + i), 0)
-                lagrange_dqdq   = np.delete(lagrange_dqdq, NTS * (i + 1) - (1 + i), 1)
-                lagrange_dqdp   = np.delete(lagrange_dqdp, NTS * (i + 1) - (1 + i), 0)
+            # FOR HACK 2: add last q again
+            q_dp_full                    = np.zeros((self.ocp.NQ, self.ocp.NP))
+            q_dp_full[:self.ocp.NTS - 1] = q_dp
 
-            # calculate first order sensitivites of q and set mul to None
-            q_dp    = - np.dot(np.linalg.inv(lagrange_dqdq), lagrange_dqdp)
-            mul_dp  = None
+            ########################
 
-            # calculate first and second order sensitivites of the solution
-            sol_dp     = lagrange_dp
-            sol_dpdp   = np.dot(q_dp.transpose(), lagrange_dqdq)
-            sol_dpdp   = np.dot(sol_dpdp, q_dp) + 2 * np.dot(lagrange_dqdp.transpose(), q_dp).transpose() + lagrange_dpdp
-
-            # HACK: add last q again
-            q_dp_full = np.zeros((NQ, NP))
-
-            for i in xrange(0, self.ocp.NU):
-                q_dp_full[NTS * i:NTS * (i + 1) - 1] = \
-                    q_dp[(NTS - 1) * i:(NTS - 1) * (i + 1)]
-
-        return q_dp_full, mul_dp, sol_dp, sol_dpdp
+        # set results as attributes
+        self.q_dp   = q_dp_full
+        self.mul_dp = mul_dp
+        self.F_dp   = F_dp
+        self.F_dpdp = F_dpdp
 
     """
     ===============================================================================
     """
 
-    def taylor(self, x0, p, q, mul, p_new):
+    def calculate_approximations(self, x_opt, p, q_opt, s_opt, mul_opt, p_new):
 
         """
 
@@ -180,42 +213,32 @@ class OCSS_sensitivity(object):
         TODO:
 
         """
-
-        # calculate sensitivities
-        q_dp, mul_dp, sol_dp, sol_dpdp = self.dp(x0, p, q, mul)
 
         # use taylor approximations to estimate the new values
-        mul_new  = (mul + mul_dp * (p_new - p)) if (mul_dp is not None) else None
-        q_new    = q + np.dot(q_dp, (p_new - p))
-        sol_new  = self.ocp.obj(x0, p, q) + np.dot(sol_dp, (p_new - p)) + 1 / 2 * np.dot(np.dot((p_new - p).transpose(), sol_dpdp), (p_new - p))
+        if self.NCA > 0:
 
-        return q_new, mul_new, sol_new
+            mul_approx = mul_opt + np.dot(self.mul_dp, (p_new - p))
+            q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
+            F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
+                         1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
 
-    """
-    ===============================================================================
-    """
+        else:
 
-    def calculate_mul(self, x0, p, q):
+            mul_approx = None
+            q_approx   = q_opt + np.dot(self.q_dp, (p_new - p))
+            F_approx   = self.ocp.obj(x_opt, None, None, None, p, q_opt, s_opt) + np.dot(self.F_dp, (p_new - p)) + \
+                         1 / 2 * np.dot(np.dot((p_new - p).transpose(), self.F_dpdp), (p_new - p))
 
-        """
-
-        ...
-
-        input:
-
-        output:
-
-        TODO: implement RQ factiorization or update scipy
-
-        """
-
-        pass
+        # set results as attributes
+        self.q_approx   = q_approx
+        self.mul_approx = mul_approx
+        self.F_approx   = F_approx
 
     """
     ===============================================================================
     """
 
-    def domain(self, x0, p, q, mul):
+    def calculate_sensitivity_domain(self, x0, p, q, mul):
 
         """
 
@@ -229,31 +252,28 @@ class OCSS_sensitivity(object):
 
         """
 
-        NP = len(p)
-
         # evaluate the constraints for later use
-        constraints_val = self.ocp.c(p, q)
-        NC = len(constraints_val)
+        constraints_val      = self.ocp.c(p, q)
+        NC                   = len(constraints_val)
         constraints_totalder = np.zeros((NC, len(p)))
 
-        # evaluate the active constraints and calculate sensitivites
-        NCA, ca = self.active(p, q)
-        q_dp, mul_dp, sol_dp, sol_dpdp = self.dp(p, q, mul)
+        # calculate sensitivites
+        q_dp, mul_dp, F_dp, F_dpdp = self.dp(p, q, mul)
 
         # calculate the total derivative of the constraints dG/dp
         for j in xrange(0, NC):
 
-            for i in xrange(0, NP):
+            for i in xrange(0, self.ocp.NP):
 
                 constraints_totalder[j, i] = np.dot(self.ocp.c_dq(p, q)[j, :].transpose(), q_dp[:, i]) + self.ocp.c_dp(p, q)[j, i]
 
         # set up array to contain the results
-        perturbations = np.zeros((NP, NC))
+        perturbations = np.zeros((self.ocp.NP, NC))
 
         # iterate through constraints and p
         for j in xrange(0, NC):
 
-            for i in xrange(0, NP):
+            for i in xrange(0, self.ocp.NP):
 
                 # calculate the maximal perturbation allowed if constraint is active
                 if j in ca:
@@ -281,9 +301,9 @@ class OCSS_sensitivity(object):
                         perturbations[i, j] = - np.sign(constraints_val[j]) / np.sign(constraints_totalder[j, i]) * np.inf
 
         # find maximal perturbations in each line
-        domain = np.zeros((NP, 2))
+        domain = np.zeros((self.ocp.NP, 2))
 
-        for i in xrange(0, NP):
+        for i in xrange(0, self.ocp.NP):
 
             domain[i, 0] = np.min(perturbations[i, :])
             domain[i, 1] = np.max(perturbations[i, :])
@@ -294,7 +314,7 @@ class OCSS_sensitivity(object):
     ===============================================================================
     """
 
-    def active(self, x0, p, q):
+    def determine_active_constraints(self, x_opt, p, q_opt, s_opt):
 
         """
 
@@ -308,43 +328,18 @@ class OCSS_sensitivity(object):
 
         """
 
-        p = np.array(p)
-
         # evaluate the active constraints
-        ca = []
-        NCA = 0
-        val = self.ocp.c(x0, p, q)
+        self.ca = []
+        c = self.ocp.c(x_opt, None, None, None, p, q_opt, s_opt)
 
         if self.ocp.NC > 0:
+            for i in xrange(0, c.size):
 
-            for i in xrange(0, val.size):
+                if c[i] >= -1e-6:
+                    self.ca = self.ca + [i]
 
-                if val[i] >= -1e-6:
-
-                    ca = ca + [i]
-                    NCA = NCA + 1
-
-        return NCA, ca
-
-    """
-    ===============================================================================
-    """
-
-    def larger_perturbations(self, x0, p, q):
-
-        """
-
-        ...
-
-        input:
-
-        output:
-
-        TODO: implement strategies for perturbations leaving the sensitivity domain
-
-        """
-
-        pass
+        # set number of active constraints
+        self.NCA = len(self.ca)
 
 """
 ===============================================================================
