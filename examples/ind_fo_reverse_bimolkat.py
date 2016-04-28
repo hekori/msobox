@@ -53,9 +53,9 @@ integrator = RK4Classic(backend_fortran)
 ts          = np.linspace(0, 2, 10)
 x0          = np.ones(5)
 p           = np.ones(5)
-q           = np.zeros((4, ts.size, 2))
-q[0, :, 0]  = 90
-q[1:, :, 0] = 1
+q           = np.zeros(4)
+q[0]        = 90
+q[1:]       = 1
 
 # necessary for reverse mode: integrate zeroth order
 integrator.zo_forward(ts, x0, p, q)

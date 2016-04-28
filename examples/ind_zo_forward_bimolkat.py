@@ -33,12 +33,12 @@ def get_dir_path():
 """
 
 # differentiate model functions
-Differentiator(get_dir_path() + "/fortran/bimolkat/ffcn.f")
+# Differentiator(get_dir_path() + "/fortran/bimolkat/ffcn.f")
 backend_fortran = BackendFortran(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so")
 
 # choose an integrator
-integrator = RK4Classic(backend_fortran)
-# integrator = ExplicitEuler(backend_fortran)
+# integrator = RK4Classic(backend_fortran)
+integrator = ExplicitEuler(backend_fortran)
 # integrator = ImplicitEuler(backend_fortran)
 
 """
@@ -46,19 +46,29 @@ integrator = RK4Classic(backend_fortran)
 """
 
 # set parameters
-ts          = np.linspace(0, 2, 100)
-x0          = np.ones(5)
+Nts         = 100
+ts          = np.linspace(0, 2, Nts)
+x           = np.ones(5)
 p           = np.ones(5)
-q           = np.zeros((4, ts.size, 2))
-q[0, :, 0]  = 90
-q[1:, :, 0] = 1
+q           = np.zeros(4)
+q[0]        = 90
+q[1:]       = 1
+
 
 # integrate
-integrator.zo_forward(ts, x0, p, q)
+xs = np.zeros((Nts, 5))
+for j in range(Nts-1):
+    xs[j, :] = x
+    x[:] = integrator.zo_forward(ts[j:j+2], x, p, q)
+
+j = Nts-1
+xs[j, :] = x
+
 
 # plot results
-pl.plot(integrator.ts, integrator.xs)
+pl.plot(ts, xs)
 pl.xlabel("t")
+pl.savefig(get_dir_path() + "/out/ind_zo_forward_bimolkat.png")
 pl.show()
 
 """
