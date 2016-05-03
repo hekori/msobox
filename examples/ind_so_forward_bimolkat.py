@@ -75,7 +75,7 @@ xs_ddot = np.zeros((ts.size,) + x_ddot.shape)
 # integrate
 for j in range(Nts-1):
     xs_ddot[j, ...] = x_ddot
-    x[...], x_dot2[...], x_dot1[...], x_ddot[...] = integrator.so_forward_xpq_xpq(ts[j:j+2],
+    x[...], x_dot2[...], x_dot1[...], x_ddot[...] = integrator.so_forward(ts[j:j+2],
                                                       x, x_dot2, x_dot1, x_ddot,
                                                       p, p_dot2, p_dot1, p_ddot,
                                                       q, q_dot2, q_dot1, q_ddot)

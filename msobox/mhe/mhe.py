@@ -302,7 +302,7 @@ class MHE(object):
         if self.NZ > 0:
             raise NotImplementedError("need integration scheme for DAEs")
 
-        self.x[:], self.x_dot[:,:] = self.ind.fo_forward_xpq(self.ts[0:2], x, x_dot, p, p_dot, q[0, :], q_dot[0, :])
+        self.x[:], self.x_dot[:,:] = self.ind.fo_forward(self.ts[0:2], x, x_dot, p, p_dot, q[0, :], q_dot[0, :])
 
         # STEP 3: post-process result of integration
         # ##########################################
@@ -604,7 +604,7 @@ class MHE(object):
         #                     self.y , self.z , self.q.ravel(), self.p,
         #                     self.Vxd, self.Vxa, self.Vq, self.Vp)
 
-        self.x[:], self.x_dot[:, :] = self.ind.fo_forward_xpq(self.ts[ci:ci+2], self.x, self.x_dot, self.p, self.p_dot, self.q[ci, ...], self.q_dot[ci, ...])
+        self.x[:], self.x_dot[:, :] = self.ind.fo_forward(self.ts[ci:ci+2], self.x, self.x_dot, self.p, self.p_dot, self.q[ci, ...], self.q_dot[ci, ...])
 
         ## build J2  
         # self.J2s[ci, :self.NY, :] = self.Vxd[:self.NX, 0, :].T

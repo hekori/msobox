@@ -75,7 +75,7 @@ class RK4Classic(IND):
         return self.xs[-1, ...]
 
 
-    def fo_forward_xpq(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
+    def fo_forward(self, ts, x0, x0_dot, p, p_dot, q, q_dot):
         """
         Solve nominal differential equation and evaluate first-order forward
         sensitivities of the differential states w.r.t. x, p and q.
@@ -181,7 +181,7 @@ class RK4Classic(IND):
         return self.xs[-1, ...], self.xs_dot[-1, ...]
 
 
-    def so_forward_xpq_xpq(self, ts,
+    def so_forward(self, ts,
                            x0, x0_dot2, x0_dot1, x0_ddot,
                            p,   p_dot2,  p_dot1, p_ddot,
                            q,   q_dot2,  q_dot1, q_ddot):

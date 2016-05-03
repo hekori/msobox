@@ -70,10 +70,10 @@ xs_dot = np.zeros((ts.size,) + x_dot.shape)
 # integrate
 for j in range(Nts-1):
     xs_dot[j, ...] = x_dot
-    x[...], x_dot[...] = integrator.fo_forward_xpq(np.linspace(ts[j], ts[j+1], 2),
-                                              x, x_dot,
-                                              p, p_dot,
-                                              q, q_dot)
+    x[...], x_dot[...] = integrator.fo_forward(ts[j:j+2],
+                                                   x, x_dot,
+                                                   p, p_dot,
+                                                   q, q_dot)
 j = Nts-1
 xs_dot[j, ...] = x_dot
 
@@ -111,7 +111,7 @@ for j in range(Nts-1):
     xs_dot[j, ...] = x_dot
     q_dot[...] = 0
     q_dot[:, j*q.size:(j+1)*q.size] = np.eye(q.size)
-    x[...], x_dot[...] = integrator.fo_forward_xpq(ts[j:j+2],
+    x[...], x_dot[...] = integrator.fo_forward(ts[j:j+2],
                                               x, x_dot,
                                               p, p_dot,
                                               q, q_dot)
