@@ -88,6 +88,24 @@ def ffcn_d_xpu_v_d_xx_dpp_duu_d_py(
     f[4] = x[4] + p[4] + u[3]
 
 
+def hfcn_py(h, t, x, p, u):
+    """Dummy for test cases."""
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
+def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
+    """Dummy for test cases."""
+    h_d[0, :] = x[0, :]
+    h_d[1, :] = x[1, :]
+    h_d[2, :] = x[2, :]
+
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
 # ------------------------------------------------------------------------------
 # PYTHON STR IMPLEMENTATION
 ffcn_py_str = """
@@ -157,12 +175,32 @@ def ffcn_d_xpu_v_d_xx_dpp_duu_d(
     f[4] = x[4] + p[4] + u[3]
 
 
+def hfcn_py(h, t, x, p, u):
+    '''Dummy for test cases.'''
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
+def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
+    '''Dummy for test cases.'''
+    h_d[0, :] = x[0, :]
+    h_d[1, :] = x[1, :]
+    h_d[2, :] = x[2, :]
+
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
 """
 
 
 # ------------------------------------------------------------------------------
 # FORTRAN IMPLEMENTATION
 ffcn_f_str = """
+C-------------------------------------------------------------------------------
+
       subroutine ffcn(f, t, x, p, u)
 C       Dummy for test cases.
         implicit none
@@ -177,9 +215,11 @@ C       ------------------------------------------------------------------------
 C       ------------------------------------------------------------------------
       end
 
+C-------------------------------------------------------------------------------
 
       subroutine ffcn_d_xpu_v(f, f_d, t, x, x_d, p, p_d, u, u_d
      *, nbdirs)
+C       ------------------------------------------------------------------------
 C       Dummy for test cases.
         implicit none
         real*8 f(5), t, x(5), p(5), u(4)
@@ -205,6 +245,48 @@ C       ------------------------------------------------------------------------
         f(5) = x(5) + p(5) + u(4)
 C       ------------------------------------------------------------------------
       end
+
+C-------------------------------------------------------------------------------
+
+      subroutine hfcn(h, t, x, p, u)
+C       ------------------------------------------------------------------------
+        implicit none
+        real*8 h(3), t, x(5), p(5), u(4)
+C       ------------------------------------------------------------------------
+
+        h(1) = x(1)
+        h(2) = x(2)
+        h(3) = x(3)
+
+C       ------------------------------------------------------------------------
+      end
+
+            subroutine hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d
+     *, nbdirs)
+C       ------------------------------------------------------------------------
+C       Dummy for test cases.
+        implicit none
+        real*8 h(3), t, x(5), p(5), u(4)
+        integer nbdirs
+        real*8 h_d(nbdirs, 3), x_d(nbdirs, 5), p_d(nbdirs, 5)
+        real*8 u_d(nbdirs, 4)
+        integer nd0
+C       ------------------------------------------------------------------------
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          h_d(nd0, 1) = x_d(nd0, 1)
+          h_d(nd0, 2) = x_d(nd0, 2)
+          h_d(nd0, 3) = x_d(nd0, 3)
+        ENDDO
+
+        ! Independent values
+        h(1) = x(1)
+        h(2) = x(2)
+        h(3) = x(3)
+C       ------------------------------------------------------------------------
+      end
+
+C-------------------------------------------------------------------------------
 """
 
 
@@ -237,6 +319,20 @@ def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
     f_b[2] = x_b[2] + p_b[2] + u_b[1]
     f_b[3] = x_b[3] + p_b[3] + u_b[2]
     f_b[4] = x_b[4] + p_b[4] + u_b[3]
+
+C-------------------------------------------------------------------------------
+
+      subroutine hfcn(f, t, x, p, u)
+C       Dummy for test cases.
+        implicit none
+        real*8 h(3), t, x(5), p(5), u(4)
+C       ------------------------------------------------------------------------
+        ! Independent values
+        h(1) = x(1)
+        h(2) = x(2)
+        h(3) = x(3)
+C       ------------------------------------------------------------------------
+      end
 
 
 """
@@ -388,6 +484,69 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn(
     # call functions
     ffcn(actual, t, x, p, u)
     ffcn_py(desired, t, x, p, u)
+
+    # compare values
+    print ""
+    print "actual:  ", actual
+    print "desired: ", desired
+    print "error:   ", lg.norm(desired - actual)
+    assert_allclose(actual, desired)
+
+
+def test_msobox_function_interface_on_ffcn_so_calling_hfcn(
+    temp_shared_library_from_ffcn_f
+):
+    """."""
+    # path to shared library
+    so_path = str(temp_shared_library_from_ffcn_f)
+    # print "so_path: ", so_path
+
+    # load shared library as module
+    module = import_shared_library(so_path)
+
+    # initialize foreign function interface for library
+    header = """
+    void ffcn_(double *f, double *t, double *x, double *p, double *u);
+    void hfcn_(double *h, double *t, double *x, double *p, double *u);
+    void ffcn_d_xpu_v_(
+      double *f, double *f_d,
+      double *t,
+      double *x, double *x_d,
+      double *p, double *p_d,
+      double *u, double *u_d,
+      int *nbdirs
+    );
+    """
+    # open shared library
+    ffi = FFI()
+    ffi.cdef(header)
+    module = ffi.dlopen(so_path)
+
+    # function declaration and dimensions
+    func = {
+        "type": "hfcn",
+        "name": "hfcn_",
+        "args": ["h", "t", "x", "p", "u"],
+        "deriv": []
+    }
+    dims = {"h": 3, "t": 1, "x": 5, "p": 5, "u": 4}
+
+    # create function
+    hfcn = Function(module, dims, func, ffi=ffi, verbose=False)
+
+    # define input values
+    t = numpy.random.random(dims["t"])
+    x = numpy.random.random(dims["x"])
+    p = numpy.random.random(dims["p"])
+    u = numpy.random.random(dims["u"])
+
+    # define output variables
+    desired = numpy.zeros(dims["h"])
+    actual = numpy.zeros(dims["h"])
+
+    # call functions
+    hfcn(actual, t, x, p, u)
+    hfcn_py(desired, t, x, p, u)
 
     # compare values
     print ""
