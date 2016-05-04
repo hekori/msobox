@@ -22,9 +22,10 @@ class GN(object):
         self.NQ        = NQ
         self.NH        = NH
         self.ts        = np.linspace(0, 1, NTS)
-        self.x0        = np.zeros(NX)
         self.x         = np.zeros(NX)
-        self.p         = np.zeros(NP)
+        self.v         = np.zeros(NX + NP)
+        self.x0        = self.v[:NX]
+        self.p         = self.v[NX:]
         self.q         = np.zeros(NQ)
         self.h         = np.zeros(NH)
         self.P         = self.p.size + self.x0.size
@@ -42,26 +43,31 @@ class GN(object):
         self.hs_ref    = np.zeros((NTS, NH))
 
 
-    def simulate_measurements(self, std):
+    def simulate_measurements(self):
 
         mf, ind      = self.mf, self.ind
         x, x0, h     = self.x, self.x0, self.h
         ts, p, q     = self.ts, self.p, self.q
         hs_ref, es   = self.hs_ref, self.es
+        ss           = self.ss
         NTS          = self.NTS
 
         self.x[:]  = self.x0
         self.h[:]  = 0.
 
         for i in range(ts.size-1):
-            mf.hfcn(h, ts[i], x,  p, q)
+            mf.hfcn(h, ts[i], x, p, q)
+            mf.sfcn(ss[i,:], ts[i], x, p, q)
             hs_ref[i, ...] =  h
             x[:] = ind.zo_forward(ts[i:i+2], x, p, q)
 
+
         i = ts.size - 1
         mf.hfcn(h, ts[i], x,  p, q)
+        mf.sfcn(ss[i,:], ts[i], x, p, q)
         hs_ref[i, ...] =  h
-        es[:, :] = hs_ref + np.random.randn(NTS,1)*std
+        es[:, :] = hs_ref + np.random.randn(NTS,self.NH)*self.ss
+
 
     def step(self):
         """ compute delta_x """
@@ -74,11 +80,11 @@ class GN(object):
         h, h_d               = self.h, self.h_d
         x0                   = self.x0
         mf, ind              = self.mf, self.ind
-        es                   = self.es
+        es, ss               = self.es, self.ss
 
         x[:]            = x0
-        p_d[:, :p.size] = np.eye(NP)
-        x_d[:, p.size:] = np.eye(NX)
+        x_d[:, :NX]     = np.eye(NX)
+        p_d[:, NX:]     = np.eye(NP)
         h[:]            = np.zeros(1)
         h_d[: :]        = np.zeros((1, P))
 
@@ -94,11 +100,11 @@ class GN(object):
         hs[i, ...]   =  h
         hs_d[i, ...] = h_d
 
-        F = hs - es
-        J = hs_d
+        F = (hs - es)/ss
+        J = hs_d/ss[:,:,np.newaxis]
 
-        tF = F.reshape((NTS*NH))
-        tJ = J.reshape((NTS*NH, P))
+        self.tF = tF = F.reshape((NTS*NH))
+        self.tJ = tJ = J.reshape((NTS*NH, P))
 
         Q, R = np.linalg.qr(tJ)
         tmp1 = Q.T.dot(tF)

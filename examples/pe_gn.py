@@ -24,14 +24,11 @@ class MF(object):
         h_d[...] = x_d[...]
 
     def sfcn(self, s, t, x, p, u):
-        s[0] = 1.e-1
+        s[0] = 5.e-1
 
     def sfcn_dot(self, s, s_d, t, x, x_d, p, p_d, u, u_d):
-        s[0]   = 1.e-1
+        s[0]   = 5.e-1
         s_d[0] = 0
-
-MF.ffcn_dot = MF.ffcn_dot
-MF.hfcn_dot = MF.hfcn_dot
 
 mf = MF()
 ind = RK4Classic(mf)
@@ -39,26 +36,40 @@ ind = RK4Classic(mf)
 gn = GN(mf, ind, 100, 1, 2, 0, 1)
 
 # reference solution
-gn.x0[:] = 1
+gn.x0[:] = 4
 gn.p[:] = [3,4]
 std = 0.1
-gn.simulate_measurements(std)
+gn.simulate_measurements()
 pl.plot(gn.ts, gn.hs_ref[:,0], '-k')
-pl.errorbar(gn.ts, gn.es[:,0], std, fmt='.')
+pl.errorbar(gn.ts, gn.es[:,0], gn.ss[:,0], fmt='.')
 pl.ion()
-pl.pause(0.1)
+pl.pause(0.01)
 
 # estimate
-gn.x0[0] = 8
+gn.x0[0] = 0
 gn.p[0]  = 4
 gn.p[1]  = 3
 
-for i in range(5):
+for i in range(10):
     s   = gn.step()
     s  *= 1
-    gn.p  += s[:2]
-    gn.x0 += s[2]
+    gn.v  += s
     pl.title("x(t)")
     pl.plot(gn.ts, gn.hs[:, 0])
-    pl.pause(2)
+    pl.pause(0.01)
 
+
+C = np.linalg.inv(gn.tJ.T.dot(gn.tJ))
+
+for i in range(gn.NX):
+    print 's%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i]))
+
+for i in range(gn.NX, gn.NX + gn.NP):
+    print 'p%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i]))
+
+print C
+
+import json
+print json.dumps(gn.es.tolist())
+
+raw_input("press key to continue")
