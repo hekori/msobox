@@ -1,6 +1,7 @@
 """Set of module-wide fixtures."""
 
 import os
+import json
 import pytest
 import subprocess
 
@@ -92,6 +93,17 @@ def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
     h[2] = x[2]
 
 
+def hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b):
+    """Dummy for test cases."""
+    h[0] = x[0] + p[0] + u[0]
+    h[1] = x[1] + p[1] + u[0]
+    h[2] = x[2] + p[2] + u[1]
+
+    f_b[0, :] = x_b[0, :]
+    f_b[1, :] = x_b[1, :]
+    f_b[2, :] = x_b[2, :]
+
+
 # ------------------------------------------------------------------------------
 # PYTHON STR IMPLEMENTATION
 mf_py_str = """
@@ -161,14 +173,14 @@ def ffcn_d_xpu_v_d_xx_dpp_duu_d(
     f[4] = x[4] + p[4] + u[3]
 
 
-def hfcn_py(h, t, x, p, u):
+def hfcn(h, t, x, p, u):
     '''Dummy for test cases.'''
     h[0] = x[0]
     h[1] = x[1]
     h[2] = x[2]
 
 
-def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
+def hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d):
     '''Dummy for test cases.'''
     h_d[0, :] = x[0, :]
     h_d[1, :] = x[1, :]
@@ -177,6 +189,17 @@ def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
     h[0] = x[0]
     h[1] = x[1]
     h[2] = x[2]
+
+
+def hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b):
+    '''Dummy for test cases.'''
+    h[0] = x[0] + p[0] + u[0]
+    h[1] = x[1] + p[1] + u[0]
+    h[2] = x[2] + p[2] + u[1]
+
+    f_b[0, :] = x_b[0, :]
+    f_b[1, :] = x_b[1, :]
+    f_b[2, :] = x_b[2, :]
 
 
 """
@@ -309,28 +332,57 @@ def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
 
 """
 
+# ------------------------------------------------------------------------------
+# model definitions
+md_dict = {
+    "dims": {"t": 1, "x": 5, "p": 5, "u": 4},
+    "functions": [
+        {"type": "ffcn", "name": "ffcn", "args": ["f", "t", "x", "p", "u"],
+         "deriv":[
+                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
+                 "deriv": [
+                        {"mode": "forward_vector",
+                            "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
+                            "out": ["f", "f_d"]}
+                ]},
+                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
+         ]},
+        {"type": "hfcn", "name": "hfcn", "args": ["h", "t", "x", "p", "u"],
+         "deriv":[
+                {"mode": "forward_vector",
+                    "in": ["x", "p", "u"], "out": ["h"],
+                 "deriv": [
+                        {"mode": "forward_vector",
+                            "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
+                            "out": ["h", "h_d"]}
+                        ]},
+                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["h"]}
+        ]}
+    ]
+}
+
 
 # ------------------------------------------------------------------------------
 # GLOBAL FIXTURES
 @pytest.fixture
-def temp_ffcn_f_file(tmpdir):
-    f = tmpdir.mkdir('temp_mf').join("ffcn.f")
+def temp_mf_f_file(tmpdir):
+    f = tmpdir.join("mf.f")
     f.write(mf_f_str)
     return f
 
 
 @pytest.fixture
-def temp_ffcn_py_file(tmpdir):
-    f = tmpdir.mkdir('temp_mf').join("ffcn.py")
+def temp_mf_py_file(tmpdir):
+    f = tmpdir.join("mf.py")
     f.write(mf_py_str)
     return f
 
 
 @pytest.fixture
-def temp_shared_library_from_ffcn_f(temp_ffcn_f_file):
+def temp_shared_library_from_ffcn_f(temp_mf_f_file):
     """Compile FORTRAN file and create shared library."""
     # unpack file path
-    fpath = str(temp_ffcn_f_file)
+    fpath = str(temp_mf_f_file)
     fpath = os.path.abspath(fpath)
     f_dir = os.path.dirname(fpath)
     f_name = os.path.basename(fpath)
@@ -376,19 +428,39 @@ def temp_shared_library_from_ffcn_f(temp_ffcn_f_file):
     return path_to_so
 
 
+@pytest.fixture
+def temp_md_dict():
+    """Return copy of model definitions dictionary."""
+    return md_dict.copy()
+
+
+@pytest.fixture
+def temp_md_file(tmpdir):
+    """Save dictionary as json string to temporary file."""
+    f = tmpdir.join("model_definitions.json")
+    f.write(json.dumps(md_dict))
+    return f
+
+
+@pytest.fixture
+def temp_md_json():
+    """Create temporary json string."""
+    return json.dumps(md_dict)
+
+
 # ------------------------------------------------------------------------------
 # VERIFY FIXTURES
-def test_temp_ffcn_f_file(temp_ffcn_f_file):
+def test_temp_mf_f_file(temp_mf_f_file):
     """Check content of temporary definition file against source."""
-    actual = temp_ffcn_f_file.read()
+    actual = temp_mf_f_file.read()
     desired = mf_f_str
     # check content
     assert actual == desired
 
 
-def test_temp_ffcn_py_file(temp_ffcn_py_file):
+def test_temp_mf_py_file(temp_mf_py_file):
     """Check content of temporary definition file against source."""
-    actual = temp_ffcn_py_file.read()
+    actual = temp_mf_py_file.read()
     desired = mf_py_str
     # check content
     assert actual == desired
@@ -400,6 +472,21 @@ def test_temp_shared_library_from_ffcn_f(temp_shared_library_from_ffcn_f):
     # check if shared library exists
     assert os.path.isfile(path_to_so)
 
+
+def test_temp_md_file(temp_md_file):
+    """Check content of temporary definition file against source."""
+    actual = json.load(temp_md_file)
+    desired = md_dict
+    # check content
+    assert actual == desired
+
+
+def test_temp_md_json(temp_md_json):
+    """Check content of temporary definition string against source."""
+    actual = json.loads(temp_md_json)
+    desired = md_dict
+    # check content
+    assert actual == desired
 
 
 # ------------------------------------------------------------------------------
