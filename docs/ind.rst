@@ -1,7 +1,7 @@
 
 
 =============================================================================================
-msobox.ind - internal numerical differentiation (IND) library of differentiated ODE solvers
+integration of ODEs + derivatives (directional and adjoint)
 =============================================================================================
 
 
@@ -16,11 +16,10 @@ Description
 
     .. math::
 
-        x_t =& f(x, p, q) \\
+        \dot x =& f(x, p, q) \\
         x(0) =& x_0
 
-    where :math:`x_t` denotes the derivative of :math:`x` w.r.t. :math:`t`,
-
+    where :math:`\dot x` denotes the derivative of :math:`x` w.r.t. :math:`t`,
     and additionally
 
     * first-order derivatives
