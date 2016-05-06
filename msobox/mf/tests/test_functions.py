@@ -27,11 +27,11 @@ from msobox.mf.functions import (Function,)
 # ------------------------------------------------------------------------------
 # ACTUAL TESTS
 def test_msobox_function_interface_on_ffcn_so_calling_ffcn(
-    temp_shared_library_from_ffcn_f
+    temp_mf_so_from_mf_f_file
 ):
     """."""
     # path to shared library
-    so_path = str(temp_shared_library_from_ffcn_f)
+    so_path = str(temp_mf_so_from_mf_f_file)
     # print "so_path: ", so_path
 
     # load shared library as module
@@ -57,7 +57,7 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn(
     # function declaration and dimensions
     func = {
         "type": "ffcn",
-        "name": "ffcn_",
+        "name": "ffcn",
         "args": ["f", "t", "x", "p", "u"],
         "deriv": []
     }
@@ -89,11 +89,11 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn(
 
 
 def test_msobox_function_interface_on_ffcn_so_calling_hfcn(
-    temp_shared_library_from_ffcn_f
+    temp_mf_so_from_mf_f_file
 ):
     """."""
     # path to shared library
-    so_path = str(temp_shared_library_from_ffcn_f)
+    so_path = str(temp_mf_so_from_mf_f_file)
     # print "so_path: ", so_path
 
     # load shared library as module
@@ -120,7 +120,7 @@ def test_msobox_function_interface_on_ffcn_so_calling_hfcn(
     # function declaration and dimensions
     func = {
         "type": "hfcn",
-        "name": "hfcn_",
+        "name": "hfcn",
         "args": ["h", "t", "x", "p", "u"],
         "deriv": []
     }
@@ -152,10 +152,10 @@ def test_msobox_function_interface_on_ffcn_so_calling_hfcn(
 
 
 def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
-    temp_shared_library_from_ffcn_f
+    temp_mf_so_from_mf_f_file
 ):
     # path to shared library
-    so_path = str(temp_shared_library_from_ffcn_f)
+    so_path = str(temp_mf_so_from_mf_f_file)
     # print "so_path: ", so_path
 
     # load shared library as module
@@ -181,7 +181,7 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
     # function declaration and dimensions
     func = {
         "type": "ffcn",
-        "name": "ffcn_d_xpu_v_",
+        "name": "ffcn_d_xpu_v",
         "args": ["f", "f_d", "t", "x", "x_d", "p", "p_d", "u", "u_d", "nbdirs"],
         "deriv": []
     }
@@ -227,9 +227,9 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
     print "successful!"
 
 
-def test_msobox_function_interface_on_ffcn_py_calling_ffcn(temp_ffcn_py_file):
+def test_msobox_function_interface_on_ffcn_py_calling_ffcn(temp_mf_py_file):
     # path to shared library
-    f_path = str(temp_ffcn_py_file)
+    f_path = str(temp_mf_py_file)
     # print "so_path: ", so_path
 
     # load shared library as module
@@ -271,10 +271,10 @@ def test_msobox_function_interface_on_ffcn_py_calling_ffcn(temp_ffcn_py_file):
 
 
 def test_msobox_function_interface_on_ffcn_py_calling_ffcn_d_xpu_v(
-    temp_ffcn_py_file
+    temp_mf_py_file
 ):
     # path to shared library
-    f_path = str(temp_ffcn_py_file)
+    f_path = str(temp_mf_py_file)
     # print "so_path: ", so_path
 
     # load shared library as module
