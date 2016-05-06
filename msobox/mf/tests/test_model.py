@@ -14,7 +14,9 @@ from numpy.testing import (assert_equal, assert_allclose)
 
 from conftest import (md_dict,)
 from conftest import (ffcn_py, ffcn_d_xpu_v_py, ffcn_d_xpu_v_d_xx_dpp_duu_d_py)
+from conftest import (ffcn_b_xpu_py,)
 from conftest import (hfcn_py, hfcn_d_xpu_v_py,)  # hfcn_d_xpu_v_d_xx_dpp_duu_d_py)
+from conftest import (hfcn_b_xpu_py,)
 
 from msobox.mf.model import (Model,)
 
@@ -110,6 +112,55 @@ def test_model_function_evaluation_from_mf_py(
 
     # define input values
     actual_args = [numpy.random.random(f_dims[arg]) for arg in f_dict["args"]]
+    desired_args = deepcopy(actual_args)
+
+    # get functions from globals() and model
+    actual = getattr(model, member)
+    desired = globals().get(member + "_py")
+
+    # call functions
+    actual(*actual_args)
+    desired(*desired_args)
+
+    print ""
+    for i in range(len(actual_args)):
+        print "actual:  ", actual_args[i]
+        print "desired: ", desired_args[i]
+        print "error:   ", lg.norm(desired_args[i] - actual_args[i])
+        assert_allclose(actual_args[i], desired_args[i])
+    print "successful!"
+
+
+@pytest.mark.parametrize("member", [
+    "ffcn_d_xpu_v", "hfcn_d_xpu_v",
+    "ffcn_b_xpu", "hfcn_b_xpu",
+])
+def test_model_fo_derivative_evaluation_from_mf_py(
+    temp_mf_py_file, temp_md_file, member
+):
+    """."""
+    # load back end
+    mf = str(temp_mf_py_file)
+    md = str(temp_md_file)
+    model = Model(mf, md, verbose=True)
+
+    # retrieve member
+    function = getattr(model, member)
+
+    # function declaration and dimensions
+    f_dict = function._declaration
+    f_dims = function._dimensions
+
+    # define input values
+    P = numpy.random.randint(20)
+    actual_args = []
+    for arg in f_dict["args"]:
+        if f_dims.has_key(arg):
+            actual_args.append(numpy.random.random(f_dims[arg]))
+        else:
+            arg = arg.split("_")[0]
+            actual_args.append(numpy.random.random([f_dims[arg], P]))
+
     desired_args = deepcopy(actual_args)
 
     # get functions from globals() and model

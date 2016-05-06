@@ -84,24 +84,24 @@ def hfcn_py(h, t, x, p, u):
 
 def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
     """Dummy for test cases."""
-    h_d[0, :] = x[0, :]
-    h_d[1, :] = x[1, :]
-    h_d[2, :] = x[2, :]
+    h_d[0, :] = x_d[0, :]
+    h_d[1, :] = x_d[1, :]
+    h_d[2, :] = x_d[2, :]
 
     h[0] = x[0]
     h[1] = x[1]
     h[2] = x[2]
 
 
-def hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b):
+def hfcn_b_xpu_py(h, h_b, t, x, x_b, p, p_b, u, u_b):
     """Dummy for test cases."""
-    h[0] = x[0] + p[0] + u[0]
-    h[1] = x[1] + p[1] + u[0]
-    h[2] = x[2] + p[2] + u[1]
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
 
-    f_b[0, :] = x_b[0, :]
-    f_b[1, :] = x_b[1, :]
-    f_b[2, :] = x_b[2, :]
+    h_b[0, :] = x_b[0, :]
+    h_b[1, :] = x_b[1, :]
+    h_b[2, :] = x_b[2, :]
 
 
 # ------------------------------------------------------------------------------
@@ -182,9 +182,9 @@ def hfcn(h, t, x, p, u):
 
 def hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d):
     '''Dummy for test cases.'''
-    h_d[0, :] = x[0, :]
-    h_d[1, :] = x[1, :]
-    h_d[2, :] = x[2, :]
+    h_d[0, :] = x_d[0, :]
+    h_d[1, :] = x_d[1, :]
+    h_d[2, :] = x_d[2, :]
 
     h[0] = x[0]
     h[1] = x[1]
@@ -193,13 +193,13 @@ def hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d):
 
 def hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b):
     '''Dummy for test cases.'''
-    h[0] = x[0] + p[0] + u[0]
-    h[1] = x[1] + p[1] + u[0]
-    h[2] = x[2] + p[2] + u[1]
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
 
-    f_b[0, :] = x_b[0, :]
-    f_b[1, :] = x_b[1, :]
-    f_b[2, :] = x_b[2, :]
+    h_b[0, :] = x_b[0, :]
+    h_b[1, :] = x_b[1, :]
+    h_b[2, :] = x_b[2, :]
 
 
 """
