@@ -38,12 +38,12 @@ with open(get_dir_path() + "/fortran/bimolkat/json.txt", "r") as f:
     ds = json.load(f)
 
 # differentiate model functions
-Differentiator(get_dir_path() + "/fortran/bimolkat", ds=ds)
+# Differentiator(get_dir_path() + "/fortran/bimolkat", ds=ds)
 backend_fortran = BackendFortran(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so")
 
 # choose an integrator
-integrator = RK4Classic(backend_fortran)
-# integrator = ExplicitEuler(backend_fortran)
+# integrator = RK4Classic(backend_fortran)
+integrator = ExplicitEuler(backend_fortran)
 # integrator = ImplicitEuler(backend_fortran)
 
 """
@@ -51,55 +51,81 @@ integrator = RK4Classic(backend_fortran)
 """
 
 # set parameters
-ts          = np.linspace(0, 2, 10)
-x0          = np.ones(5)
+Nts         = 100
+ts          = np.linspace(0, 2, Nts)
+x           = np.ones(5)
 p           = np.ones(5)
-q           = np.zeros((4, ts.size, 2))
-q[0, :, 0]  = 90.
-q[1:, :, 0] = 1.
+q           = np.zeros(4)
+q[0]        = 90.
+q[1:]       = 1.
 
 # set directions for first order forward differentiation w.r.t. p
 P           = p.size
-x0_dot      = np.zeros(x0.shape + (P,))
+x_dot       = np.zeros(x.shape + (P,))
 p_dot       = np.eye(P)
 q_dot       = np.zeros(q.shape + (P,))
 
+xs_dot = np.zeros((ts.size,) + x_dot.shape)
+
 # integrate
-integrator.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+for j in range(Nts-1):
+    xs_dot[j, ...] = x_dot
+    x[...], x_dot[...] = integrator.fo_forward(ts[j:j+2],
+                                                   x, x_dot,
+                                                   p, p_dot,
+                                                   q, q_dot)
+j = Nts-1
+xs_dot[j, ...] = x_dot
 
 # plot d/dp x2(t)
+pl.figure()
 pl.title("d/dp x2(t)")
-pl.plot(integrator.ts, integrator.xs_dot[:, 1, :])
+pl.plot(ts, xs_dot[:, 1, :])
 pl.xlabel("t")
-pl.show()
+pl.savefig(get_dir_path() + "/out/ind_fo_forward_bimolkat_p.png")
+# pl.show()
 
 """
 ===============================================================================
 """
 
 # set parameters
-ts          = np.linspace(0, 2, 10)
-x0          = np.ones(5)
+Nts         = 10
+ts          = np.linspace(0, 2, Nts)
+x           = np.ones(5)
 p           = np.ones(5)
-q           = np.zeros((4, ts.size, 1))
-q[0, :]     = 90.
-q[1:, :]    = 1.
+q           = np.zeros(4)
+q[0]        = 90.
+q[1:]       = 1.
 
-# set directions for first order forward differentiation w.r.t. q
-P           				= q.size
-x0_dot      				= np.zeros(x0.shape + (P,))
-p_dot       				= np.zeros(p.shape + (P,))
-q_dot       			    = np.zeros(q.shape + (P,))
-q_dot.reshape((P, P))[:, :] = np.eye(P)
+# set directions for first order forward differentiation w.r.t. p
+P           = Nts * q.size
+x_dot       = np.zeros(x.shape + (P,))
+p_dot       = np.zeros(p.shape + (P,))
+q_dot       = np.zeros(q.shape + (P,))
+
+xs_dot = np.zeros((ts.size,) + x_dot.shape)
 
 # integrate
-integrator.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+for j in range(Nts-1):
+    xs_dot[j, ...] = x_dot
+    q_dot[...] = 0
+    q_dot[:, j*q.size:(j+1)*q.size] = np.eye(q.size)
+    x[...], x_dot[...] = integrator.fo_forward(ts[j:j+2],
+                                              x, x_dot,
+                                              p, p_dot,
+                                              q, q_dot)
+j = Nts-1
+xs_dot[j, ...] = x_dot
 
-# plot d/dq1 x2(t)
-pl.title("d/dq1 x2(t)")
-pl.plot(integrator.ts, integrator.xs_dot[:, 1, :])
+# plot d/dp x2(t)
+pl.figure()
+pl.title("d/dq x2(t)")
+pl.plot(ts, xs_dot[:, 1, :])
 pl.xlabel("t")
+pl.savefig(get_dir_path() + "/out/ind_fo_forward_bimolkat_q.png")
 pl.show()
+
 
 """
 ===============================================================================

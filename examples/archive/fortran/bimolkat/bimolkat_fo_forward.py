@@ -26,7 +26,7 @@ q_dot       = numpy.zeros(q.shape + (P,))
 
 p_dot[:, :] = numpy.eye(P) 
 
-rk4.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+rk4.fo_forward(ts, x0, x0_dot, p, p_dot, q, q_dot)
 
 from matplotlib import pyplot
 pyplot.figure(figsize=(3, 2))
@@ -53,7 +53,7 @@ q_dot       = numpy.zeros(q.shape + (P,))
 
 q_dot.reshape((P, P))[:, :] = numpy.eye(P) 
 
-rk4.fo_forward_xpq(ts, x0, x0_dot, p, p_dot, q, q_dot)
+rk4.fo_forward(ts, x0, x0_dot, p, p_dot, q, q_dot)
 
 from matplotlib import pyplot
 pyplot.figure(figsize=(3, 2))

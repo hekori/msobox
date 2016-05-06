@@ -163,7 +163,7 @@ Example 1: zero-order forward
     .. literalinclude:: ../examples/ind_zo_forward_bimolkat.py
         :lines: 1-30
 
-.. image:: ../examples/bimolkat_zo_forward.png
+.. image:: ../examples/ind_zo_forward_bimolkat.png
     :align: center
     :scale: 100
 
@@ -175,14 +175,15 @@ Example 2: first-order forward
     Compute trajectory :math:`\frac{\partial x}{\partial p}(t; x_0, p, q)`
     and :math:`\frac{\partial x}{\partial q}(t; x_0, p, q)`
 
-    .. literalinclude:: bimolkat_fo_forward.py
+    .. literalinclude:: ../examples/ind_fo_forward_bimolkat.py
 
-  .. image:: ../examples/ind_fo_forward_bimolkat.png
+  .. image:: ../examples/ind_fo_forward_bimolkat_p.png
     :align: center
     :scale: 100
 
-
-
+  .. image:: ../examples/ind_fo_forward_bimolkat_q.png
+    :align: center
+    :scale: 100
 
 
 Example 3: first-order reverse

@@ -350,7 +350,7 @@ class OCMS_indegrator(object):
         q_dot  = np.zeros(q_interval.shape + (self.NP,))
 
         # integrate
-        self.integrator.fo_forward_xpq(tsi,
+        self.integrator.fo_forward(tsi,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q_interval, q_dot)
@@ -402,7 +402,7 @@ class OCMS_indegrator(object):
         q_dot.reshape((self.NTSI, self.NTSI))[:, :] = np.eye(self.NTSI)
 
         # integrate
-        self.integrator.fo_forward_xpq(tsi,
+        self.integrator.fo_forward(tsi,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q_interval, q_dot)
@@ -457,7 +457,7 @@ class OCMS_indegrator(object):
         q_dot  = np.zeros(q_interval.shape + (self.NX,))
 
         # integrate
-        self.integrator.fo_forward_xpq(tsi,
+        self.integrator.fo_forward(tsi,
                                        x0, x0_dot,
                                        p, p_dot,
                                        q_interval, q_dot)
