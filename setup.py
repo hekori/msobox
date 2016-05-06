@@ -56,34 +56,34 @@ setup(
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
-        "Development Status :: 4 - Beta"
+        "Development Status :: 4 - Beta",
 
         # Indicate who your project is intended for
-        "Intended Audience :: Education"
-        "Intended Audience :: Science/Research"
+        "Intended Audience :: Education",
+        "Intended Audience :: Science/Research",
 
         # Pick your license as you wish (should match "license" above)
         "License :: OSI Approved :: BSD License",
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        "Programming Language :: Python :: 2.7"
+        "Programming Language :: Python :: 2.7",
 
         # Natural language of the implementation
-        "Natural Language :: English"
+        "Natural Language :: English",
 
         # Tested on Ubuntu 14.04
-        "Operating System :: POSIX :: Linux"
+        "Operating System :: POSIX :: Linux",
 
         # Indicate audience
-        "Topic :: Education"
-        "Topic :: Education :: Testing"
-        "Topic :: Scientific/Engineering"
-        "Topic :: Scientific/Engineering :: Mathematics"
-        "Topic :: Software Development :: Libraries"
-        "Topic :: Software Development :: Libraries :: Application Frameworks"
+        "Topic :: Education",
+        "Topic :: Education :: Testing",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: Utilities"
+        "Topic :: Utilities",
     ],
 
     # What does your project relate to?
@@ -95,6 +95,8 @@ setup(
     # Author details
     author="MSOBox Development Team",
     author_email="msobox@hekori.com",
+
+    url = 'https://bitbucket.org/msobox/msobox',
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip"s

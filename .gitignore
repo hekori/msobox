@@ -12,5 +12,9 @@ sonic.log
 *.bak
 fort.*
 
+dist/
+build/
+msobox.egg-info/
+
 # Whitelist
 !tox.ini
