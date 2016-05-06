@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import numpy as np
 import matplotlib.pyplot as pl
 from msobox.ind.rk4classic import RK4Classic
