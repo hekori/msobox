@@ -94,7 +94,7 @@ for :math:`t_i = \frac{i}{99}, i=0,\dots,99`, :math:`x_0=2`, :math:`p=(3,4)`. Th
    :lines: 1-1000
 
 
-.. image:: ../examples/ind.png
+.. image:: ./examples/ind.png
     :align: center
     :scale: 100
 
