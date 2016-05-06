@@ -22,6 +22,7 @@ class Functor(object):
     """Functor implementation for MSO box function interface."""
 
     def __init__(self, module, function, dimensions, declaration, ffi=None):
+        """Functor implementation for MSO box function interface."""
         err_str = "function shall be a callable object"
         assert callable(function), err_str
 
@@ -36,6 +37,7 @@ class Functor(object):
             self._cast_args = True
 
     def __call__(self, *args, **kwargs):
+        """TODO get doc_string from function or auto-generated one."""
         if self._cast_args:
             ffi_args = []
             ffi_shps = []
@@ -67,7 +69,6 @@ class Function(object):
 
     def __new__(cls, module, dims_d, func_d, ffi=None, verbose=False):
         """Create hierarchy of Functors and return them."""
-        print dims_d
         _dims = {}
         _dims.update(dims_d)
 
@@ -86,10 +87,15 @@ class Function(object):
         return functor
 
     @classmethod
-    def create_functor_from_module_and_data(cls, module, _dims, _func, ffi=None):
+    def create_functor_from_module_and_data(
+        cls, module, _dims, _func, ffi=None
+    ):
         """Create a functor from module, dimensions and declaration."""
         # retrieve function by name
-        func = cls.import_function_from_module_by_name(module, _func["name"])
+        f_name = _func["name"]
+        if ffi:
+            f_name += "_"
+        func = cls.import_function_from_module_by_name(module, f_name)
 
         # check arguments if specified
         if _func["args"] and isinstance(func, types.FunctionType):

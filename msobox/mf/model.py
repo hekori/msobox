@@ -152,6 +152,34 @@ def generate_derivative_declarations(
             )
 
 
+def header_from_function_name_and_args(fname, fargs):
+    """
+    Create C header file for the FFI interface.
+
+    fname = 'ffcn'
+    fargs = ['f', 't', 'x', 'p', 'u']
+    Returns
+        void ffcn_(double *f, double *t, double *x, double *p, double *u);
+    """
+    def args_str_from_args(fargs):
+        return ", ".join(["double* {}".format(x) for x in fargs])
+
+    header = "void {fname}_({fargs_str});".format(
+        fname=fname, fargs_str=args_str_from_args(fargs)
+    )
+    return header
+
+
+def generate_header_from_declarations(function_declarations, verbose=True):
+    """Create C header file for the FFI interface."""
+    header = ""
+    for (f_name, (f_dims, f_dict)) in function_declarations.iteritems():
+        s = header_from_function_name_and_args(f_name, f_dict["args"])
+        header += s + "\n"
+
+    return header
+
+
 # ------------------------------------------------------------------------------
 class Model(object):
 
@@ -181,16 +209,10 @@ class Model(object):
                 self.dimensions, self.declarations, verbose=self.verbose
             )
 
-        # TODO distinguish between python and so!
-        # generate header file from declarations
-        # _header = \
-        #     self.generate_header_from_declarations(
-        #         _function_declarations
-        #     )
-
         # load model functions
-        self.ffi = None
-        self.module = self.load_model_functions(model_functions, verbose)
+        self.module, self.ffi = self.load_model_functions(
+            model_functions, _function_declarations, verbose
+        )
 
         # load functions from module
         for (f_name, (f_dims, f_dict)) in _function_declarations.iteritems():
@@ -256,28 +278,10 @@ class Model(object):
 
         return _d
 
-
-
-    @classmethod
-    def header_from_function_name_and_args(cls, fname, fargs):
-        """
-        Create C header file for the FFI interface.
-
-        fname = 'ffcn'
-        fargs = ['f', 't', 'x', 'p', 'u']
-        Returns
-            void ffcn_(double *f, double *t, double *x, double *p, double *u);
-        """
-        def args_str_from_args(fargs):
-            return ", ".join(["double* {}".format(x) for x in fargs])
-
-        header = """
-            void {fname}({fargs_str});
-        """.format(fname=fname, fargs_str=args_str_from_args(fargs))
-        return header
-
     @staticmethod
-    def load_model_functions(model_functions, verbose=True):
+    def load_model_functions(
+        model_functions, function_declarations, verbose=True
+    ):
         """
         Load model functions.
 
@@ -288,15 +292,21 @@ class Model(object):
                 1) a path to a directory containing a file 'model_functions.py'
                 2) a class or an object providing a specified API or
 
+        function_declarations : dict
+            function declarations for header generation
+
         Returns
         -------
         module: class-like
             returns a class-like module object.
 
+        ffi: None or cffi.FFI()
+            returns None for Python or FFI interface for shared libraries
+
         """
         # is model_functions a file?
         if os.path.isfile(model_functions):
-            # is it a shared library?
+            # unpack path
             f_path = os.path.abspath(model_functions)
             f_dir = os.path.dirname(f_path)
             f_name = os.path.basename(f_path)
@@ -306,17 +316,32 @@ class Model(object):
             # print "f_name:  ", f_name
             # print "f_id:    ", f_id
             # print "f_ext:   ", f_ext
+
+            # is it a shared library?
             if f_ext == ".so":
-                return import_shared_library(f_path, verbose=verbose)
+                # generate header file from declarations
+                header = generate_header_from_declarations(
+                    function_declarations
+                )
+
+                # instantiate foreign function interface (FFI)
+                ffi = FFI()
+                ffi.cdef(header)
+                module = ffi.dlopen(f_path)
+
+                ret = (module, ffi)
+                return ret
+
             elif f_ext == ".py":
-                return import_module_from_file(f_path, verbose=verbose)
+                ret = import_module_from_file(f_path, verbose=verbose), None
+                return ret
             else:
                 err_str = "'model_functions' extension is not 'so' or 'py'.\n"
                 err_str += "bailing out ..."
                 raise TypeError(err_str)
 
         elif isinstance(model_functions, object):
-            return model_functions
+            return (model_functions, None)
         else:
             err_str = "'model_functions' is neither an importable file nor a "
             err_str += "class inherited from 'object'.\n"
