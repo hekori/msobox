@@ -87,7 +87,7 @@ We would like to compute the derivatives
     \frac{\partial h}{\partial x_0}(t_i, x(t_i; x_0, p, q), p, u) \\
     \frac{\partial h}{\partial p}(t_i, x(t_i; x_0, p, q), p, u)
 
-for :math:`t_i = \frac{i}{99}`, :math:`x_0=2`, :math:`p=(3,4)`. The following code shows how to setup this problem with MSOBox.
+for :math:`t_i = \frac{i}{99}, i=0,\dots,99`, :math:`x_0=2`, :math:`p=(3,4)`. The following code shows how to setup this task with MSOBox.
 
 .. literalinclude:: ../examples/ind.py
    :language: python
