@@ -64,85 +64,14 @@ Features
          - second-order forward
          - first-order reverse
 
+Example
+-------
 
-Known to work on
-----------------
+:math:`x(t; x_0, p, q)`
 
-    * Ubuntu 12.04, Tapenade 3.6
-
-
-Model Functions
----------------
-
-    * Fortran 77 + Tapenade AD
-
-      - the model functions are differentiated using Tapenade
-      - the generated ``*.f`` files are compiled into ``libproblem.so``
-      - the Python module CFFI is used to call the Fortran functions
-      - You need Tapenade >= 3.6 to generate the derivatives of the model functions. Get it on http://www-sop.inria.fr/tropics/tapenade.html
-
-      - Advantages:
-          - very fast execution of the model function and derivatives
-
-      - Disadvantages
-          - Need to run and compile fortran sources (time consuming for prototyping)
-
-    
-    * Python + Finite Differences
-
-      - Advantages:
-          - easy to get started, no further software requirements
-      - Disadvantages: 
-          - function precision is low, especially for second- and higher-order derivatives 
-          - therefore often problems during optimization 
-          - Difficult to tune the finite difference step size
-          - No adjoint mode
-
-    * Python + PyADOLC Automatic Differentiation
-
-      - Advantage:
-          - write Python functions
-          - no compilation times
-          - relatively fast
-      - Disadvantages: 
-          - need to restrict to subset of Python
-          - tricky to install on some systems (where boost::python is not available)
-
-    * Python + AlgoPy Automatic Differentiation
-
-      - Advantage:
-          - easy to install via pip
-          - no compilation times
-
-      - Disadvantages: 
-          - need to restrict to subset of Python
-          - slow execution
-
-
-Getting started
----------------
-
-
-We consider a chemical reaction kinetics example (Diels-Alder reaction).
-
-
-.. image:: http://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Original_Diels-Alder_reaction.png/640px-Original_Diels-Alder_reaction.png
-    :align: center
-    :scale: 100
-
-The parameters :math:`p` are nature-given and contain unknown quantities such as activation energies and reaction rate constants.
-The control functions 
-
-.. math::
-
-    u(t; q) 
-
-are parameterized by the control vector :math:`q`. (Currently only piecewise-linear continuous control functions are possible).
-
-The dynamics are described the the model equations ``ffcn.f``, i.e., the rhs of the ODE:
-
-.. literalinclude:: ../examples/bimolkat/ffcn.f
-   :language: fortran
+.. literalinclude:: ../examples/ind.py
+   :language: python
+   :lines: 1-1000
 
 
 
@@ -153,7 +82,6 @@ Example 1: zero-order forward
 
 
     .. literalinclude:: ../examples/ind_zo_forward_bimolkat.py
-        :lines: 1-30
 
 .. image:: ../examples/ind_zo_forward_bimolkat.png
     :align: center
