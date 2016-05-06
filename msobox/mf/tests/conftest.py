@@ -257,6 +257,38 @@ C       ------------------------------------------------------------------------
 
 C-------------------------------------------------------------------------------
 
+      subroutine ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b
+     *, nbdirs)
+C       ------------------------------------------------------------------------
+C       Dummy for test cases.
+        implicit none
+        real*8 f(5), t, x(5), p(5), u(4)
+        integer nbdirs
+        real*8 f_b(nbdirs, 5), x_b(nbdirs, 5), p_b(nbdirs, 5)
+        real*8 u_b(nbdirs, 4)
+        integer nd0
+C       ------------------------------------------------------------------------
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          f_b(nd0, 1) = x_b(nd0, 1) + p_b(nd0, 1) + u_b(nd0, 1)
+          f_b(nd0, 2) = x_b(nd0, 2) + p_b(nd0, 2) + u_b(nd0, 1)*t
+          f_b(nd0, 3) = x_b(nd0, 3) + p_b(nd0, 3) + u_b(nd0, 2)
+          f_b(nd0, 4) = x_b(nd0, 4) + p_b(nd0, 4) + u_b(nd0, 3)
+          f_b(nd0, 5) = x_b(nd0, 5) + p_b(nd0, 5) + u_b(nd0, 4)
+        ENDDO
+
+        ! Independent values
+        f(1) = x(1) + p(1) + u(1)
+        f(2) = x(2) + p(2) + t*u(1)
+        f(3) = x(3) + p(3) + u(2)
+        f(4) = x(4) + p(4) + u(3)
+        f(5) = x(5) + p(5) + u(4)
+C       ------------------------------------------------------------------------
+      end
+
+
+C-------------------------------------------------------------------------------
+
       subroutine hfcn(h, t, x, p, u)
 C       ------------------------------------------------------------------------
         implicit none
@@ -270,7 +302,9 @@ C       ------------------------------------------------------------------------
 C       ------------------------------------------------------------------------
       end
 
-            subroutine hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d
+C-------------------------------------------------------------------------------
+
+      subroutine hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d
      *, nbdirs)
 C       ------------------------------------------------------------------------
 C       Dummy for test cases.
@@ -286,6 +320,33 @@ C       ------------------------------------------------------------------------
           h_d(nd0, 1) = x_d(nd0, 1)
           h_d(nd0, 2) = x_d(nd0, 2)
           h_d(nd0, 3) = x_d(nd0, 3)
+        ENDDO
+
+        ! Independent values
+        h(1) = x(1)
+        h(2) = x(2)
+        h(3) = x(3)
+C       ------------------------------------------------------------------------
+      end
+
+C-------------------------------------------------------------------------------
+
+      subroutine hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b
+     *, nbdirs)
+C       ------------------------------------------------------------------------
+C       Dummy for test cases.
+        implicit none
+        real*8 h(3), t, x(5), p(5), u(4)
+        integer nbdirs
+        real*8 h_b(nbdirs, 3), x_b(nbdirs, 5), p_b(nbdirs, 5)
+        real*8 u_b(nbdirs, 4)
+        integer nd0
+C       ------------------------------------------------------------------------
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          h_b(nd0, 1) = x_b(nd0, 1)
+          h_b(nd0, 2) = x_b(nd0, 2)
+          h_b(nd0, 3) = x_b(nd0, 3)
         ENDDO
 
         ! Independent values
@@ -379,7 +440,7 @@ def temp_mf_py_file(tmpdir):
 
 
 @pytest.fixture
-def temp_shared_library_from_ffcn_f(temp_mf_f_file):
+def temp_mf_so_from_mf_f_file(temp_mf_f_file):
     """Compile FORTRAN file and create shared library."""
     # unpack file path
     fpath = str(temp_mf_f_file)
@@ -466,9 +527,9 @@ def test_temp_mf_py_file(temp_mf_py_file):
     assert actual == desired
 
 
-def test_temp_shared_library_from_ffcn_f(temp_shared_library_from_ffcn_f):
+def test_temp_mf_so_from_mf_f_file(temp_mf_so_from_mf_f_file):
     """Check if library was build from fortran file."""
-    path_to_so = str(temp_shared_library_from_ffcn_f)
+    path_to_so = str(temp_mf_so_from_mf_f_file)
     # check if shared library exists
     assert os.path.isfile(path_to_so)
 
