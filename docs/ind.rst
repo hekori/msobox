@@ -26,21 +26,14 @@ Description
 
       .. math::
 
-        \frac{\partial x}{\partial x_0}(t; x_0, p, q) \;, \\
-        \frac{\partial x}{\partial p}(t; x_0, p, q) \;, \\
-        \frac{\partial x}{\partial q}(t; x_0, p, q)
+        \frac{\partial x}{\partial (x_0, p, q)}(t; x_0, p, q) \;, \\
 
     * and second-order derivatives of the solution
 
       .. math::
 
-        \frac{\partial^2 x}{\partial x_0^2}(t; x_0, p, q) \;, &
-        \frac{\partial^2 x}{\partial x_0 \partial p}(t; x_0, p, q) \\
-        \frac{\partial^2 x}{\partial x_0 \partial q}(t; x_0, p, q) \;, &
-        \frac{\partial^2 x}{\partial p^2}(t; x_0, p, q) \\
-        \frac{\partial^2 x}{\partial p \partial q}(t; x_0, p, q) \;, &
-        \frac{\partial^2 x}{\partial q^2}(t; x_0, p, q)
-
+        \frac{\partial^2 x}{\partial (x_0, p, q)^2}(t; x_0, p, q)
+      
     in an accurate and efficient way.
 
     The derivatives w.r.t. :math:`x_0`, :math:`p` and :math:`q` are computed based on the IND and automatic differentiation (AD)

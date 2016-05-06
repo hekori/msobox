@@ -40,7 +40,7 @@ setup(
 
     # brief description of the project
     description=(
-        "MSOBox - A toolbox for model-based optimization"
+        "MSOBox - A Toolbox for Model-based Optimization"
     ),
     # detailed description of the project
     # TODO add link to read-the-docs

@@ -1,10 +1,6 @@
-msobox - An MSO Toolbox
-=======================
+MSOBox - A Toolbox for Model-based Optimization
+===============================================
 
-An pip-installable holistic toolbox for 
+An holistic, pip-installable toolbox for 
 
-* integration of ODEs + derivatives (directional and adjoint), :doc:`read more ... <ind>`
-* least squares parameter estimation
-
-
-
+* integration of ODEs and derivatives, :doc:`read more ... <ind>`
