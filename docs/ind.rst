@@ -67,96 +67,34 @@ Features
 Example
 -------
 
-:math:`x(t; x_0, p, q)`
+Consider the initial value problem
+
+.. math::
+
+    \dot x =& p_1(x - p_2) \\
+    x(0) =& x_0
+
+and the model response function 
+
+.. math::
+
+    h(t, x, p, u)  = (x(t) - p_1)^2 \;.
+
+We would like to compute the derivatives
+
+.. math::
+
+    \frac{\partial h}{\partial x_0}(t_i, x(t_i; x_0, p, q), p, u) \\
+    \frac{\partial h}{\partial p}(t_i, x(t_i; x_0, p, q), p, u)
+
+for :math:`t_i = \frac{i}{99}`, :math:`x_0=2`, :math:`p=(3,4)`. The following code shows how to setup this problem with MSOBox.
 
 .. literalinclude:: ../examples/ind.py
    :language: python
    :lines: 1-1000
 
 
-
-Example 1: zero-order forward
-`````````````````````````````
-
-    Compute trajectory :math:`x(t; x_0, p, q)`, i.e., a simple forward evaluation.
-
-
-    .. literalinclude:: ../examples/ind_zo_forward_bimolkat.py
-
-.. image:: ../examples/ind_zo_forward_bimolkat.png
+.. image:: ../examples/ind.png
     :align: center
     :scale: 100
-
-
-
-Example 2: first-order forward
-``````````````````````````````
-
-    Compute trajectory :math:`\frac{\partial x}{\partial p}(t; x_0, p, q)`
-    and :math:`\frac{\partial x}{\partial q}(t; x_0, p, q)`
-
-    .. literalinclude:: ../examples/ind_fo_forward_bimolkat.py
-
-  .. image:: ../examples/ind_fo_forward_bimolkat_p.png
-    :align: center
-    :scale: 100
-
-  .. image:: ../examples/ind_fo_forward_bimolkat_q.png
-    :align: center
-    :scale: 100
-
-
-Example 3: first-order reverse
-``````````````````````````````
-
-    Compute the gradients of the state :math:`x(t=2; x_0, p, q)` w.r.t. :math:`x_0, p, q`, i.e.,
-
-    .. math::
-
-        \nabla_{x_0} x(t=2; x_0, p, q) \;, \\
-        \nabla_{p} x(t=2; x_0, p, q) \;, \\
-        \nabla_{q} x(t=2; x_0, p, q) \;.
-
-
-    .. literalinclude:: bimolkat_fo_reverse.py
-
-    where one obtains the output::
-
-        gradient of x(t=2; x0, p, q) w.r.t. p  =
-        [-0.05553826 -0.26378935 -0.18022685 -0.57068079  0.0912674 ]
-        gradient of x(t=2; x0, p, q) w.r.t. q  =
-        [[[ -5.88595438e-08   0.00000000e+00]
-          [ -5.93303903e-08   0.00000000e+00]
-          [ -5.98124990e-08   0.00000000e+00]
-          ...,
-          [ -1.55170436e-04   0.00000000e+00]
-          [ -1.57724384e-04   0.00000000e+00]
-          [  0.00000000e+00   0.00000000e+00]]
-
-         [[ -1.91875726e-04   0.00000000e+00]
-          [ -1.92256884e-04   0.00000000e+00]
-          [ -1.92638781e-04   0.00000000e+00]
-          ...,
-          [ -1.09278673e-05   0.00000000e+00]
-          [ -3.67184216e-06   0.00000000e+00]
-          [  0.00000000e+00   0.00000000e+00]]
-
-         [[ -1.88832838e-03   0.00000000e+00]
-          [ -1.88832379e-03   0.00000000e+00]
-          [ -1.88831907e-03   0.00000000e+00]
-          ...,
-          [ -4.59399550e-05   0.00000000e+00]
-          [ -1.54234950e-05   0.00000000e+00]
-          [  0.00000000e+00   0.00000000e+00]]
-
-         [[  2.08733332e-03   0.00000000e+00]
-          [  2.08733821e-03   0.00000000e+00]
-          [  2.08734323e-03   0.00000000e+00]
-          ...,
-          [  3.96132167e-03   0.00000000e+00]
-          [  3.99233933e-03   0.00000000e+00]
-          [  0.00000000e+00   0.00000000e+00]]]
-        gradient of x(t=2; x0, p, q) w.r.t. x0 =
-        [-0.47113849  0.52078906  0.04958182  0.0499501  -0.04782551]
-
 
