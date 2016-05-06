@@ -5,6 +5,9 @@ import json
 import numpy
 import pytest
 
+import scipy.linalg as lg
+
+from copy import (deepcopy,)
 from collections import (OrderedDict,)
 from numpy.testing import (TestCase, run_module_suite)
 from numpy.testing import (assert_equal, assert_allclose)
@@ -102,22 +105,27 @@ def test_model_function_evaluation_from_mf_py(
     function = getattr(model, member)
 
     # function declaration and dimensions
-    f_dict = function._func
-    f_dims = function._dims
+    f_dict = function._declaration
+    f_dims = function._dimensions
 
     # define input values
-    actual_args = [numpy.random.random(f_dims[arg]) for arg in f_dims["args"]]
-    desired_args = [numpy.random.random(f_dims[arg]) for arg in f_dims["args"]]
+    actual_args = [numpy.random.random(f_dims[arg]) for arg in f_dict["args"]]
+    desired_args = deepcopy(actual_args)
+
+    # get functions from globals() and model
+    actual = getattr(model, member)
+    desired = globals().get(member + "_py")
 
     # call functions
-    ffcn_d_xpu_v(actual, actual_d_xpu_v, t, x, x_d, p, p_d, u, u_d)
-    ffcn_d_xpu_v_py(desired, desired_d_xpu_v, t, x, x_d, p, p_d, u, u_d)
+    actual(*actual_args)
+    desired(*desired_args)
 
     print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
-    assert_allclose(actual, desired)
+    for i in range(len(actual_args)):
+        print "actual:  ", actual_args[i]
+        print "desired: ", desired_args[i]
+        print "error:   ", lg.norm(desired_args[i] - actual_args[i])
+        assert_allclose(actual_args[i], desired_args[i])
     print "successful!"
 
 

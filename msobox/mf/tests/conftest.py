@@ -396,7 +396,7 @@ def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
 # ------------------------------------------------------------------------------
 # model definitions
 md_dict = {
-    "dims": {"t": 1, "x": 5, "p": 5, "u": 4},
+    "dims": {"f": 5, "h": 3, "t": 1, "x": 5, "p": 5, "u": 4},
     "functions": [
         {"type": "ffcn", "name": "ffcn", "args": ["f", "t", "x", "p", "u"],
          "deriv":[
