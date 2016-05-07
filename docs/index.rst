@@ -1,5 +1,5 @@
-MSOBox - A Tool Box for Mathematical Modeling, Simulation and Optimization
-==========================================================================
+MSOBox - A Python Tool Box for Dynamic Optimization
+===================================================
 
 An holistic, pip-installable toolbox for 
 
@@ -12,5 +12,5 @@ Installation::
 
 Source Code::
 
-    is available at https://bitbucket.org/msobox/msobox.
+    is available at https://github.com/hekori/msobox.
 
