@@ -103,8 +103,9 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        "numpy",    # used internally for all computations
-        "cffi",     # to enable calls to compiled fortran derivatives
+        "numpy",  # used internally for all computations
+        "scipy",  # using linear algebra routines
+        "cffi",  # to enable calls to compiled fortran derivatives
     ],
 
     # Testing with pytest and specific settings
