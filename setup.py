@@ -15,16 +15,38 @@ import msobox
 # ------------------------------------------------------------------------------
 class PyTest(TestCommand):
 
-    """Wrapper for untitests with pytest."""
+    """Wrapper for untitests with 'pytest'."""
 
     def finalize_options(self):
+        """Setup test suite."""
         TestCommand.finalize_options(self)
         self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
+        """Run test suite using 'pytest'."""
+        # NOTE: import here, cause outside the eggs aren't loaded
         import pytest
         errcode = pytest.main(self.test_args)
+        sys.exit(errcode)
+
+
+# ------------------------------------------------------------------------------
+class Tox(TestCommand):
+
+    """Wrapper for testing with different python environments using 'tox'."""
+
+    def finalize_options(self):
+        """Setup test suite."""
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        """Run test suite using 'tox'."""
+        # NOTE: import here, cause outside the eggs aren't loaded
+        import tox
+        errcode = tox.cmdline(self.test_args)
         sys.exit(errcode)
 
 
@@ -106,7 +128,8 @@ setup(
     ],
 
     # Testing with pytest and specific settings
-    tests_require=["pytest"],
+    tests_require=["pytest", "tox"],
+    # cmdclass = {'test': Tox},
     cmdclass={"test": PyTest},
     # include_package_data=True,
     # test_suite="msobox.test.test_sandman",
