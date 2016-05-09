@@ -2,10 +2,22 @@ language: python
 python:
     - "2.7"
 install:
-    - "pip install -r requirements.txt --use-mirrors"
-    - "pip install coverage"
-    - "pip install coveralls"
+    true
+    # - "pip install -r requirements.txt --use-mirrors"
+    # - "pip install coverage"
+    # - "pip install coveralls"
 script:
-    - "coverage run --source=msobox setup.py test"
+    setup.py test
+    # - "coverage run --source=msobox setup.py test"
 after_success:
-    coveralls
+    true
+    # coveralls
+# blacklist
+branches:
+  except:
+    - development
+
+# whitelist
+branches:
+  only:
+    - master
