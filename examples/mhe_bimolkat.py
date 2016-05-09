@@ -1,31 +1,40 @@
+import os
+import sys
+import json
 import time
 import numpy as np
-from msobox.mhe import MHE_TR_QPOASES as MHE
+
+from msobox.mhe.mhe import MHE
 from msobox.mhe import RealtimePlot
+
+from msobox.mf.model import Model
 from msobox.mf.tapenade import Differentiator
-from msobox.mf.fortran import BackendFortran
+# from msobox.mf.fortran import BackendFortran
 from msobox.ind.rk4classic import RK4Classic
 
 # setting print options to print all array elements
 np.set_printoptions(threshold=np.nan)
-
 
 def get_dir_path():
     """return script directory"""
     import inspect, os
     return os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-
-"""
-===============================================================================
-"""
-import json
 with open(get_dir_path() + "/fortran/bimolkat/json.txt", "r") as f:
     ds = json.load(f)
 
 # differentiate model functions
 # Differentiator(get_dir_path() + "/fortran/bimolkat", ds=ds)
-mf = BackendFortran(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so")
+mf = Model(get_dir_path() + "/fortran/bimolkat/gen/libproblem.so", ds)
+
+# brief check to show everything works
+assert hasattr(mf, "ffcn")
+assert hasattr(mf, "ffcn_dot")
+assert hasattr(mf, "ffcn_d_xpu_v")
+assert hasattr(mf, "hfcn")
+assert hasattr(mf, "hfcn_dot")
+assert hasattr(mf, "hfcn_d_xpu_v")
+
 mf.NX = ds['dims']['x']
 mf.NY = ds['dims']['f']
 mf.NZ = ds['dims']['x'] - ds['dims']['f']
@@ -77,7 +86,6 @@ plotter = RealtimePlot(mhe, show_canvas=True,
                             path='/tmp',
                             fname='out')
 
-
 # plotter.state_ylim = (-0.1, 2)
 
 mhe.VERBOSE = False
@@ -117,11 +125,11 @@ for i in range(100):
     plotter.draw();  #raw_input("press enter to continue")
     # print 'plotting time=', time.time() - st
 
-    mhe.ub[:mhe.NX] = 5.5
-    mhe.lb[:mhe.NX] = -5.5
+    # mhe.ub[:mhe.NX] = 5.5
+    # mhe.lb[:mhe.NX] = -5.5
 
-    mhe.ub[mhe.NX:] = 5
-    mhe.lb[mhe.NX:] = 0.01
+    # mhe.ub[mhe.NX:] = 5
+    # mhe.lb[mhe.NX:] = 0.01
 
     for k in range(3):
         mhe.preparation_phase()

@@ -1,6 +1,5 @@
 import os
 import numpy
-import vplan
 
 import matplotlib
 from matplotlib import pyplot as plt
@@ -460,8 +459,8 @@ class RealtimePlot(object):
                 for ci in range(self.mhe.ts.size - 1):
                     t0 = self.mhe.ts[ci]
                     t1 = self.mhe.ts[ci+1]
-                    q0 = self.mhe.q[j, ci, 0]
-                    q1 = self.mhe.q[j, ci, 1]
+                    q0 = self.mhe.q[ci, j]
+                    q1 = 0.0 # self.mhe.q[j, ci, 1]
 
                     t_list[ci, 0] = t0
                     t_list[ci, 1] = t1
@@ -472,7 +471,7 @@ class RealtimePlot(object):
                 # last node
                 ci = self.mhe.ts.size - 1
                 t0 = self.mhe.ts[ci]
-                q0 = self.mhe.q[j, ci, 0]
+                q0 = self.mhe.q[ci, j]
                 t_list[ci, 0] = t0
                 u_list[ci, 0] = q0
 
@@ -504,38 +503,38 @@ class RealtimePlot(object):
             self.fig.savefig(f_path, dpi=self.dpi)
             self.picture_cnt += 1
 
-class VplanPlotPlugin(vplan.daesol2.StandardPlugin):
-    """"
-    Call the plot.f function from vplan
-    """
+# class VplanPlotPlugin(vplan.daesol2.StandardPlugin):
+#     """"
+#     Call the plot.f function from vplan
+#     """
 
-    def __init__(self, db, rwh, iwh):
-        super(VplanPlotPlugin, self).__init__()
-        self.rwh = rwh
-        self.iwh = iwh
-        self.db  = db
+#     def __init__(self, db, rwh, iwh):
+#         super(VplanPlotPlugin, self).__init__()
+#         self.rwh = rwh
+#         self.iwh = iwh
+#         self.db  = db
 
-        self.unit = 10
-        filename = "plot/integ.plt.1"
-        vplan.fortopen( self.unit, filename)
+#         self.unit = 10
+#         filename = "plot/integ.plt.1"
+#         vplan.fortopen( self.unit, filename)
 
-    def __call__(self, t, t_type, xd, xa, q, p, u,
-                 Vxd=None, Vxa=None, Vq=None, Vp=None, Vu=None):
-        super(VplanPlotPlugin, self).__call__(\
-              t, t_type, xd, xa, q, p, u,
-              Vxd, Vxa, Vq, Vp, Vu)
-        x = numpy.hstack((xd, xa))
-        int_dummy = numpy.zeros(1, dtype=numpy.int32)
-        double_dummy = numpy.zeros(1, dtype=float)
+#     def __call__(self, t, t_type, xd, xa, q, p, u,
+#                  Vxd=None, Vxa=None, Vq=None, Vp=None, Vu=None):
+#         super(VplanPlotPlugin, self).__call__(\
+#               t, t_type, xd, xa, q, p, u,
+#               Vxd, Vxa, Vq, Vp, Vu)
+#         x = numpy.hstack((xd, xa))
+#         int_dummy = numpy.zeros(1, dtype=numpy.int32)
+#         double_dummy = numpy.zeros(1, dtype=float)
 
-        self.db.V.PLOT(0, numpy.array(t), x, p, q,
-                          int_dummy, int_dummy, double_dummy,
-                          int_dummy, double_dummy,
-                          int_dummy, int_dummy, double_dummy,
-                          self.rwh, self.iwh)
+#         self.db.V.PLOT(0, numpy.array(t), x, p, q,
+#                           int_dummy, int_dummy, double_dummy,
+#                           int_dummy, double_dummy,
+#                           int_dummy, int_dummy, double_dummy,
+#                           self.rwh, self.iwh)
 
-    def __del__(self):
-        vplan.fortclose(self.unit)
+#     def __del__(self):
+#       vplan.fortclose(self.unit)
 
 def set_errorbar(plotline, caplines, barlinecols, x, y, yerr):
     """

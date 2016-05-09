@@ -1,6 +1,5 @@
 import os
 import numpy
-import vplan
 import json
 
 import matplotlib
@@ -16,7 +15,7 @@ matplotlib.rc('text', usetex=True)
 
 class OfflinePlotData(object):
     """
-    Store data for offline plotting 
+    Store data for offline plotting
     """
 
 

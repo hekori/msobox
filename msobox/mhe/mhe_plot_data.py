@@ -1,40 +1,4 @@
 import numpy
-import vplan
-
-class MHEPlugin(vplan.daesol2.StandardPlugin):
-    def __init__(self, mhe):
-        super(MHEPlugin, self).__init__()
-        self.mhe = mhe
-        self.dosave = True
-
-    def set_interval(self, nci):
-        self.nci = nci
-        self.nis = 0
-
-    def __call__(self, t, t_type, xd, xa, q, p, u,
-                 Vxd=None, Vxa=None, Vq=None, Vp=None, Vu=None):
-
-        if self.dosave == False:
-            return
-
-        # store time instants
-        self.mhe.plot_data.t[self.nci, self.nis] = t
-
-        # store state x_{L+1}
-        self.mhe.plot_data.x[self.nci, self.nis, :self.mhe.NY] = xd
-        self.mhe.plot_data.x[self.nci, self.nis, self.mhe.NY:] = xa
-
-        if not Vxd == None and not Vxa == None and (Vq == 0.).all():
-            # store Xx
-            self.mhe.plot_data.Xx[self.nci, self.nis, :self.mhe.NY, :] = Vxd[:self.mhe.NX, 0, :].T
-            self.mhe.plot_data.Xx[self.nci, self.nis, self.mhe.NY:, :] = Vxa[:self.mhe.NX, 0, :].T
-
-            # store Xp
-            self.mhe.plot_data.Xp[self.nci, self.nis, :self.mhe.NY, :] = Vxd[self.mhe.NX:, 0, :].T
-            self.mhe.plot_data.Xp[self.nci, self.nis, self.mhe.NY:, :] = Vxa[self.mhe.NX:, 0, :].T
-
-        self.nis += 1
-        self.tabula_rasa()
 
 
 class PlotData(object):
@@ -150,20 +114,17 @@ class PlotData(object):
         stores trajectory in self.x_list
         """
         # enable save into t_list and x_list
-        tmp = self.mhe.integrator.plugin.dosave
-        self.mhe.integrator.plugin.dosave = True
-
         self.mhe._init_ms_node(0)
 
         # integrate over whole horizon part by part
         for j, node in enumerate(self.mhe.ts[:-1]):
-            self.mhe._update_rwh_iwh(j)
             t0, tend = self.mhe.ts[j], self.mhe.ts[j + 1]
-            self.mhe.xd[...], self.mhe.xa[...] = self.mhe.integrator.forward(
-                numpy.linspace(t0, tend, self.NIS),
-                self.mhe.xd, self.mhe.xa, self.mhe.q.ravel(), self.mhe.p)
-
-        self.mhe.integrator.plugin.dosave = tmp
+            self.mhe.x[:], self.mhe.x_dot[:, :] = self.mhe.ind.fo_forward(
+                self.mhe.ts[j:j+1],
+                self.mhe.x, self.mhe.x_dot,
+                self.mhe.p, self.mhe.p_dot,
+                self.mhe.q[j, :], self.mhe.q_dot[j, :]
+            )
 
     def integrate_nodewise(self):
         """
@@ -172,19 +133,16 @@ class PlotData(object):
         #print '#'* 20
         #print 'integrate_nodewise():\n'
 
-        tmp = self.mhe.integrator.plugin.dosave
-        self.mhe.integrator.plugin.dosave = True
-
         # integrate over whole horizon part by part
         for j, node in enumerate(self.mhe.ts[:-1]):
             self.mhe._init_ms_node(j)
-            self.mhe._update_rwh_iwh(j)
             t0, tend = self.mhe.ts[j], self.mhe.ts[j + 1]
-            self.mhe.xd[...], self.mhe.xa[...] = self.mhe.integrator.forward(
+            self.mhe.x[:], self.mhe.x_dot[:, :] = self.mhe.ind.fo_forward(
                 numpy.linspace(t0, tend, self.NIS),
-                self.mhe.xd, self.mhe.xa, self.mhe.q.ravel(), self.mhe.p)
-
-        self.mhe.integrator.plugin.dosave = tmp
+                self.mhe.x, self.mhe.x_dot,
+                self.mhe.p, self.mhe.p_dot,
+                self.mhe.q[j, :], self.mhe.q_dot[j, :]
+            )
 
     def get_sensitivities(self):
         """
