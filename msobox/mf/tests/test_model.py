@@ -5,7 +5,8 @@ import json
 import numpy
 import pytest
 
-import scipy.linalg as lg
+import numpy.linalg as lg
+# import scipy.linalg as lg
 
 from copy import (deepcopy,)
 from collections import (OrderedDict,)

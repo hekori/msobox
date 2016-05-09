@@ -104,7 +104,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         "numpy",  # used internally for all computations
-        "scipy",  # using linear algebra routines
+        # "scipy",  # using linear algebra routines
         "cffi",  # to enable calls to compiled fortran derivatives
     ],
 

@@ -6,7 +6,8 @@ import numpy
 import pytest
 import tempfile
 
-import scipy.linalg as lg
+import numpy.linalg as lg
+# import scipy.linalg as lg
 
 from cffi import (FFI,)
 from collections import (OrderedDict,)
