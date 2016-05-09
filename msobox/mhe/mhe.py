@@ -10,10 +10,10 @@ import tempfile
 import scipy.linalg
 from numpy.testing import assert_almost_equal
 
-from .mhe_plot_data import PlotData
+from mhe_plot_data import PlotData
 
-from msobox.mf.tapenade import Differentiator
-from msobox.mf.fortran import BackendFortran
+# from msobox.mf.tapenade import Differentiator
+# from msobox.mf.fortran import BackendFortran
 
 class MHE(object):
     """
@@ -170,9 +170,8 @@ class MHE(object):
         self.eyeNX   = numpy.zeros((self.NX, self.P))
         self.eyeNP   = numpy.zeros((self.NP, self.P))
         self.zerosNU = numpy.zeros((self.NU, self.P))
-        self.eyeNX[:, :self.NX] = numpy.eye(self.NX) 
-        self.eyeNP[:, self.NX:] = numpy.eye(self.NP) 
-
+        self.eyeNX[:, :self.NX] = numpy.eye(self.NX)
+        self.eyeNP[:, self.NX:] = numpy.eye(self.NP)
 
         self.x_dot = numpy.zeros((self.NX, self.P))
         self.p_dot = numpy.zeros((self.NP, self.P))
@@ -181,7 +180,7 @@ class MHE(object):
         # measurements, model response and errors
         self.etas   = numpy.zeros((self.M, self.NH))
         self.hs     = numpy.zeros((self.M, self.NH))
-        self.sigmas = numpy.zeros((self.M, self.NH))
+        self.sigmas = numpy.ones((self.M, self.NH))
 
         # check setup
         self.check()
@@ -213,8 +212,8 @@ class MHE(object):
 
         # shift control grid
         # automatically repeat latest control
-        self.q[:,:-1,:] = self.q[:,1:,:]
-        self.q[:,-1,:] = self.q[:,-2,:]
+        self.q[:-1, :] = self.q[1:, :]
+        self.q[-1, :] = self.q[-2, :]
 
         # shift multiple shooting values
         self.s[:-1, :] = self.s[1:, :]
@@ -251,7 +250,7 @@ class MHE(object):
         # renaming for convenience
         # ########################
 
-        ex           = self.ex
+        # ex           = self.ex
         ACSBI        = self.ACSBI
         CovPenalty   = self.CovPenalty
         Xx           = self.Xx
@@ -302,7 +301,11 @@ class MHE(object):
         if self.NZ > 0:
             raise NotImplementedError("need integration scheme for DAEs")
 
-        self.x[:], self.x_dot[:,:] = self.ind.fo_forward(self.ts[0:2], x, x_dot, p, p_dot, q[0, :], q_dot[0, :])
+        self.x[:], self.x_dot[:,:] = self.ind.fo_forward(
+            self.ts[0:2],
+            self.x, self.x_dot,
+            self.p, self.p_dot,
+            self.q[0, :], self.q_dot[0, :])
 
         # STEP 3: post-process result of integration
         # ##########################################
@@ -371,9 +374,14 @@ class MHE(object):
 
         #         cnt += nh
 
-
-        self.mf.hfcn_d_xpu_v(htilde, H, t, x, self.eyeNX, p, self.eyeNP, u, self.zerosNU, self.P)
-
+        self.mf.hfcn_d_xpu_v(
+            htilde, H,
+            self.ts[:1],
+            self.x, self.eyeNX,
+            self.p, self.eyeNP,
+            self.q[0, :], self.zerosNU
+            # self.P
+        )
 
         htilde[:] -= Hx.dot(self.x)
         htilde[:] -= Hp.dot(self.p)
@@ -586,7 +594,7 @@ class MHE(object):
         # store Xx
         # self.Xx[:self.NY, :] = self.Vxd[:self.NX, 0, :].T
         # self.Xx[self.NY:, :] = self.Vxa[:self.NX, 0, :].T
-        self.Xx[:, :] = self.x_dot
+        self.Xx[:, :] = self.x_dot[:, :self.NY]
 
     def _preparation_phase_integration(self, ci):
         """
@@ -606,7 +614,7 @@ class MHE(object):
 
         self.x[:], self.x_dot[:, :] = self.ind.fo_forward(self.ts[ci:ci+2], self.x, self.x_dot, self.p, self.p_dot, self.q[ci, ...], self.q_dot[ci, ...])
 
-        ## build J2  
+        ## build J2
         # self.J2s[ci, :self.NY, :] = self.Vxd[:self.NX, 0, :].T
         # self.J2s[ci, self.NY:, :] = self.Vxa[:self.NX, 0, :].T
         # self.J2p[ci, :self.NY, :] = self.Vxd[self.NX:, 0, :].T
@@ -650,12 +658,11 @@ class MHE(object):
         self.debug_out('mhe.simulate_measurement()\n')
         self.debug_out('-'*80+'\n')
 
-
         if not simulate_error:
             self.debug_out('NOTE: No measurement error is simulated!\n')
 
         eta   = numpy.zeros(self.NH)
-        sigma = numpy.zeros(self.NH)
+        sigma = numpy.ones(self.NH)
         # ex = self.ex
 
         # # integrate over whole horizon part by part
@@ -712,7 +719,10 @@ class MHE(object):
             #         eta[tmpa:tmpb][...]   = h
             #         sigma[tmpa:tmpb][...] = s
 
-            self.mf.hfcn(h, t, x, p, u)
+            h = numpy.zeros(self.NH)
+            s = numpy.zeros(self.NH)
+
+            self.mf.hfcn(h, self.ts[j:j+1], self.x, self.p, self.q.ravel())
 
             # TODO: implement sfcn
             # self.mf.sfcn(s, t, x, p, u)
@@ -748,6 +758,13 @@ class MHE(object):
         """
 
         # ex = self.ex
+        htilde = self.htilde
+        htilde[:] = 0.
+
+        H = numpy.zeros((self.NH, self.NX + self.NP))
+        Hx = H[:, :self.NX]
+        Hp = H[:, self.NX:]
+
         Xx = self.Xx
 
         # for nmess in range(ex.Nmess):
@@ -807,10 +824,15 @@ class MHE(object):
         #         # save model response
         #         self.hs[ci, tmpa:tmpb] = h[:]
 
-        self.mf.hfcn_d_xpu_v(htilde, H, t, x, Xx, p, self.eyeNP, u, self.zerosNU, self.P)
+        self.mf.hfcn_d_xpu_v(
+            htilde, H,
+            self.ts[ci:ci+1],
+            self.x, self.eyeNX,
+            self.p, self.eyeNP,
+            self.q[ci], self.zerosNU
+        )
 
         # TODO: implement sfcn here and compute hfcn/sfcn
-
 
 
     def set_control(self, q):
@@ -818,8 +840,8 @@ class MHE(object):
         self.debug_out('mhe.set_control(q)\n')
         self.debug_out('-'*80+'\n')
 
-        q = numpy.asarray(q).reshape(self.NU, 2)
-        self.q[:, -1, :] = q[:, :]
+        q = numpy.asarray(q)
+        self.q[-1, :] = q[:]
 
         # when q is changed, recalculate last model response
         self._calculate_measnode(self.M-1)

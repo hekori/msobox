@@ -1,6 +1,7 @@
 """Base class of MSOBox model function implementation."""
 
 import os
+import re
 import sys
 import cffi
 import json
@@ -144,12 +145,47 @@ def generate_derivative_declarations(
         # _d[function_d["name"]] = (_dims, _func)
         declarations[name] = (_deriv_dims, _deriv_func)
 
+        # add 'dot' alias for total derivative
+        # FIXME: if invar + outvar == args then add '_dot' or '_bar' as alias
+        if outvar + ["t"] + invar == _func["args"]:
+            if "d" in mode:
+                declarations[_func["name"] + "_dot"] = (
+                    _deriv_dims, _deriv_func
+                )
+            elif "b" in mode:
+                declarations[_func["name"] + "_bar"] = (
+                    _deriv_dims, _deriv_func
+                )
+
+        # TODO: add recursively higher order derivatives
+        # NOTE: there will be a problem with nbdirs of fortran calls
         continue
         # assign next level of derivatives when specified
         if _deriv_func["deriv"]:
             generate_derivative_declarations(
                 declarations, _deriv_func["deriv"], _dims, _func, verbose
             )
+
+
+def args_str_from_args(fargs):
+    """Generate arguments for C header."""
+    pt = re.compile(r"_d(?P<cnt>\d?)")
+
+    s = []
+    dirs = []
+
+    for arg in fargs:
+        s.append("double* {}".format(arg))
+        m = pt.findall(fargs[1])
+        for m in pt.finditer(arg):
+            m = m.group("cnt")
+            if m not in dirs:
+                dirs.append(m)
+    for cnt in dirs:
+        s.append("int* nbdirs{}".format(cnt))
+
+    s = ", ".join([str(x) for x in s])
+    return s
 
 
 def header_from_function_name_and_args(fname, fargs):
@@ -160,10 +196,20 @@ def header_from_function_name_and_args(fname, fargs):
     fargs = ['f', 't', 'x', 'p', 'u']
     Returns
         void ffcn_(double *f, double *t, double *x, double *p, double *u);
-    """
-    def args_str_from_args(fargs):
-        return ", ".join(["double* {}".format(x) for x in fargs])
 
+    fname = 'ffcn_d_xpu_v'
+    fargs = ['f', 'f_d', 't', 'x', 'x_d', 'p', 'p_d', 'u', 'u_d']
+    Returns
+        void ffcn_(double *f, double *t, double *x, double *p, double *u);
+        void ffcn_d_xpu_v(
+            double* f, double* f_d,
+            double* t,
+            double* x, double* x_d,
+            double* p, double* p_d,
+            double* u, double* u_d,
+            int* nbdirs
+        )
+    """
     header = "void {fname}_({fargs_str});".format(
         fname=fname, fargs_str=args_str_from_args(fargs)
     )
@@ -221,8 +267,6 @@ class Model(object):
                 self.module, f_dims, f_dict, ffi=self.ffi, verbose=self.verbose
             )
             setattr(self, f_name, func)
-            # TODO add here _dot as hack for lecture!
-            pass
 
     @staticmethod
     def load_model_definitions(model_definitions):
