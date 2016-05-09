@@ -1,29 +1,33 @@
 {
-    "dims": {"t": 1, "x": 5, "p": 5, "u": 4, "f": 5, "h": 3}, 
+    "dims": {"t": 1, "x": 5, "p": 5, "u": 4, "f": 5, "h": 3},
     "functions":[
-        {"type": "ffcn",
-        "args": ["f", "t", "x", "p", "u"],
-        "deriv":[
-                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
-                "deriv":
-                    [
-                        {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "u", "u_d"], "out": ["f", "f_d"]}
-                    ]
-                },
-                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
-            ]   
+        {
+            "name": "ffcn",
+            "type": "ffcn",
+            "args": ["f", "t", "x", "p", "u"],
+            "deriv":[
+                    {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
+                    "deriv":
+                        [
+                            {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "u", "u_d"], "out": ["f", "f_d"]}
+                        ]
+                    },
+                    {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
+                ]
         },
-        {"type": "hfcn",
-        "args": ["h", "t", "x", "p", "u"],
-        "deriv":[
-                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["h"],
-                "deriv":
-                    [
-                        {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "u", "u_d"], "out": ["h", "h_d"]}
-                    ]
-                },
-                {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["h"]}
-            ]   
+        {
+            "name": "hfcn",
+            "type": "hfcn",
+            "args": ["h", "t", "x", "p", "u"],
+            "deriv":[
+                    {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["h"],
+                    "deriv":
+                        [
+                            {"mode": "forward_vector", "in": ["x", "x_d", "p", "p_d", "u", "u_d"], "out": ["h", "h_d"]}
+                        ]
+                    },
+                    {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["h"]}
+                ]
         }
 
     ]
