@@ -1,6 +1,7 @@
 # msobox .gitignore
 # Blacklist
 *~
+*.
 *.pyc
 *.pdf
 .coverage
@@ -11,6 +12,7 @@ sonic.log
 *.so
 *.bak
 fort.*
+
 
 dist/
 build/
