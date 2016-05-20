@@ -70,7 +70,8 @@ class OCSS_indegrator(object):
         self.NG   = NG
         self.NC   = NG * self.NTS
         self.NU   = NU
-        self.NQ   = NU * self.NTS
+        self.NQI  = 1
+        self.NQ   = NU * self.NQI * self.NTS
         self.bcq  = bcq
         self.bcg  = bcg
 
@@ -137,7 +138,7 @@ class OCSS_indegrator(object):
         """
 
         # set up array
-        q_ind = np.zeros((self.NU, self.NTS, 1))
+        q_ind = np.zeros((self.NU, self.NTS, self.NQI))
 
         # convert controls from one-dimensional array to INDegrator specific format
         for i in xrange(0, self.NU):

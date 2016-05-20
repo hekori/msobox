@@ -37,10 +37,11 @@ NTS		number of time steps
 s 		shooting variables
 NS 		number of shooting variables (= NTS * NX)
 bcs     upper and lower bounds on shooting variables
-tsi 	time steps in shooting intervals
-NTSI 	number of time steps in shooting intervals
+tsi 	time steps in intervals
+NTSI 	number of time steps in intervals
 q		control variables
-NQ	 	number of control variables (= NTS * NU)
+NQI     number of control variables in interval
+NQ	 	number of control variables (= NTS * NU * NQI)
 c		constraints
 NC 		number of constraints (= NTS * NG)
 
