@@ -1,6 +1,7 @@
 # msobox .gitignore
 # Blacklist
 *~
+*.
 *.pyc
 *.pdf
 .coverage

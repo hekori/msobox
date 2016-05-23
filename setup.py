@@ -90,7 +90,7 @@ setup(
     keywords="numerical integration sensitivity generation",
 
     # The project"s contents.
-    packages=["msobox"],
+    packages=find_packages(),
 
     # Author details
     author="MSOBox Development Team",
