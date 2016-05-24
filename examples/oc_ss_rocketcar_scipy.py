@@ -21,7 +21,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 
 # local imports
-from msobox.oc.ocss_snopt import OCSS_snopt
+from msobox.oc.ocss_scipy import OCSS_scipy
 from msobox.oc.ocss_indegrator import OCSS_indegrator
 
 # setting print options to print all array elements
@@ -52,7 +52,7 @@ s0      = np.array([4, -1, 4, 0, 0, 4])
 problem.set_integrator("rk4")
 
 # solve the problem
-solver  = OCSS_snopt(problem)
+solver  = OCSS_scipy(problem)
 results = solver.solve(x0=x0, xend=xend, p=p, q0=q0, s0=s0)
 
 # print results
@@ -66,7 +66,6 @@ print "multipliers matching conditions:", results[6]
 
 q_opt   = results[0]
 s_opt   = results[1]
-mul_opt = results[4]
 
 # plot controls and states
 x_opt = problem.integrate(p, q_opt, s_opt)

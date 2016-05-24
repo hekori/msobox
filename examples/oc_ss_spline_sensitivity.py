@@ -41,7 +41,7 @@ def get_dir_path():
 # initialize an optimal control problem
 name    = "oc-ss-spline"
 path    = get_dir_path() + "/fortran/spline/"
-ts      = np.linspace(0, 1, 20)
+ts      = np.linspace(0, 1, 5)
 bcq     = np.array([-1e6, 1e6], ndmin=2)
 bcg     = np.array([-1e6, 0], ndmin=2)
 problem = OCSS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bcq=bcq, bcg=bcg, ts=ts)

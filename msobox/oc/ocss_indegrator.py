@@ -464,9 +464,9 @@ class OCSS_indegrator(object):
 
             # integrate
             xs[i + 1, :], xs_dot[i + 1, :, i * self.NU:(i + 1) * self.NU] = self.integrator.fo_forward(tsi,
-                                                                                                        x0, x0_dot,
-                                                                                                        p, p_dot,
-                                                                                                        q_interval, q_dot)
+                                                                                                       x0, x0_dot,
+                                                                                                       p, p_dot,
+                                                                                                       q_interval, q_dot)
 
             # set initial conditions and directions to obtain dx_i/dx0
             x0     = xs[i, :]
@@ -474,7 +474,7 @@ class OCSS_indegrator(object):
             p_dot  = np.zeros((self.NP, self.NX))
             q_dot  = np.zeros((self.NU, self.NX))
 
-            # integrate to obtain dx/dx0
+            # integrate
             xs_tmp = self.integrator.fo_forward(tsi,
                                                 x0, x0_dot,
                                                 p, p_dot,
@@ -507,28 +507,74 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot  = np.eye(self.NX)
+        # x0_ddot = np.zeros(x0_dot.shape + (self.NX,))
+        # p_dot   = np.zeros((self.NP, self.NX))
+        # p_ddot  = np.zeros(p_dot.shape + (self.NX,))
+        # q_dot   = np.zeros(q.shape + (self.NX,))
+        # q_ddot  = np.zeros(q_dot.shape + (self.NX,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot, x0_dot, x0_ddot,
+        #                                    p, p_dot, p_dot, p_ddot,
+        #                                    q, q_dot, q_dot, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NX))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NX))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NX, self.NX))
 
         # set up directions for differentation
         x0_dot  = np.eye(self.NX)
         x0_ddot = np.zeros(x0_dot.shape + (self.NX,))
         p_dot   = np.zeros((self.NP, self.NX))
         p_ddot  = np.zeros(p_dot.shape + (self.NX,))
-        q_dot   = np.zeros(q.shape + (self.NX,))
+        q_dot   = np.zeros((self.NU, self.NX))
         q_ddot  = np.zeros(q_dot.shape + (self.NX,))
 
-        # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot, x0_dot, x0_ddot,
-                                           p, p_dot, p_dot, p_ddot,
-                                           q, q_dot, q_dot, q_ddot)
+        # set initial conditions
+        xs[0, :]            = s[0, :]
+        xs_dot1[0, :, :]    = x0_dot
+        xs_dot2[0, :, :]    = x0_dot
+        xs_ddot[0, :, :, :] = x0_ddot
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, :]
+            x0_dot2 = xs_dot2[i, :, :]
+            x0_ddot = xs_ddot[i, :, :, :]
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, :], xs_ddot[i + 1, :, :, :] = self.integrator.so_forward(tsi,
+                                                                                                                           x0, x0_dot, x0_dot, x0_ddot,
+                                                                                                                           p, p_dot, p_dot, p_ddot,
+                                                                                                                           q_interval, q_dot, q_dot, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -551,28 +597,74 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot  = np.zeros((self.NX, self.NP))
+        # x0_ddot = np.zeros(x0_dot.shape + (self.NP,))
+        # p_dot   = np.eye(self.NP)
+        # p_ddot  = np.zeros(p_dot.shape + (self.NP,))
+        # q_dot   = np.zeros(q.shape + (self.NP,))
+        # q_ddot  = np.zeros(q_dot.shape + (self.NP,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot, x0_dot, x0_ddot,
+        #                                    p, p_dot, p_dot, p_ddot,
+        #                                    q, q_dot, q_dot, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NP, self.NP))
 
         # set up directions for differentation
         x0_dot  = np.zeros((self.NX, self.NP))
         x0_ddot = np.zeros(x0_dot.shape + (self.NP,))
         p_dot   = np.eye(self.NP)
         p_ddot  = np.zeros(p_dot.shape + (self.NP,))
-        q_dot   = np.zeros(q.shape + (self.NP,))
+        q_dot   = np.zeros((self.NU, self.NP))
         q_ddot  = np.zeros(q_dot.shape + (self.NP,))
 
-        # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot, x0_dot, x0_ddot,
-                                           p, p_dot, p_dot, p_ddot,
-                                           q, q_dot, q_dot, q_ddot)
+        # set initial conditions
+        xs[0, :]            = s[0, :]
+        xs_dot1[0, :, :]    = x0_dot
+        xs_dot2[0, :, :]    = x0_dot
+        xs_ddot[0, :, :, :] = x0_ddot
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, :]
+            x0_dot2 = xs_dot2[i, :, :]
+            x0_ddot = xs_ddot[i, :, :, :]
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, :], xs_ddot[i + 1, :, :, :] = self.integrator.so_forward(tsi,
+                                                                                                                           x0, x0_dot, x0_dot, x0_ddot,
+                                                                                                                           p, p_dot, p_dot, p_ddot,
+                                                                                                                           q_interval, q_dot, q_dot, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -595,29 +687,97 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot                                  = np.zeros((self.NX, self.NQ))
+        # x0_ddot                                 = np.zeros(x0_dot.shape + (self.NQ,))
+        # p_dot                                   = np.zeros((p.size, self.NQ))
+        # p_ddot                                  = np.zeros(p_dot.shape + (self.NQ,))
+        # q_dot                                   = np.zeros(q.shape + (self.NQ,))
+        # q_dot.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
+        # q_ddot                                  = np.zeros(q_dot.shape + (self.NQ,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot, x0_dot, x0_ddot,
+        #                                    p, p_dot, p_dot, p_ddot,
+        #                                    q, q_dot, q_dot, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NQ, self.NQ))
 
-        # set up directions for differentation
-        x0_dot                                  = np.zeros((self.NX, self.NQ))
-        x0_ddot                                 = np.zeros(x0_dot.shape + (self.NQ,))
-        p_dot                                   = np.zeros((p.size, self.NQ))
-        p_ddot                                  = np.zeros(p_dot.shape + (self.NQ,))
-        q_dot                                   = np.zeros(q.shape + (self.NQ,))
-        q_dot.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
-        q_ddot                                  = np.zeros(q_dot.shape + (self.NQ,))
+        # set initial conditions
+        xs[0, :] = s[0, :]
 
         # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot, x0_dot, x0_ddot,
-                                           p, p_dot, p_dot, p_ddot,
-                                           q, q_dot, q_dot, q_ddot)
+        for i in xrange(0, self.NTS - 1):
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # set initial conditions and directions
+            x0      = xs[i, :]
+            x0_dot  = np.zeros((self.NX, self.NU))
+            x0_ddot = np.zeros(x0_dot.shape + (self.NU,))
+            p_dot   = np.zeros((self.NP, self.NU))
+            p_ddot  = np.zeros(p_dot.shape + (self.NU,))
+            q_dot   = np.eye(self.NU)
+            q_ddot  = np.zeros(q_dot.shape + (self.NU,))
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, i * self.NU:(i + 1) * self.NU], xs_dot2[i + 1, :, i * self.NU:(i + 1) * self.NU], \
+                xs_ddot[i + 1, :, i * self.NU:(i + 1) * self.NU, i * self.NU:(i + 1) * self.NU] = self.integrator.so_forward(tsi,
+                                                                                                                             x0, x0_dot, x0_dot, x0_ddot,
+                                                                                                                             p, p_dot, p_dot, p_ddot,
+                                                                                                                             q_interval, q_dot, q_dot, q_ddot)
+
+            # set initial conditions and directions to obtain further off-diagonal derivatives
+            x0      = xs[i, :]
+            x0_dot  = np.eye(self.NX)
+            x0_ddot = np.zeros(x0_dot.shape + (self.NX,))
+            p_dot   = np.zeros((self.NP, self.NX))
+            p_ddot  = np.zeros(p_dot.shape + (self.NX,))
+            q_dot   = np.zeros((self.NU, self.NX))
+            q_ddot  = np.zeros(q_dot.shape + (self.NX,))
+
+            # integrate
+            xs_dot1_tmp, xs_dot2_tmp, xs_ddot_tmp = self.integrator.so_forward(tsi,
+                                                                               x0, x0_dot, x0_dot, x0_ddot,
+                                                                               p, p_dot, p_dot, p_ddot,
+                                                                               q_interval, q_dot, q_dot, q_ddot)[1:]
+
+            # calculate dx_i/dq_i-j = dx_i/dx_i-j * dx_i-1/dq_i-j
+            for j in xrange(0, i):
+
+                xs_dot1[i + 1, :, j * self.NU:(j + 1) * self.NU]                                = np.dot(xs_dot1_tmp, xs_dot1[i, :, j * self.NU:(j + 1) * self.NU])
+                xs_dot2[i + 1, :, j * self.NU:(j + 1) * self.NU]                                = np.dot(xs_dot2_tmp, xs_dot2[i, :, j * self.NU:(j + 1) * self.NU])
+                # xs_ddot[i + 1, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU] = np.dot(xs_ddot_tmp, xs_ddot[i, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU])
+
+        print xs_dot1
+        print xs_dot2
+        print xs_ddot
+        raw_input()
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
+
 
     """
     ===============================================================================
@@ -640,12 +800,41 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot1 = np.eye(self.NX)
+        # x0_dot2 = np.zeros((self.NX, self.NP))
+        # x0_ddot = np.zeros(x0_dot1.shape + (self.NP,))
+        # p_dot1  = np.zeros((self.NP, self.NX))
+        # p_dot2  = np.eye(self.NP)
+        # p_ddot  = np.zeros(p_dot1.shape + (self.NP,))
+        # q_dot1  = np.zeros(q.shape + (self.NX,))
+        # q_dot2  = np.zeros(q.shape + (self.NP,))
+        # q_ddot  = np.zeros(q_dot1.shape + (self.NP,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot2, x0_dot1, x0_ddot,
+        #                                    p, p_dot2, p_dot1, p_ddot,
+        #                                    q, q_dot2, q_dot1, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NX))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NX, self.NP))
 
         # set up directions for differentation
         x0_dot1 = np.eye(self.NX)
@@ -654,17 +843,37 @@ class OCSS_indegrator(object):
         p_dot1  = np.zeros((self.NP, self.NX))
         p_dot2  = np.eye(self.NP)
         p_ddot  = np.zeros(p_dot1.shape + (self.NP,))
-        q_dot1  = np.zeros(q.shape + (self.NX,))
-        q_dot2  = np.zeros(q.shape + (self.NP,))
+        q_dot1  = np.zeros((self.NU, self.NX))
+        q_dot2  = np.zeros((self.NU, self.NP))
         q_ddot  = np.zeros(q_dot1.shape + (self.NP,))
 
-        # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot2, x0_dot1, x0_ddot,
-                                           p, p_dot2, p_dot1, p_ddot,
-                                           q, q_dot2, q_dot1, q_ddot)
+        # set initial conditions
+        xs[0, :]            = s[0, :]
+        xs_dot1[0, :, :]    = x0_dot1
+        xs_dot2[0, :, :]    = x0_dot2
+        xs_ddot[0, :, :, :] = x0_ddot
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, :]
+            x0_dot2 = xs_dot2[i, :, :]
+            x0_ddot = xs_ddot[i, :, :, :]
+
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, :], xs_ddot[i + 1, :, :, :] = self.integrator.so_forward(tsi,
+                                                                                                                             x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                             p, p_dot2, p_dot1, p_ddot,
+                                                                                                                             q_interval, q_dot2, q_dot1, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -687,32 +896,96 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot1                                  = np.eye(self.NX)
+        # x0_dot2                                  = np.zeros((self.NX, self.NQ))
+        # x0_ddot                                  = np.zeros(x0_dot1.shape + (self.NQ,))
+        # p_dot1                                   = np.zeros((self.NP, self.NX))
+        # p_dot2                                   = np.zeros((self.NP, self.NQ))
+        # p_ddot                                   = np.zeros(p_dot1.shape + (self.NQ,))
+        # q_dot1                                   = np.zeros(q.shape + (self.NX,))
+        # q_dot2                                   = np.zeros(q.shape + (self.NQ,))
+        # q_dot2.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
+        # q_ddot                                   = np.zeros(q_dot1.shape + (self.NQ,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot2, x0_dot1, x0_ddot,
+        #                                    p, p_dot2, p_dot1, p_ddot,
+        #                                    q, q_dot2, q_dot1, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NX))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NX, self.NQ))
 
-        # set up directions for differentation
-        x0_dot1                                  = np.eye(self.NX)
-        x0_dot2                                  = np.zeros((self.NX, self.NQ))
-        x0_ddot                                  = np.zeros(x0_dot1.shape + (self.NQ,))
-        p_dot1                                   = np.zeros((self.NP, self.NX))
-        p_dot2                                   = np.zeros((self.NP, self.NQ))
-        p_ddot                                   = np.zeros(p_dot1.shape + (self.NQ,))
-        q_dot1                                   = np.zeros(q.shape + (self.NX,))
-        q_dot2                                   = np.zeros(q.shape + (self.NQ,))
-        q_dot2.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
-        q_ddot                                   = np.zeros(q_dot1.shape + (self.NQ,))
+        # set initial conditions
+        xs[0, :] = s[0, :]
 
         # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot2, x0_dot1, x0_ddot,
-                                           p, p_dot2, p_dot1, p_ddot,
-                                           q, q_dot2, q_dot1, q_ddot)
+        for i in xrange(0, self.NTS - 1):
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # set initial conditions and directions
+            x0      = xs[i, :]
+            x0_dot1 = np.eye(self.NX)
+            x0_dot2 = np.zeros((self.NX, self.NQ))
+            x0_ddot = np.zeros(x0_dot1.shape + (self.NQ,))
+            p_dot1  = np.zeros((self.NP, self.NX))
+            p_dot2  = np.zeros((self.NP, self.NQ))
+            p_ddot  = np.zeros(p_dot1.shape + (self.NQ,))
+            q_dot1  = np.zeros((self.NU, self.NX))
+            q_dot2  = np.eye(self.NU)
+            q_ddot  = np.zeros(q_dot1.shape + (self.NQ,))
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, i * self.NU:(i + 1) * self.NU], \
+                xs_ddot[i + 1, :, :, i * self.NU:(i + 1) * self.NU] = self.integrator.so_forward(tsi,
+                                                                                                 x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                 p, p_dot2, p_dot1, p_ddot,
+                                                                                                 q_interval, q_dot2, q_dot1, q_ddot)
+
+            # set initial conditions and directions to obtain further off-diagonal derivatives
+            x0      = xs[i, :]
+            x0_dot  = np.eye(self.NX)
+            x0_ddot = np.zeros(x0_dot.shape + (self.NX,))
+            p_dot   = np.zeros((self.NP, self.NX))
+            p_ddot  = np.zeros(p_dot.shape + (self.NX,))
+            q_dot   = np.zeros((self.NU, self.NX))
+            q_ddot  = np.zeros(q_dot.shape + (self.NX,))
+
+            # integrate
+            xs_dot2_tmp, xs_ddot_tmp = self.integrator.so_forward(tsi,
+                                                                  x0, x0_dot, x0_dot, x0_ddot,
+                                                                  p, p_dot, p_dot, p_ddot,
+                                                                  q_interval, q_dot, q_dot, q_ddot)[2:]
+
+            # calculate dx_i/dq_i-j = dx_i/dx_i-j * dx_i-1/dq_i-j
+            for j in xrange(0, i):
+
+                xs_dot2[i + 1, :, j * self.NU:(j + 1) * self.NU]                                = np.dot(xs_dot2_tmp, xs_dot2[i, :, j * self.NU:(j + 1) * self.NU])
+                xs_ddot[i + 1, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU] = np.dot(xs_ddot_tmp, xs_ddot[i, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU])
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -735,32 +1008,104 @@ class OCSS_indegrator(object):
 
         """
 
+        # # convert controls and shooting variables to INDegrator specific format
+        # q = self.q_array2ind(q)
+        # s = self.s_array2ind(s)
+
+        # # set initial conditions
+        # x0 = s[0, :]
+
+        # # set up directions for differentation
+        # x0_dot1                                  = np.zeros((self.NX, self.NP))
+        # x0_dot2                                  = np.zeros((self.NX, self.NQ))
+        # x0_ddot                                  = np.zeros(x0_dot1.shape + (self.NQ,))
+        # p_dot1                                   = np.eye(self.NP)
+        # p_dot2                                   = np.zeros((self.NP, self.NQ))
+        # p_ddot                                   = np.zeros(p_dot1.shape + (self.NQ,))
+        # q_dot1                                   = np.zeros(q.shape + (self.NP,))
+        # q_dot2                                   = np.zeros(q.shape + (self.NQ,))
+        # q_dot2.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
+        # q_ddot                                   = np.zeros(q_dot1.shape + (self.NQ,))
+
+        # # integrate
+        # self.integrator.so_forward(self.ts,
+        #                                    x0, x0_dot2, x0_dot1, x0_ddot,
+        #                                    p, p_dot2, p_dot1, p_ddot,
+        #                                    q, q_dot2, q_dot1, q_ddot)
+
+        # return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+
         # convert controls and shooting variables to INDegrator specific format
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # set initial conditions
-        x0 = s[0, :]
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NP, self.NQ))
 
-        # set up directions for differentation
-        x0_dot1                                  = np.zeros((self.NX, self.NP))
-        x0_dot2                                  = np.zeros((self.NX, self.NQ))
-        x0_ddot                                  = np.zeros(x0_dot1.shape + (self.NQ,))
-        p_dot1                                   = np.eye(self.NP)
-        p_dot2                                   = np.zeros((self.NP, self.NQ))
-        p_ddot                                   = np.zeros(p_dot1.shape + (self.NQ,))
-        q_dot1                                   = np.zeros(q.shape + (self.NP,))
-        q_dot2                                   = np.zeros(q.shape + (self.NQ,))
-        q_dot2.reshape((self.NQ, self.NQ))[:, :] = np.eye(self.NQ)
-        q_ddot                                   = np.zeros(q_dot1.shape + (self.NQ,))
+        # set initial conditions
+        xs[0, :] = s[0, :]
 
         # integrate
-        self.integrator.so_forward(self.ts,
-                                           x0, x0_dot2, x0_dot1, x0_ddot,
-                                           p, p_dot2, p_dot1, p_ddot,
-                                           q, q_dot2, q_dot1, q_ddot)
+        for i in xrange(0, self.NTS - 1):
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # set initial conditions and directions
+            x0      = xs[i, :]
+            x0_dot1 = np.zeros((self.NX, self.NP))
+            x0_dot2 = np.zeros((self.NX, self.NU))
+            x0_ddot = np.zeros(x0_dot1.shape + (self.NU,))
+            p_dot1  = np.zeros((self.NP, self.NP))
+            p_dot2  = np.zeros((self.NP, self.NU))
+            p_ddot  = np.zeros(p_dot1.shape + (self.NU,))
+            q_dot1  = np.zeros((self.NU, self.NP))
+            q_dot2  = np.eye(self.NU)
+            q_ddot  = np.zeros(q_dot1.shape + (self.NU,))
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, i * self.NU:(i + 1) * self.NU], \
+                xs_ddot[i + 1, :, :, i * self.NU:(i + 1) * self.NU] = self.integrator.so_forward(tsi,
+                                                                                                 x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                 p, p_dot2, p_dot1, p_ddot,
+                                                                                                 q_interval, q_dot2, q_dot1, q_ddot)
+
+            # set initial conditions and directions to obtain further off-diagonal derivatives
+            x0      = xs[i, :]
+            x0_dot  = np.eye(self.NX)
+            x0_ddot = np.zeros(x0_dot.shape + (self.NX,))
+            p_dot   = np.zeros((self.NP, self.NX))
+            p_ddot  = np.zeros(p_dot.shape + (self.NX,))
+            q_dot   = np.zeros((self.NU, self.NX))
+            q_ddot  = np.zeros(q_dot.shape + (self.NX,))
+
+            # integrate
+            xs_dot2_tmp, xs_ddot_tmp = self.integrator.so_forward(tsi,
+                                                                  x0, x0_dot, x0_dot, x0_ddot,
+                                                                  p, p_dot, p_dot, p_ddot,
+                                                                  q_interval, q_dot, q_dot, q_ddot)[2:]
+
+            # calculate dx_i/dq_i-j = dx_i/dx_i-j * dx_i-1/dq_i-j
+            for j in xrange(0, i):
+
+                print xs_ddot_tmp.shape
+                print xs_ddot[i + 1, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU].shape
+
+                xs_dot2[i + 1, :, j * self.NU:(j + 1) * self.NU]                                = np.dot(xs_dot2_tmp, xs_dot2[i, :, j * self.NU:(j + 1) * self.NU])
+                # xs_ddot[i + 1, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU] = np.dot(xs_ddot_tmp, xs_ddot[i, :, j * self.NU:(j + 1) * self.NU, j * self.NU:(j + 1) * self.NU])
+
+        print xs_dot1
+        print xs_dot2
+        print xs_ddot
+        raw_input()
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
