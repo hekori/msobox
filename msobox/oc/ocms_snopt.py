@@ -69,8 +69,8 @@ class OCMS_snopt(object):
 
         """
 
-        NQ = self.ocp.NQ + self.ocp.NS                # add the shooting variables as controls
-        NC = self.ocp.NC + self.ocp.NS - self.ocp.NX  # add matching conditions for shooting nodes
+        NQ = self.ocp.NQ + self.ocp.NS   # add the shooting variables as controls
+        NC = self.ocp.NC + self.ocp.NMC  # add matching conditions for shooting nodes
 
         """
         ===============================================================================
@@ -93,15 +93,17 @@ class OCMS_snopt(object):
             Flow[0]   = -1e6
             Fupp[0]   = 1e6
 
-            # set the nonlinear constraints of the problem
-            for i in xrange(0, self.ocp.NG):
-                Flow[1 + i * self.ocp.NTS:1 + (i + 1) * self.ocp.NTS] = self.ocp.bcg[i, 0]
-                Fupp[1 + i * self.ocp.NTS:1 + (i + 1) * self.ocp.NTS] = self.ocp.bcg[i, 1]
+            # set the upper and lower bounds for the inequality constraints
+            Flow[1:1 + self.ocp.NCG] = -1e6
+            Fupp[1:1 + self.ocp.NCG] = 0
 
-            # set the equality constraints for the matching conditions
-            for i in xrange(self.ocp.NC + 1, NC + 1):
-                Flow[i] = 0
-                Fupp[i] = 0
+            # set the upper and lower bounds for the equality constraints
+            Flow[1 + self.ocp.NCG:1 + self.ocp.NC] = 0
+            Fupp[1 + self.ocp.NCG:1 + self.ocp.NC] = 0
+
+            # set the upper and lower bounds for the matching conditions
+            Flow[1 + self.ocp.NC:] = 0
+            Fupp[1 + self.ocp.NC:] = 0
 
             # set the upper and lower bounds for the controls q
             for i in xrange(0, self.ocp.NU):
@@ -109,11 +111,8 @@ class OCMS_snopt(object):
                 xupp[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bcq[i, 1]
 
             # set the upper and lower bounds for the shooting variables s
-            for j in xrange(0, self.ocp.NTS):
-                for i in xrange(0, self.ocp.NX):
-
-                    xlow[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 0]
-                    xupp[self.ocp.NQ + j * self.ocp.NX + i] = self.ocp.bcs[i, 1]
+            xlow[self.ocp.NQ:] = -1e6
+            xupp[self.ocp.NQ:] = 1e6
 
             # fix the shooting variables s at the boundaries if necessary
             for i in xrange(0, self.ocp.NX):
@@ -159,8 +158,11 @@ class OCMS_snopt(object):
                 # evaluate the objective
                 F[0] = self.ocp.obj(xs, None, None, None, p, q, s)
 
-                # evaluate the nonlinear constraints
-                F[1:self.ocp.NC + 1] = self.ocp.c(xs, None, None, None, p, q, s)
+                # evaluate the inequality constraints
+                F[1:self.ocp.NCG + 1] = self.ocp.ineqc(xs, None, None, None, p, q, s)
+
+                # evaluate the equality constraints
+                F[self.ocp.NCG + 1:self.ocp.NC + 1] = self.ocp.eqc(xs, None, None, None, p, q, s)
 
                 # evaluate the matching conditions
                 F[self.ocp.NC + 1:] = self.ocp.mc(xs, None, None, None, p, q, s)
@@ -176,39 +178,59 @@ class OCMS_snopt(object):
                 G[self.ocp.NQ:NQ] = self.ocp.obj_ds(xs, xs_dot_s, None, None, p, q, s)[1]  # shooting variables
                 l                 = NQ
 
-                # calculate derivatives of constraints
-                c_dq = self.ocp.c_dq(xs, xs_dot_q, None, None, p, q, s)[1]
-                c_ds = self.ocp.c_ds(xs, xs_dot_s, None, None, p, q, s)[1]
+                # calculate derivatives of inequality constraints
+                ineqc_dq = self.ocp.ineqc_dq(xs, xs_dot_q, None, None, p, q, s)[1]
+                ineqc_ds = self.ocp.ineqc_ds(xs, xs_dot_s, None, None, p, q, s)[1]
 
-                for i in xrange(0, self.ocp.NC):
-                    G[l:l + self.ocp.NQ]      = c_dq[i, :] # controls
-                    G[l + self.ocp.NQ:l + NQ] = c_ds[i, :] # shooting variables
+                for i in xrange(0, self.ocp.NCG):
+                    G[l:l + self.ocp.NQ]      = ineqc_dq[i, :] # controls
+                    G[l + self.ocp.NQ:l + NQ] = ineqc_ds[i, :] # shooting variables
+                    l                         = l + NQ
+
+                # calculate derivatives of equality constraints
+                eqc_dq = self.ocp.eqc_dq(xs, xs_dot_q, None, None, p, q, s)[1]
+                eqc_ds = self.ocp.eqc_ds(xs, xs_dot_s, None, None, p, q, s)[1]
+
+                for i in xrange(0, self.ocp.NCH):
+                    G[l:l + self.ocp.NQ]      = eqc_dq[i, :] # controls
+                    G[l + self.ocp.NQ:l + NQ] = eqc_ds[i, :] # shooting variables
                     l                         = l + NQ
 
                 # calculate derivatives of matching conditions
                 mc_dq = self.ocp.mc_dq(xs, xs_dot_q, None, None, p, q, s)[1]
                 mc_ds = self.ocp.mc_ds(xs, xs_dot_s, None, None, p, q, s)[1]
 
-                for i in xrange(0, self.ocp.NS - self.ocp.NX):
+                for i in xrange(0, self.ocp.NMC):
                     G[l:l + self.ocp.NQ]      = mc_dq[i, :] # controls
                     G[l + self.ocp.NQ:l + NQ] = mc_ds[i, :] # shooting variables
                     l                         = l + NQ
 
-                # DEBUG: CHECK SECOND DERIVATIVES:
+                ################################  DEBUG: CHECK SECOND DERIVATIVES:
 
-                xs, xs_dot_q1, xs_dot_q2, xs_dot_dqdq = self.ocp.integrate_dqdq(p, q, s)
-                xs, xs_dot_s1, xs_dot_s2, xs_dot_dsds = self.ocp.integrate_dsds(p, q, s)
-                xs, xs_dot_p1, xs_dot_p2, xs_dot_dpdp = self.ocp.integrate_dpdp(p, q, s)
-                xs, xs_dot_s1, xs_dot_p2, xs_dot_dsdp = self.ocp.integrate_dsdp(p, q, s)
-                xs, xs_dot_s1, xs_dot_q2, xs_dot_dsdq = self.ocp.integrate_dsdq(p, q, s)
-                xs, xs_dot_p1, xs_dot_q2, xs_dot_dpdq = self.ocp.integrate_dpdq(p, q, s)
-                print self.ocp.c_dqdq(xs, xs_dot_q1, xs_dot_q2, xs_dot_dqdq, p, q, s)
-                print self.ocp.c_dsds(xs, xs_dot_s1, xs_dot_s2, xs_dot_dsds, p, q, s)
-                print self.ocp.c_dpdp(xs, xs_dot_p1, xs_dot_p2, xs_dot_dpdp, p, q, s)
-                print self.ocp.c_dsdp(xs, xs_dot_s1, xs_dot_p2, xs_dot_dsdp, p, q, s)
-                print self.ocp.c_dsdq(xs, xs_dot_s1, xs_dot_q2, xs_dot_dsdq, p, q, s)
-                print self.ocp.c_dpdq(xs, xs_dot_p1, xs_dot_q2, xs_dot_dpdq, p, q, s)
-                raw_input()
+                # xs, xs_dot_q1, xs_dot_q2, xs_dot_dqdq = self.ocp.integrate_dqdq(p, q, s)
+                # xs, xs_dot_s1, xs_dot_s2, xs_dot_dsds = self.ocp.integrate_dsds(p, q, s)
+                # xs, xs_dot_p1, xs_dot_p2, xs_dot_dpdp = self.ocp.integrate_dpdp(p, q, s)
+                # xs, xs_dot_s1, xs_dot_p2, xs_dot_dsdp = self.ocp.integrate_dsdp(p, q, s)
+                # xs, xs_dot_s1, xs_dot_q2, xs_dot_dsdq = self.ocp.integrate_dsdq(p, q, s)
+                # xs, xs_dot_p1, xs_dot_q2, xs_dot_dpdq = self.ocp.integrate_dpdq(p, q, s)
+
+                # print self.ocp.c_dqdq(xs, xs_dot_q1, xs_dot_q2, xs_dot_dqdq, p, q, s)
+                # print self.ocp.c_dsds(xs, xs_dot_s1, xs_dot_s2, xs_dot_dsds, p, q, s)
+                # print self.ocp.c_dpdp(xs, xs_dot_p1, xs_dot_p2, xs_dot_dpdp, p, q, s)
+                # print self.ocp.c_dsdp(xs, xs_dot_s1, xs_dot_p2, xs_dot_dsdp, p, q, s)
+                # print self.ocp.c_dsdq(xs, xs_dot_s1, xs_dot_q2, xs_dot_dsdq, p, q, s)
+                # print self.ocp.c_dpdq(xs, xs_dot_p1, xs_dot_q2, xs_dot_dpdq, p, q, s)
+
+                # print self.ocp.mc_dqdq(xs, xs_dot_q1, xs_dot_q2, xs_dot_dqdq, p, q, s)
+                # print self.ocp.mc_dsds(xs, xs_dot_s1, xs_dot_s2, xs_dot_dsds, p, q, s)
+                # print self.ocp.mc_dpdp(xs, xs_dot_p1, xs_dot_p2, xs_dot_dpdp, p, q, s)
+                # print self.ocp.mc_dsdp(xs, xs_dot_s1, xs_dot_p2, xs_dot_dsdp, p, q, s)
+                # print self.ocp.mc_dsdq(xs, xs_dot_s1, xs_dot_q2, xs_dot_dsdq, p, q, s)
+                # print self.ocp.mc_dpdq(xs, xs_dot_p1, xs_dot_q2, xs_dot_dpdq, p, q, s)
+
+                # raw_input()
+
+                ################################
 
             return 0
 
