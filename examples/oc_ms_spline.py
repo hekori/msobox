@@ -40,24 +40,28 @@ def get_dir_path():
 # initialize an optimal control problem
 name    = "oc-ms-spline"
 path    = get_dir_path() + "/fortran/spline/"
-ts      = np.linspace(0, 1, 20)
+ts      = np.linspace(0, 1, 5)
 bcq     = np.array([-1e6, 1e6], ndmin=2)
 bcs     = np.array([[-1e6, 1e6],
 				    [-1e6, 1e6],
 				    [-1e6, 1e6]], ndmin=2)
 bcg     = np.array([-1e6, 0], ndmin=2)
-problem = OCMS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=1, NU=1, bcq=bcq, bcs=bcs, bcg=bcg, ts=ts, NTSI=10)
+problem = OCMS_indegrator(name=name, path=path, minormax="min", NX=3, NG=1, NP=2, NU=1, bcq=bcq, bcs=bcs, bcg=bcg, ts=ts, NTSI=10)
 x0      = [0, 1, 0]
 xend    = [0, -1, None]
-p       = np.array([1.])
+p       = 1 * np.ones((problem.NP,))
 q0      = 0 * np.ones((problem.NQ,))
 s0      = np.array([0] * problem.NS)
 # s0      = problem.initial_s0(x0, xend)
 
 # choose an integrator
 problem.set_integrator("rk4")
-# problem.set_integrator("explict_euler")
-# problem.set_integrator("implicit_euler")
+
+###########################
+
+
+
+###########################
 
 # solve the problem
 solver  = OCMS_snopt(problem)

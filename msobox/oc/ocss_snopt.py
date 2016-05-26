@@ -119,9 +119,9 @@ class OCSS_snopt(object):
                     xlow[self.ocp.NQ + i] = x0[i]
                     xupp[self.ocp.NQ + i] = x0[i]
 
-                if xend[-(i + 1)] is not None:
-                    xlow[-(i + 1)] = xend[-(i + 1)]
-                    xupp[-(i + 1)] = xend[-(i + 1)]
+                if xend[i] is not None:
+                    xlow[self.ocp.NQ + self.ocp.NX + i] = xend[i]
+                    xupp[self.ocp.NQ + self.ocp.NX + i] = xend[i]
 
             # set xstate
             xstate[0:NQ] = 0
