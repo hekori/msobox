@@ -1,16 +1,18 @@
 # msobox .gitignore
 # Blacklist
+.tox/
+htmlcov/
+msobox.egg-info/
 *~
 *.pyc
 *.pdf
 .coverage
-.tox/
-htmlcov/
 sonic.log
 *.o
 *.so
 *.bak
-fort.*
+*fort.*
+*.png
 
 # Whitelist
 !tox.ini
