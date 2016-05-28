@@ -34,8 +34,8 @@ class IND(object):
     def zo_check(self, ts, x0, p, q):
         """Check for dimensions and allocate memory."""
         # set dimeions
-        self.NTS = ts.size              # number of time steps
-        self.NQ = self.NU*self.NTS*2     # number of control variables
+        self.NTS = ts.size                        # number of time steps
+        self.NQ  = self.NU * self.NTS * self.NQI  # number of control variables
 
         # assert that the dimensions match
         self.NX = x0.size

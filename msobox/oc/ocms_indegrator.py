@@ -293,17 +293,20 @@ class OCMS_indegrator(object):
         q = self.q_array2ind(q)
         s = self.s_array2ind(s)
 
-        # allocate memory
-        q_interval = np.zeros((self.NU, self.NTSI, 1))
+        # set initial conditions
+        x0 = s[interval, :]
 
         # set time steps for this interval
         tsi = np.linspace(self.ts[interval], self.ts[interval + 1], self.NTSI)
 
         # set constant controls for this interval
-        q_interval[:, :, :] = q[:, interval, :]
+        q_interval = q[:, interval, 0]
 
         # integrate
-        self.integrator.zo_forward(tsi, s[interval], p, q_interval)
+        self.integrator.zo_forward(tsi,
+                                   x0,
+                                   p,
+                                   q_interval)
 
         return self.integrator.xs
 
@@ -335,14 +338,11 @@ class OCMS_indegrator(object):
         # set initial conditions
         x0 = s[interval, :]
 
-        # allocate memory
-        q_interval = np.zeros((self.NU, self.NTSI, 1))
-
         # set time steps for this interval
         tsi = np.linspace(self.ts[interval], self.ts[interval + 1], self.NTSI)
 
         # set constant controls for this interval
-        q_interval[:, :, :] = q[:, interval, :]
+        q_interval[:, :, :] = q[:, interval, 0]
 
         # set up directions for differentation
         x0_dot = np.zeros((self.NX, self.NP))
@@ -351,9 +351,9 @@ class OCMS_indegrator(object):
 
         # integrate
         self.integrator.fo_forward(tsi,
-                                       x0, x0_dot,
-                                       p, p_dot,
-                                       q_interval, q_dot)
+                                   x0, x0_dot,
+                                   p, p_dot,
+                                   q_interval, q_dot)
 
         return self.integrator.xs, self.integrator.xs_dot
 
@@ -385,32 +385,27 @@ class OCMS_indegrator(object):
         # set initial conditions
         x0 = s[interval, :]
 
-        # allocate memory
-        q_interval = np.zeros((self.NU, self.NTSI, 1))
-        xs_dot     = np.zeros((self.NTSI, self.NX))
-
         # set time steps for this interval
         tsi = np.linspace(self.ts[interval], self.ts[interval + 1], self.NTSI)
 
         # set constant controls for this interval
-        q_interval[:, :, :] = q[:, interval, :]
+        q_interval = q[:, interval, 0]
 
         # set up directions for differentation
-        x0_dot                                      = np.zeros((self.NX, self.NTSI))
-        p_dot                                       = np.zeros((self.NP, self.NTSI))
-        q_dot                                       = np.zeros(q_interval.shape + (self.NTSI,))
-        q_dot.reshape((self.NTSI, self.NTSI))[:, :] = np.eye(self.NTSI)
+        x0_dot = np.zeros((self.NX, self.NU))
+        p_dot  = np.zeros((self.NP, self.NU))
+        q_dot  = np.eye(self.NU)
+
+        # allocate memory
+        xs_dot = np.zeros((self.NTSI, self.NX, self.NQ))
 
         # integrate
         self.integrator.fo_forward(tsi,
-                                       x0, x0_dot,
-                                       p, p_dot,
-                                       q_interval, q_dot)
+                                   x0, x0_dot,
+                                   p, p_dot,
+                                   q_interval, q_dot)
 
-        # build derivatives for controls by summing up in shooting interval
-        for j in xrange(0, self.NTSI):
-            for k in xrange(0, self.NTSI):
-                xs_dot[j, :] = xs_dot[j, :] + self.integrator.xs_dot[j, :, k]
+        xs_dot[:, :, interval * self.NU:(interval + 1) * self.NU] = self.integrator.xs_dot
 
         return self.integrator.xs, xs_dot
 
@@ -442,14 +437,11 @@ class OCMS_indegrator(object):
         # set initial conditions
         x0 = s[interval, :]
 
-        # allocate memory
-        q_interval = np.zeros((self.NU, self.NTSI, 1))
-
         # set time steps for this interval
         tsi = np.linspace(self.ts[interval], self.ts[interval + 1], self.NTSI)
 
         # set constant controls for this interval
-        q_interval[:, :, :] = q[:, interval, :]
+        q_interval = q[:, interval, 0]
 
         # set up directions for differentation
         x0_dot = np.eye(self.NX)
@@ -458,9 +450,9 @@ class OCMS_indegrator(object):
 
         # integrate
         self.integrator.fo_forward(tsi,
-                                       x0, x0_dot,
-                                       p, p_dot,
-                                       q_interval, q_dot)
+                                   x0, x0_dot,
+                                   p, p_dot,
+                                   q_interval, q_dot)
 
         return self.integrator.xs, self.integrator.xs_dot
 
@@ -490,8 +482,6 @@ class OCMS_indegrator(object):
 
         # integrate on shooting intervals
         for i in xrange(0, self.NTS - 1):
-
-            # integrate and save data
             xs[i, :, :] = self.integrate_interval(i, p, q, s)
 
         return xs
@@ -523,8 +513,6 @@ class OCMS_indegrator(object):
 
         # integrate on shooting intervals
         for i in xrange(0, self.NTS - 1):
-
-            # integrate and save data
             xs[i, :, :], xs_dot[i, :, :, :] = self.integrate_interval_dp(i, p, q, s)
 
         return xs, xs_dot
@@ -556,9 +544,7 @@ class OCMS_indegrator(object):
 
         # integrate on shooting intervals
         for i in xrange(0, self.NTS - 1):
-
-        	# integrate and save data
-            xs[i, :, :], xs_dot[i, :, :, i] = self.integrate_interval_dq(i, p, q, s)
+            xs[i, :, :], xs_dot[i, :, :, :] = self.integrate_interval_dq(i, p, q, s)
 
         return xs, xs_dot
 
@@ -589,8 +575,6 @@ class OCMS_indegrator(object):
 
         # integrate on shooting intervals
         for i in xrange(0, self.NTS - 1):
-
-            # integrate and save data
             xs[i, :, :], xs_dot[i, :, :, i * self.NX:(i + 1) * self.NX] = self.integrate_interval_dx0(i, p, q, s)
 
         return xs, xs_dot
