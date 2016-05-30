@@ -31,31 +31,7 @@ class OCMS_snopt(object):
     ===============================================================================
     """
 
-    def __init__(self, ocp):
-
-        """
-
-        description ...
-
-        input:
-            ...
-
-        output:
-            ...
-
-        TODO:
-            ...
-
-        """
-
-        # set attributes
-        self.ocp = ocp
-
-    """
-    ===============================================================================
-    """
-
-    def solve(self, x0, xend, p, q0, s0):
+    def solve(self):
 
         """
 
@@ -68,6 +44,12 @@ class OCMS_snopt(object):
         TODO:
 
         """
+
+        x0 = self.ocp.x0
+        xend = self.ocp.xend
+        p = self.ocp.p
+        q0 = self.ocp.q0
+        s0 = self.ocp.s0
 
         NQ = self.ocp.NQ + self.ocp.NS   # add the shooting variables as controls
         NC = self.ocp.NC + self.ocp.NMC  # add matching conditions for shooting nodes
@@ -93,24 +75,24 @@ class OCMS_snopt(object):
             Flow[0]   = -1e6
             Fupp[0]   = 1e6
 
-            # set the upper and lower bounds for the inequality constraints
+            # set the upper and lower bnds for the inequality constraints
             Flow[1:1 + self.ocp.NCG] = -1e6
             Fupp[1:1 + self.ocp.NCG] = 0
 
-            # set the upper and lower bounds for the equality constraints
+            # set the upper and lower bnds for the equality constraints
             Flow[1 + self.ocp.NCG:1 + self.ocp.NC] = 0
             Fupp[1 + self.ocp.NCG:1 + self.ocp.NC] = 0
 
-            # set the upper and lower bounds for the matching conditions
+            # set the upper and lower bnds for the matching conditions
             Flow[1 + self.ocp.NC:] = 0
             Fupp[1 + self.ocp.NC:] = 0
 
-            # set the upper and lower bounds for the controls q
+            # set the upper and lower bnds for the controls q
             for i in xrange(0, self.ocp.NU):
-                xlow[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bcq[i, 0]
-                xupp[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bcq[i, 1]
+                xlow[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bnds[i, 0]
+                xupp[i * self.ocp.NTS:(i + 1) * self.ocp.NTS] = self.ocp.bnds[i, 1]
 
-            # set the upper and lower bounds for the shooting variables s
+            # set the upper and lower bnds for the shooting variables s
             xlow[self.ocp.NQ:] = -1e6
             xupp[self.ocp.NQ:] = 1e6
 
@@ -315,7 +297,7 @@ class OCMS_snopt(object):
 
         # open output files using snfilewrappers.[ch] */
         specn  = self.ocp.path + "/snopt.spc"
-        printn = self.ocp.path + "/output/" + self.ocp.name + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
+        printn = self.ocp.path + "/output/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "-snopt.out"
         specname[:len(specn)]   = list(specn)
         printname[:len(printn)] = list(printn)
 

@@ -70,31 +70,31 @@ class OCMS_scipy(object):
         NQ = self.ocp.NQ + self.ocp.NS   # add the shooting variables as controls
         NC = self.ocp.NC + self.ocp.NMC  # add matching conditions for shooting nodes
 
-        # set bounds
-        bounds = []
+        # set bnds
+        bnds = []
 
-        # set the upper and lower bounds for the controls q
+        # set the upper and lower bnds for the controls q
         for j in xrange(0, self.ocp.NU):
             for k in xrange(0, self.ocp.NTS):
-                bounds.append((self.ocp.bcq[j, 0], self.ocp.bcq[j, 1]))
+                bnds.append((self.ocp.bnds[j, 0], self.ocp.bnds[j, 1]))
 
-        # set the upper and lower bounds for the shooting variables s
+        # set the upper and lower bnds for the shooting variables s
         for i in xrange(0, self.ocp.NX):
             if x0[i] is not None:
-                bounds.append((x0[i], x0[i]))
+                bnds.append((x0[i], x0[i]))
 
             else:
-                bounds.append((-1e6, 1e6))
+                bnds.append((-1e6, 1e6))
 
         for i in xrange(0, self.ocp.NS - 2 * self.ocp.NX):
-            bounds.append((-1e6, 1e6))
+            bnds.append((-1e6, 1e6))
 
         for i in xrange(0, self.ocp.NX):
             if xend[i] is not None:
-                bounds.append((xend[i], xend[i]))
+                bnds.append((xend[i], xend[i]))
 
             else:
-                bounds.append((-1e6, 1e6))
+                bnds.append((-1e6, 1e6))
 
         def obj(x):
 
@@ -217,7 +217,7 @@ class OCMS_scipy(object):
                            {"type":"eq", "fun":mc, "jac":mc_jac})
 
             # call solver
-            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=bounds,
+            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bnds=bnds,
                                            constraints=constraints,
                                            options={"disp":True, "iprint":2, "ftol":1e-9})
 
@@ -232,7 +232,7 @@ class OCMS_scipy(object):
                            {"type":"eq", "fun":mc, "jac":mc_jac})
 
             # call solver
-            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=bounds,
+            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bnds=bnds,
                                            constraints=constraints,
                                            options={"disp":True, "iprint":2, "ftol":1e-9})
 
@@ -248,7 +248,7 @@ class OCMS_scipy(object):
                            {"type":"eq", "fun":mc, "jac":mc_jac})
 
             # call solver
-            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=bounds,
+            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bnds=bnds,
                                            constraints=constraints,
                                            options={"disp":True, "iprint":2, "ftol":1e-9})
 
@@ -262,7 +262,7 @@ class OCMS_scipy(object):
             constraints = ({"type":"eq", "fun":mc, "jac":mc_jac})
 
             # call solver
-            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=bounds,
+            results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bnds=bnds,
                                            constraints=constraints,
                                            options={"disp":True, "iprint":2, "ftol":1e-9})
 

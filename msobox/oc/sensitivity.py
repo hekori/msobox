@@ -15,7 +15,7 @@ import numpy as np
 ===============================================================================
 """
 
-class OCSS_sensitivity(object):
+class Sensitivity(object):
 
     """
 

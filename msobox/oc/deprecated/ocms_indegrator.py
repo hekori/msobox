@@ -16,10 +16,6 @@ import json
 from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
 
-from msobox.ind.explicit_euler import ExplicitEuler
-from msobox.ind.implicit_euler import ImplicitEuler
-from msobox.ind.rk4classic import RK4Classic
-
 """
 ===============================================================================
 """
@@ -36,7 +32,7 @@ class OCMS_indegrator(object):
     ===============================================================================
     """
 
-    def __init__(self, name, path, minormax, NX, NG, NH, NP, NU, bcq, ts, NTSI):
+    def prepare(self):
 
         """
 
@@ -53,50 +49,28 @@ class OCMS_indegrator(object):
 
         """
 
-        # decide whether to minimize or maximize
-        if minormax == "max":
-            self.sign = -1  # sign is negative for maximization
-        else:
-            self.sign = 1   # sign is positive for minimization
-
-        # set attributes
-        self.name   = name
-        self.path   = path
-
-        self.ts     = ts
-        self.NTS    = ts.size
-        self.NTSI   = NTSI
-
-        self.NX     = NX
-        self.NP     = NP
-
-        self.NG     = NG
-        self.NH     = NH
-        self.NCG    = self.NG * self.NTS
-        self.NCH    = self.NH * self.NTS
-        self.NC     = self.NCG + self.NCH
-
-        self.NU     = NU
-        self.NQI    = 1
-        self.NQ     = self.NU * self.NTS * self.NQI
-        self.bcq    = bcq
-
-        self.NS     = self.NTS * self.NX
-        self.NMC    = self.NS - self.NX
+        self.NTS = self.ts.size                   # number of time steps
+        self.NCG = self.NG * self.NTS             # number of inequality constraints
+        self.NCH = self.NH * self.NTS             # number of equality constraints
+        self.NC  = self.NCG + self.NCH            # total number of constraints
+        self.NQI = 1                              # number of controls per shooting interval
+        self.NQ  = self.NU * self.NTS * self.NQI  # number of controls
+        self.NS  = self.NTS * self.NX             # number of shooting variable
+        self.NMC = self.NS - self.NX              # number of matching conditions
 
         # load json containing data structure for differentiator
-        with open(path + "ds.json", "r") as f:
+        with open(self.path + "ds.json", "r") as f:
             ds = json.load(f)
 
         # differentiate model functions
-        Differentiator(path, ds=ds)
-        self.backend_fortran = BackendFortran(path + "gen/libproblem.so")
+        Differentiator(self.path, ds=ds)
+        self.backend_fortran = BackendFortran(self.path + "gen/libproblem.so")
 
     """
     ===============================================================================
     """
 
-    def set_integrator(self, integrator):
+    def solve(self):
 
         """
 
@@ -113,23 +87,62 @@ class OCMS_indegrator(object):
 
         """
 
-        if integrator == "rk4":
-            self.integrator = RK4Classic(self.backend_fortran)
+        # TODO: type asserts
+        # TODO: attribute asserts
 
-        elif integrator == "explicit_euler":
-            self.integrator = ExplicitEuler(self.backend_fortran)
+        # assert right dimensions of data
+        assert self.p.size == self.NP
+        assert self.q0.size == self.NQ
+        assert self.s0.size == self.NS
 
-        elif integrator == "implicit_euler":
-            self.integrator = ImplicitEuler(self.backend_fortran)
+        # set integrator
+        if self.integrator == "rk4classic":
+
+            from msobox.ind.rk4classic import RK4Classic
+            self.ind = RK4Classic(self.backend_fortran)
+
+        elif self.integrator == "explicit_euler":
+
+            from msobox.ind.explicit_euler import ExplicitEuler
+            self.ind = ExplicitEuler(self.backend_fortran)
 
         else:
+            print "Chosen integrator is not available."
             raise NotImplementedError
+
+        # set solver
+        if self.solver == "snopt":
+
+            from msobox.oc.ocms_snopt import OCMS_snopt
+            self.sol = OCMS_snopt()
+
+        elif self.integrator == "scipy":
+            from msobox.oc.ocms_scipy import OCMS_scipy
+            self.sol = OCMS_scipy()
+
+        else:
+            print "Chosen solver is not available."
+            raise NotImplementedError
+
+        # set whether to minimize or maximize
+        if self.minormax == "min":
+            self.sign = 1
+
+        elif self.minormax == "max":
+            self.sign = -1
+
+        else:
+            print "No valid input for minormax."
+            raise Exception
+
+        # solve the optimal control problem
+        self.results = self.sol.solve()
 
     """
     ===============================================================================
     """
 
-    def initial_s0(self, x0, xend):
+    def approximate_s(self):
 
         """
 
@@ -154,11 +167,11 @@ class OCMS_indegrator(object):
             for i in xrange(0, self.NX):
 
                 # set all shooting variables to x0
-                s0[j * self.NX + i] = x0[i]
+                s0[j * self.NX + i] = self.x0[i]
 
                 # interpolate from x0 to xend if possible
-                if xend[i] is not None:
-                    s0[j * self.NX + i] = x0[i] + float(j) / (self.NTS - 1) * (xend[i] - x0[i]) / (self.ts[-1] - self.ts[0])
+                if self.xend[i] is not None:
+                    s0[j * self.NX + i] = self.x0[i] + float(j) / (self.NTS - 1) * (self.xend[i] - self.x0[i]) / (self.ts[-1] - self.ts[0])
 
         return s0
 
@@ -311,12 +324,12 @@ class OCMS_indegrator(object):
         q_interval = q[:, interval, 0]
 
         # integrate
-        self.integrator.zo_forward(tsi,
+        self.ind.zo_forward(tsi,
                                    x0,
                                    p,
                                    q_interval)
 
-        return self.integrator.xs
+        return self.ind.xs
 
     """
     ===============================================================================
@@ -361,14 +374,14 @@ class OCMS_indegrator(object):
         xs_dot = np.zeros((self.NTSI, self.NX, self.NS))
 
         # integrate
-        self.integrator.fo_forward(tsi,
+        self.ind.fo_forward(tsi,
                                    x0, x0_dot,
                                    p, p_dot,
                                    q_interval, q_dot)
 
-        xs_dot[:, :, interval * self.NX:(interval + 1) * self.NX] = self.integrator.xs_dot
+        xs_dot[:, :, interval * self.NX:(interval + 1) * self.NX] = self.ind.xs_dot
 
-        return self.integrator.xs, xs_dot
+        return self.ind.xs, xs_dot
 
     """
     ===============================================================================
@@ -410,12 +423,12 @@ class OCMS_indegrator(object):
         q_dot  = np.zeros((self.NU, self.NP))
 
         # integrate
-        self.integrator.fo_forward(tsi,
+        self.ind.fo_forward(tsi,
                                    x0, x0_dot,
                                    p, p_dot,
                                    q_interval, q_dot)
 
-        return self.integrator.xs, self.integrator.xs_dot
+        return self.ind.xs, self.ind.xs_dot
 
     """
     ===============================================================================
@@ -460,14 +473,14 @@ class OCMS_indegrator(object):
         xs_dot = np.zeros((self.NTSI, self.NX, self.NQ))
 
         # integrate
-        self.integrator.fo_forward(tsi,
+        self.ind.fo_forward(tsi,
                                    x0, x0_dot,
                                    p, p_dot,
                                    q_interval, q_dot)
 
-        xs_dot[:, :, interval * self.NU:(interval + 1) * self.NU] = self.integrator.xs_dot
+        xs_dot[:, :, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_dot
 
-        return self.integrator.xs, xs_dot
+        return self.ind.xs, xs_dot
 
     """
     ===============================================================================
@@ -517,16 +530,16 @@ class OCMS_indegrator(object):
         xs_ddot = np.zeros((self.NTSI, self.NX, self.NS, self.NS))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot, x0_dot, x0_ddot,
                                    p, p_dot, p_dot, p_ddot,
                                    q_interval, q_dot, q_dot, q_ddot)
 
-        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.integrator.xs_dot1
-        xs_dot2[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.integrator.xs_dot2
-        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, interval * self.NX:(interval + 1) * self.NX] = self.integrator.xs_ddot
+        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot1
+        xs_dot2[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot2
+        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, interval * self.NX:(interval + 1) * self.NX] = self.ind.xs_ddot
 
-        return self.integrator.xs, xs_dot1, xs_dot2, xs_ddot
+        return self.ind.xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -571,12 +584,12 @@ class OCMS_indegrator(object):
         q_ddot  = np.zeros(q_dot.shape + (self.NP,))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot, x0_dot, x0_ddot,
                                    p, p_dot, p_dot, p_ddot,
                                    q_interval, q_dot, q_dot, q_ddot)
 
-        return self.integrator.xs, self.integrator.xs_dot1, self.integrator.xs_dot2, self.integrator.xs_ddot
+        return self.ind.xs, self.ind.xs_dot1, self.ind.xs_dot2, self.ind.xs_ddot
 
     """
     ===============================================================================
@@ -626,16 +639,16 @@ class OCMS_indegrator(object):
         xs_ddot = np.zeros((self.NTSI, self.NX, self.NQ, self.NQ))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot, x0_dot, x0_ddot,
                                    p, p_dot, p_dot, p_ddot,
                                    q_interval, q_dot, q_dot, q_ddot)
 
-        xs_dot1[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.integrator.xs_dot1
-        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.integrator.xs_dot2
-        xs_ddot[:, :, interval * self.NU:(interval + 1) * self.NU, interval * self.NU:(interval + 1) * self.NU] = self.integrator.xs_ddot
+        xs_dot1[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot1
+        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot2
+        xs_ddot[:, :, interval * self.NU:(interval + 1) * self.NU, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_ddot
 
-        return self.integrator.xs, xs_dot1, xs_dot2, xs_ddot
+        return self.ind.xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -687,15 +700,15 @@ class OCMS_indegrator(object):
         xs_ddot = np.zeros((self.NTSI, self.NX, self.NS, self.NP))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot2, x0_dot1, x0_ddot,
                                    p, p_dot2, p_dot1, p_ddot,
                                    q_interval, q_dot2, q_dot1, q_ddot)
 
-        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]    = self.integrator.xs_dot1
-        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, :] = self.integrator.xs_ddot
+        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]    = self.ind.xs_dot1
+        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, :] = self.ind.xs_ddot
 
-        return self.integrator.xs, xs_dot1, self.integrator.xs_dot2, xs_ddot
+        return self.ind.xs, xs_dot1, self.ind.xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -748,16 +761,16 @@ class OCMS_indegrator(object):
         xs_ddot = np.zeros((self.NTSI, self.NX, self.NS, self.NQ))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot2, x0_dot1, x0_ddot,
                                    p, p_dot2, p_dot1, p_ddot,
                                    q_interval, q_dot2, q_dot1, q_ddot)
 
-        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.integrator.xs_dot1
-        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.integrator.xs_dot2
-        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, interval * self.NU:(interval + 1) * self.NU] = self.integrator.xs_ddot
+        xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot1
+        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot2
+        xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_ddot
 
-        return self.integrator.xs, xs_dot1, xs_dot2, xs_ddot
+        return self.ind.xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -809,15 +822,15 @@ class OCMS_indegrator(object):
         xs_ddot = np.zeros((self.NTSI, self.NX, self.NP, self.NQ))
 
         # integrate
-        self.integrator.so_forward(tsi,
+        self.ind.so_forward(tsi,
                                    x0, x0_dot2, x0_dot1, x0_ddot,
                                    p, p_dot2, p_dot1, p_ddot,
                                    q_interval, q_dot2, q_dot1, q_ddot)
 
-        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]    = self.integrator.xs_dot2
-        xs_ddot[:, :, :, interval * self.NU:(interval + 1) * self.NU] = self.integrator.xs_ddot
+        xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]    = self.ind.xs_dot2
+        xs_ddot[:, :, :, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_ddot
 
-        return self.integrator.xs, self.integrator.xs_dot1, xs_dot2, xs_ddot
+        return self.ind.xs, self.ind.xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -2993,6 +3006,303 @@ class OCMS_indegrator(object):
             mc_dpdq[i * self.NX:(i + 1) * self.NX, :, :] = xs_ddot[i, -1, :, :, :]
 
         return mc, mc_dp, mc_dq, mc_dpdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc = np.zeros((self.NQ * 2 + self.NS * 2,))
+
+        # set the lower bnds for the controls q and the shooting variables s
+        for i in xrange(0, self.NU):
+            bc[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 0] - q
+
+        for i in xrange(0, self.NS):
+            bc[self.NQ + i] = -1e6 - s[i]
+
+        # set the upper bnds for the controls q and the shooting variables s
+        l = self.NQ + self.NS
+        for i in xrange(0, self.NU):
+            bc[l + i * self.NTS:l + (i + 1) * self.NTS] = q - self.bnds[i, 1]
+
+        for i in xrange(0, self.NS):
+            bc[2 * self.NQ + self.NS + i] = -s[i] - 1e6
+
+        # fix the shooting variables s at the boundaries if necessary
+        l = self.NQ
+        for i in xrange(0, self.NX):
+            if self.x0[i] is not None:
+                bc[l]     = self.x0[i] - s[i]
+                bc[l + 1] = s[i] - self.x0[i]
+                l         = l + 2
+
+        l = self.NQ * 2 + self.NS
+        for i in xrange(0, self.NX):
+            if self.xend[i] is not None:
+                bc[l]     = self.xend[i] - s[i]
+                bc[l + 1] = s[i] - self.xend[i]
+                l         = l + 2
+
+        return bc
+
+    """
+    ===============================================================================
+    """
+
+    def bc_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_ds = np.zeros((self.NQ * 2 + self.NS * 2, self.NS))
+
+        # set derivatives
+        bc_ds[self.NQ:self.NQ + self.NS, :] = -np.eye(self.NS)
+        bc_ds[self.NQ * 2 + self.NS:, :]    = np.eye(self.NS)
+
+        return bc_ds
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        bc_dp = np.zeros((self.NQ * 2 + self.NS * 2, self.NP))
+
+        return bc_dp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dq = np.zeros((self.NQ * 2 + self.NS * 2, self.NQ))
+
+        # set derivatives
+        bc_dq[0:self.NQ, :]                               = -np.eye(self.NQ)
+        bc_dq[self.NQ + self.NS:self.NQ * 2 + self.NS, :] = np.eye(self.NQ)
+
+        return bc_dq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsds = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NS))
+
+        return bc_dsds
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dpdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dpdp = np.zeros((self.NQ * 2 + self.NS * 2, self.NP, self.NP))
+
+        return bc_dpdp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dqdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NQ, self.NQ))
+
+        return bc_dqdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsdp = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NP))
+
+        return bc_dsdp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NQ))
+
+        return bc_dsdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dpdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dpdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NP, self.NQ))
+
+        return bc_dpdq
 
     """
     ===============================================================================
