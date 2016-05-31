@@ -199,7 +199,7 @@ class OCSS_scipy(object):
             results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=b,
                                            constraints=({"type":"ineq", "fun":cons, "jac":cons_jac},
                                                         {"type":"eq", "fun":matching_conditions, "jac":matching_conditions_jac}),
-                                           tol=1e-6, options={'disp':True, 'iprint':2})
+                                           options={"disp":True, "iprint":2, "ftol":1e-9})
 
             # detailed output
             print results
@@ -211,7 +211,7 @@ class OCSS_scipy(object):
             # call solver without constraints
             results = sp.optimize.minimize(obj, x, args=(), method="SLSQP", jac=True, bounds=b,
                                            constraints=({"type":"eq", "fun":matching_conditions, "jac":matching_conditions_jac}),
-                                           tol=1e-6, options={'disp':True, 'iprint':2})
+                                           options={"disp":True, "iprint":2, "ftol":1e-9})
 
             # detailed output
             print results

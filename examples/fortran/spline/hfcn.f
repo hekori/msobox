@@ -1,6 +1,6 @@
 C ===============================================================================
 C
-C 	fortran gfcn for the splines example
+C 	fortran hfcn for the splines example
 C
 C 	x1_dot = x2
 C 	x2_dot = u
@@ -10,13 +10,13 @@ C 	x1 < 0.1
 C
 C ===============================================================================
 
-	subroutine gfcn(g, t, x, p, u)
+	subroutine hfcn(h, t, x, p, u)
 
 		implicit none
 
-		double precision g(1), t(1), x(3), p(2), u(1)
+		double precision h(1), t(1), x(3), p(2), u(1)
 
-		g(1) = x(1) - 0.1
+		h(1) = 0
 
 	end
 
