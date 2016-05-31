@@ -3,7 +3,7 @@
 """
 ===============================================================================
 
-sensitivity analysis of optimal control problems discretized for single shooting ...
+sensitivity analysis of optimal control problems
 
 ===============================================================================
 """

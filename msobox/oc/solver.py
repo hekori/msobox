@@ -441,7 +441,7 @@ class Solver(object):
             xs_dot_s     = self.ocp.integrate_ds(p, q, s)[1]
 
             # allocate memory
-            jac = np.zeros((self.ocp.NC, NQ))
+            jac = np.zeros((self.ocp.NCG, NQ))
 
             # build jacobian
             jac[:, 0:self.ocp.NQ] = -self.ocp.ineqc_dq(xs, xs_dot_q, None, None, p, q, s)[1]
@@ -472,7 +472,7 @@ class Solver(object):
             xs_dot_s     = self.ocp.integrate_ds(p, q, s)[1]
 
             # allocate memory
-            jac = np.zeros((self.ocp.NC, NQ))
+            jac = np.zeros((self.ocp.NCH, NQ))
 
             # build jacobian
             jac[:, 0:self.ocp.NQ] = self.ocp.eqc_dq(xs, xs_dot_q, None, None, p, q, s)[1]

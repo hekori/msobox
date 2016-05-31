@@ -41,8 +41,8 @@ ocp.NX   = 3 					  		   		 # number of states >= 1
 ocp.NP   = 2  					  		   		 # number of parameters >= 1
 ocp.NU   = 1  									 # number of control functions >= 1
 ocp.NG   = 1                             		 # number of inequality constraints
-ocp.NH   = 1  							 		 # number of equality constraints
-ocp.ts   = np.linspace(0, 1, 10)   		         # control grid
+ocp.NH   = 0  							 		 # number of equality constraints
+ocp.ts   = np.linspace(0, 1, 25)   		         # control grid
 ocp.NTS  = ocp.ts.size   						 # number of controls
 ocp.NTSI = 2              		  		 		 # number of time steps per control interval >= 2
 
@@ -58,7 +58,7 @@ ocp.prepare() 			  						 # check input and prepare subsequent solution
 
 ocs        = Solver()
 ocs.ocp    = ocp      # ocp to be solved
-ocs.solver = "snopt"  # nlp solver to be used
+ocs.solver = "scipy"  # nlp solver to be used
 ocs.solve()			  # solve the ocp
 
 print "\n"

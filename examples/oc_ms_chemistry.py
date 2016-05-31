@@ -57,7 +57,7 @@ ocp.prepare() 			  						    # check input and prepare subsequent solution
 
 ocs        = Solver()
 ocs.ocp    = ocp      # ocp to be solved
-ocs.solver = "snopt"  # nlp solver to be used
+ocs.solver = "scipy"  # nlp solver to be used
 ocs.solve()			  # solve the ocp
 
 print "\n"
