@@ -115,20 +115,20 @@ class Problem(object):
         """
 
         # allocate memory
-        s0 = np.zeros((self.NTS * self.NX,))
+        self.s = np.zeros((self.NTS * self.NX,))
 
         # approximate shooting variables by linear interpolation if possible
-        for j in xrange(0, self.NTS):
-            for i in xrange(0, self.NX):
+        for i in xrange(0, self.NX):
 
-                # set all shooting variables to x0
-                s0[j * self.NX + i] = self.x0[i]
+            # set initial shooting variables to x0 if possible
+            if self.x0[i] is not None:
+                self.s[i] = self.x0[i]
+
+            for j in xrange(1, self.NTS):
 
                 # interpolate from x0 to xend if possible
                 if self.xend[i] is not None:
-                    s0[j * self.NX + i] = self.x0[i] + float(j) / (self.NTS - 1) * (self.xend[i] - self.x0[i]) / (self.ts[-1] - self.ts[0])
-
-        self.s = s0
+                    self.s[j * self.NX + i] = self.x0[i] + float(j) / (self.NTS - 1) * (self.xend[i] - self.x0[i]) / (self.ts[-1] - self.ts[0])
 
     """
     ===============================================================================
@@ -160,10 +160,12 @@ class Problem(object):
         self.NMC = self.NS - self.NX              # number of matching conditions
 
         # assert right dimensions of data
-        assert self.ts.size == self.NTS
-        assert self.p.size  == self.NP
-        assert self.q.size  == self.NQ
-        assert self.s.size  == self.NS
+        assert self.ts.size      == self.NTS
+        assert self.p.size       == self.NP
+        assert self.q.size       == self.NQ
+        assert self.s.size       == self.NS
+        assert len(self.x0)      == self.NX
+        assert len(self.xend)    == self.NX
 
         # set whether to minimize or maximize
         if self.minormax == "min":
@@ -269,7 +271,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -311,7 +313,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -334,9 +336,9 @@ class Problem(object):
 
         # integrate
         self.ind.fo_forward(tsi,
-                                   x0, x0_dot,
-                                   p, p_dot,
-                                   q_interval, q_dot)
+                            x0, x0_dot,
+                            p, p_dot,
+                            q_interval, q_dot)
 
         xs_dot[:, :, interval * self.NX:(interval + 1) * self.NX] = self.ind.xs_dot
 
@@ -363,7 +365,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -383,9 +385,9 @@ class Problem(object):
 
         # integrate
         self.ind.fo_forward(tsi,
-                                   x0, x0_dot,
-                                   p, p_dot,
-                                   q_interval, q_dot)
+                            x0, x0_dot,
+                            p, p_dot,
+                            q_interval, q_dot)
 
         return self.ind.xs, self.ind.xs_dot
 
@@ -410,7 +412,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -433,9 +435,9 @@ class Problem(object):
 
         # integrate
         self.ind.fo_forward(tsi,
-                                   x0, x0_dot,
-                                   p, p_dot,
-                                   q_interval, q_dot)
+                            x0, x0_dot,
+                            p, p_dot,
+                            q_interval, q_dot)
 
         xs_dot[:, :, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_dot
 
@@ -462,7 +464,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -490,9 +492,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot, x0_dot, x0_ddot,
-                                   p, p_dot, p_dot, p_ddot,
-                                   q_interval, q_dot, q_dot, q_ddot)
+                            x0, x0_dot, x0_dot, x0_ddot,
+                            p, p_dot, p_dot, p_ddot,
+                            q_interval, q_dot, q_dot, q_ddot)
 
         xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot1
         xs_dot2[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot2
@@ -521,7 +523,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -544,9 +546,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot, x0_dot, x0_ddot,
-                                   p, p_dot, p_dot, p_ddot,
-                                   q_interval, q_dot, q_dot, q_ddot)
+                            x0, x0_dot, x0_dot, x0_ddot,
+                            p, p_dot, p_dot, p_ddot,
+                            q_interval, q_dot, q_dot, q_ddot)
 
         return self.ind.xs, self.ind.xs_dot1, self.ind.xs_dot2, self.ind.xs_ddot
 
@@ -571,7 +573,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -599,9 +601,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot, x0_dot, x0_ddot,
-                                   p, p_dot, p_dot, p_ddot,
-                                   q_interval, q_dot, q_dot, q_ddot)
+                            x0, x0_dot, x0_dot, x0_ddot,
+                            p, p_dot, p_dot, p_ddot,
+                            q_interval, q_dot, q_dot, q_ddot)
 
         xs_dot1[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot1
         xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot2
@@ -630,7 +632,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -660,9 +662,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot2, x0_dot1, x0_ddot,
-                                   p, p_dot2, p_dot1, p_ddot,
-                                   q_interval, q_dot2, q_dot1, q_ddot)
+                            x0, x0_dot2, x0_dot1, x0_ddot,
+                            p, p_dot2, p_dot1, p_ddot,
+                            q_interval, q_dot2, q_dot1, q_ddot)
 
         xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]    = self.ind.xs_dot1
         xs_ddot[:, :, interval * self.NX:(interval + 1) * self.NX, :] = self.ind.xs_ddot
@@ -690,7 +692,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -721,9 +723,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot2, x0_dot1, x0_ddot,
-                                   p, p_dot2, p_dot1, p_ddot,
-                                   q_interval, q_dot2, q_dot1, q_ddot)
+                            x0, x0_dot2, x0_dot1, x0_ddot,
+                            p, p_dot2, p_dot1, p_ddot,
+                            q_interval, q_dot2, q_dot1, q_ddot)
 
         xs_dot1[:, :, interval * self.NX:(interval + 1) * self.NX]                                              = self.ind.xs_dot1
         xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]                                              = self.ind.xs_dot2
@@ -752,7 +754,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -782,9 +784,9 @@ class Problem(object):
 
         # integrate
         self.ind.so_forward(tsi,
-                                   x0, x0_dot2, x0_dot1, x0_ddot,
-                                   p, p_dot2, p_dot1, p_ddot,
-                                   q_interval, q_dot2, q_dot1, q_ddot)
+                            x0, x0_dot2, x0_dot1, x0_ddot,
+                            p, p_dot2, p_dot1, p_ddot,
+                            q_interval, q_dot2, q_dot1, q_ddot)
 
         xs_dot2[:, :, interval * self.NU:(interval + 1) * self.NU]    = self.ind.xs_dot2
         xs_ddot[:, :, :, interval * self.NU:(interval + 1) * self.NU] = self.ind.xs_ddot

@@ -37,22 +37,21 @@ def get_dir_path():
 
 ocp 	 = Problem()
 ocp.path = get_dir_path() + "/fortran/spline/"   # folder containing the fortran model files
-ocp.NX   = 3 					  		   		 # number of states
-ocp.NP   = 2  					  		   		 # number of parameters
-ocp.NU   = 1  									 # number of control functions
+ocp.NX   = 3 					  		   		 # number of states >= 1
+ocp.NP   = 2  					  		   		 # number of parameters >= 1
+ocp.NU   = 1  									 # number of control functions >= 1
 ocp.NG   = 1                             		 # number of inequality constraints
-ocp.NH   = 0  							 		 # number of equality constraints
-ocp.NTS  = 20									 # number of controls and shooting nodes
-ocp.ts   = np.linspace(0, 1, 20)    		     # control grid
+ocp.NH   = 1  							 		 # number of equality constraints
+ocp.ts   = np.linspace(0, 1, 10)   		         # control grid
 ocp.NTS  = ocp.ts.size   						 # number of controls
-ocp.NTSI = 2              		  		 		 # number of time steps per control interval
+ocp.NTSI = 2              		  		 		 # number of time steps per control interval >= 2
 
 ocp.x0   	   = [0, 1, 0] 			  		     # initial values for states
 ocp.xend 	   = [0, -1, None]          		 # boundary values for states
 ocp.bnds 	   = np.array([-1e6, 1e6], ndmin=2)  # box constraints for control functions
 ocp.p  		   = 1 * np.ones((ocp.NP,))       	 # parameter values
 ocp.q 		   = -3 * np.ones((ocp.NTS,))        # initial guess for controls
-ocp.s          = np.array([0, 1, 0, 0, -1, 0]) 	 # initial guess for shooting variables
+ocp.approximate_s()  				  	     	 # calculate initial guess for shooting variables
 ocp.minormax   = "min"						     # choose minimization or maximization
 ocp.integrator = "rk4classic"    	     		 # integrator to be used
 ocp.prepare() 			  						 # check input and prepare subsequent solution

@@ -97,6 +97,41 @@ class Problem(object):
     ===============================================================================
     """
 
+    def approximate_s(self):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        self.s = np.zeros((2 * self.NX,))
+
+        # approximate shooting variables by linear interpolation if possible
+        for i in xrange(0, self.NX):
+
+            # set initial shooting variables to x0 if possible
+            if self.x0[i] is not None:
+                self.s[i] = self.x0[i]
+
+            # set end shooting variables to xend if possible
+            if self.xend[i] is not None:
+                self.s[self.NX + i] = self.xend[i]
+
+    """
+    ===============================================================================
+    """
+
     def prepare(self):
 
         """
@@ -123,10 +158,12 @@ class Problem(object):
         self.NMC = self.NX                        # number of matching conditions
 
         # assert right dimensions of data
-        assert self.ts.size == self.NTS
-        assert self.p.size  == self.NP
-        assert self.q.size  == self.NQ
-        assert self.s.size  == self.NS
+        assert self.ts.size      == self.NTS
+        assert self.p.size       == self.NP
+        assert self.q.size       == self.NQ
+        assert self.s.size       == self.NS
+        assert len(self.x0)      == self.NX
+        assert len(self.xend)    == self.NX
 
         # set whether to minimize or maximize
         if self.minormax == "min":
@@ -224,7 +261,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -274,7 +311,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -282,14 +319,11 @@ class Problem(object):
         xs     = np.zeros((self.NTS, self.NX))
         xs_dot = np.zeros((self.NTS, self.NX, self.NS))
 
-        # set up directions for differentation
-        x0_dot = np.eye(self.NX)
-        p_dot  = np.zeros((self.NP, self.NX))
-        q_dot  = np.zeros((self.NU, self.NX))
-
-        # set initial conditions
+        # set up directions and initial conditions
         xs[0, :]                = s[0, :]
-        xs_dot[0, :, 0:self.NX] = x0_dot
+        xs_dot[0, :, 0:self.NX] = np.eye(self.NX)
+        p_dot                   = np.zeros((self.NP, self.NX))
+        q_dot                   = np.zeros((self.NU, self.NX))
 
         # integrate
         for i in xrange(0, self.NTS - 1):
@@ -333,7 +367,7 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
@@ -391,13 +425,13 @@ class Problem(object):
 
         """
 
-        # convert controls and shooting variables to INDegrator specific format
+        # convert controls and shooting variables
         q = self.flat2array_q(q)
         s = self.flat2array_s(s)
 
         # allocate memory
-        xs         = np.zeros((self.NTS, self.NX))
-        xs_dot     = np.zeros((self.NTS, self.NX, self.NQ))
+        xs     = np.zeros((self.NTS, self.NX))
+        xs_dot = np.zeros((self.NTS, self.NX, self.NQ))
 
         # set initial conditions
         xs[0, :] = s[0, :]
@@ -447,7 +481,47 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NS))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NS))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NS, self.NS))
+
+        # set up directions and initial conditions
+        xs[0, :]                 = s[0, :]
+        xs_dot1[0, :, 0:self.NX] = np.eye(self.NX)
+        xs_dot2[0, :, 0:self.NX] = np.eye(self.NX)
+        x0_ddot                  = np.zeros((self.NX, self.NX, self.NX))
+        p_dot                    = np.zeros((self.NP, self.NX))
+        p_ddot                   = np.zeros((self.NP, self.NX, self.NX))
+        q_dot                    = np.zeros((self.NU, self.NX))
+        q_ddot                   = np.zeros((self.NU, self.NX, self.NX))
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, 0:self.NX]
+            x0_dot2 = xs_dot2[i, :, 0:self.NX]
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, 0:self.NX], xs_dot2[i + 1, :, 0:self.NX], xs_ddot[i + 1, :, 0:self.NX, 0:self.NX] = self.ind.so_forward(tsi,
+                                                                                                                                                    x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                                                    p, p_dot, p_dot, p_ddot,
+                                                                                                                                                    q_interval, q_dot, q_dot, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -470,7 +544,45 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NP, self.NP))
+
+        # set up directions and initial conditions
+        xs[0, :] = s[0, :]
+        x0_ddot  = np.zeros((self.NX, self.NP, self.NP))
+        p_dot    = np.eye(self.NP)
+        p_ddot   = np.zeros((self.NP, self.NP, self.NP))
+        q_dot    = np.zeros((self.NU, self.NP))
+        q_ddot   = np.zeros((self.NU, self.NP, self.NP))
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, :]
+            x0_dot2 = xs_dot2[i, :, :]
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, :], xs_ddot[i + 1, :, :, :] = self.ind.so_forward(tsi,
+                                                                                                                    x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                    p, p_dot, p_dot, p_ddot,
+                                                                                                                    q_interval, q_dot, q_dot, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -493,7 +605,46 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NQ, self.NQ))
+
+        # set initial conditions
+        xs[0, :] = s[0, :]
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # set up directions and initial conditions
+            x0                                      = xs[i, :]
+            x0_dot1                                 = xs_dot1[i, :, 0:(i + 1) * self.NU]
+            x0_dot2                                 = xs_dot2[i, :, 0:(i + 1) * self.NU]
+            x0_ddot                                 = np.zeros((self.NX, (i + 1) * self.NU, (i + 1) * self.NU))
+            p_dot                                   = np.zeros((self.NP, (i + 1) * self.NU))
+            p_ddot                                  = np.zeros((self.NP, (i + 1) * self.NU, (i + 1) * self.NU))
+            q_dot                                   = np.zeros((self.NU, (i + 1) * self.NU))
+            q_dot[:, i * self.NU:(i + 1) * self.NU] = np.eye(self.NU)
+            q_ddot                                  = np.zeros((self.NU, (i + 1) * self.NU, (i + 1) * self.NU))
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, 0:(i + 1) * self.NU], xs_dot2[i + 1, :, 0:(i + 1) * self.NU], xs_ddot[i + 1, :, 0:(i + 1) * self.NU, 0:(i + 1) * self.NU] = self.ind.so_forward(tsi,
+                                                                                                                                                                                            x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                                                                                            p, p_dot, p_dot, p_ddot,
+                                                                                                                                                                                            q_interval, q_dot, q_dot, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -516,7 +667,48 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NS))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NS, self.NP))
+
+        # set up directions and initial conditions
+        xs[0, :]                 = s[0, :]
+        xs_dot1[0, :, 0:self.NX] = np.eye(self.NX)
+        x0_ddot                  = np.zeros((self.NX, self.NX, self.NX))
+        p_dot1                   = np.zeros((self.NP, self.NX))
+        p_dot2                   = np.eye(self.NP)
+        p_ddot                   = np.zeros((self.NP, self.NX, self.NX))
+        q_dot1                   = np.zeros((self.NU, self.NX))
+        q_dot2                   = np.zeros((self.NU, self.NP))
+        q_ddot                   = np.zeros((self.NU, self.NX, self.NX))
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set initial conditions
+            x0      = xs[i, :]
+            x0_dot1 = xs_dot1[i, :, 0:self.NX]
+            x0_dot2 = xs_dot2[i, :, :]
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, 0:self.NX], xs_dot2[i + 1, :, :], xs_ddot[i + 1, :, 0:self.NX, :] = self.ind.so_forward(tsi,
+                                                                                                                                    x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                                    p, p_dot2, p_dot1, p_ddot,
+                                                                                                                                    q_interval, q_dot2, q_dot1, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -539,7 +731,49 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NS))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NS, self.NQ))
+
+        # set up directions and initial conditions
+        xs[0, :]                 = s[0, :]
+        xs_dot1[0, :, 0:self.NX] = np.eye(self.NX)
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set up directions and initial conditions
+            x0                                       = xs[i, :]
+            x0_dot1                                  = xs_dot1[i, :, 0:self.NX]
+            x0_dot2                                  = xs_dot2[i, :, 0:(i + 1) * self.NU]
+            x0_ddot                                  = np.zeros((self.NX, self.NX, (i + 1) * self.NU))
+            p_dot1                                   = np.zeros((self.NP, self.NX))
+            p_dot2                                   = np.zeros((self.NP, (i + 1) * self.NU))
+            p_ddot                                   = np.zeros((self.NP, self.NX, (i + 1) * self.NU))
+            q_dot1                                   = np.zeros((self.NU, self.NX))
+            q_dot2                                   = np.zeros((self.NU, (i + 1) * self.NU))
+            q_dot2[:, i * self.NU:(i + 1) * self.NU] = np.eye(self.NU)
+            q_ddot                                   = np.zeros((self.NU, self.NX, (i + 1) * self.NU))
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, 0:self.NX], xs_dot2[i + 1, :, 0:(i + 1) * self.NU], xs_ddot[i + 1, :, 0:self.NX, 0:(i + 1) * self.NU] = self.ind.so_forward(tsi,
+                                                                                                                                                                        x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                                                                        p, p_dot2, p_dot1, p_ddot,
+                                                                                                                                                                        q_interval, q_dot2, q_dot1, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -562,7 +796,48 @@ class Problem(object):
 
         """
 
-        raise NotImplementedError
+        # convert controls and shooting variables
+        q = self.flat2array_q(q)
+        s = self.flat2array_s(s)
+
+        # allocate memory
+        xs      = np.zeros((self.NTS, self.NX))
+        xs_dot1 = np.zeros((self.NTS, self.NX, self.NP))
+        xs_dot2 = np.zeros((self.NTS, self.NX, self.NQ))
+        xs_ddot = np.zeros((self.NTS, self.NX, self.NP, self.NQ))
+
+        # set up directions and initial conditions
+        xs[0, :] = s[0, :]
+
+        # integrate
+        for i in xrange(0, self.NTS - 1):
+
+            # set up directions and initial conditions
+            x0                                       = xs[i, :]
+            x0_dot1                                  = xs_dot1[i, :, :]
+            x0_dot2                                  = xs_dot2[i, :, 0:(i + 1) * self.NU]
+            x0_ddot                                  = np.zeros((self.NX, self.NP, (i + 1) * self.NU))
+            p_dot1                                   = np.eye(self.NP)
+            p_dot2                                   = np.zeros((self.NP, (i + 1) * self.NU))
+            p_ddot                                   = np.zeros((self.NP, self.NP, (i + 1) * self.NU))
+            q_dot1                                   = np.zeros((self.NU, self.NP))
+            q_dot2                                   = np.zeros((self.NU, (i + 1) * self.NU))
+            q_dot2[:, i * self.NU:(i + 1) * self.NU] = np.eye(self.NU)
+            q_ddot                                   = np.zeros((self.NU, self.NP, (i + 1) * self.NU))
+
+            # set time steps for this interval
+            tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
+
+            # set constant controls for this interval
+            q_interval = q[:, i, 0]
+
+            # integrate
+            xs[i + 1, :], xs_dot1[i + 1, :, :], xs_dot2[i + 1, :, 0:(i + 1) * self.NU], xs_ddot[i + 1, :, :, 0:(i + 1) * self.NU] = self.ind.so_forward(tsi,
+                                                                                                                                                        x0, x0_dot2, x0_dot1, x0_ddot,
+                                                                                                                                                        p, p_dot2, p_dot1, p_ddot,
+                                                                                                                                                        q_interval, q_dot2, q_dot1, q_ddot)
+
+        return xs, xs_dot1, xs_dot2, xs_ddot
 
     """
     ===============================================================================
@@ -590,7 +865,7 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c = np.zeros((self.NC,))
+            c = np.zeros((self.NCG,))
 
             x = np.zeros((self.NX,))
             g = np.zeros((self.NG,))
@@ -641,8 +916,8 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            ds    = np.zeros((self.NC, self.NS))
+            c     = np.zeros((self.NCG,))
+            ds    = np.zeros((self.NCG, self.NS))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NX))
@@ -667,8 +942,8 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NG):
-                    ds[i + k * self.NTS, :self.NX] = g_dot[k, :]
-                    c[i + k * self.NTS]            = g[k]
+                    ds[i + k * self.NTS, 0:self.NX] = g_dot[k, :]
+                    c[i + k * self.NTS]             = g[k]
 
         return c, ds
 
@@ -699,8 +974,8 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            c_dp  = np.zeros((self.NC, self.NP))
+            c     = np.zeros((self.NCG,))
+            c_dp  = np.zeros((self.NCG, self.NP))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NP))
@@ -757,8 +1032,8 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            dq    = np.zeros((self.NC, self.NQ))
+            c     = np.zeros((self.NCG,))
+            dq    = np.zeros((self.NCG, self.NQ))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NU))
@@ -827,10 +1102,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            ds1  = np.zeros((self.NC, self.NS))
-            ds2  = np.zeros((self.NC, self.NS))
-            dsds = np.zeros((self.NC, self.NS, self.NS))
+            c    = np.zeros((self.NCG,))
+            ds1  = np.zeros((self.NCG, self.NS))
+            ds2  = np.zeros((self.NCG, self.NS))
+            dsds = np.zeros((self.NCG, self.NS, self.NS))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NX))
@@ -851,9 +1126,9 @@ class Problem(object):
 
                 # state and controls for this time step
                 x      = xs[i, :]
-                x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
-                x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
-                x_ddot = np.reshape(xs_ddot[i, :, :, :], x_ddot.shape)
+                x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
+                x_dot2 = np.reshape(xs_dot2[i, :, 0:self.NX], x_dot2.shape)
+                x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, 0:self.NX], x_ddot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -867,10 +1142,10 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NG):
-                    dsds[i + k * self.NTS, self.NX:, self.NX:] = g_ddot[k, :, :]
-                    ds1[i + k * self.NTS, self.NX:]            = g_dot1[k, :]
-                    ds2[i + k * self.NTS, self.NX:]            = g_dot2[k, :]
-                    c[i + k * self.NTS]                        = g[k]
+                    dsds[i + k * self.NTS, 0:self.NX, 0:self.NX] = g_ddot[k, :, :]
+                    ds1[i + k * self.NTS, 0:self.NX]             = g_dot1[k, :]
+                    ds2[i + k * self.NTS, 0:self.NX]             = g_dot2[k, :]
+                    c[i + k * self.NTS]                          = g[k]
 
         return c, ds1, ds2, dsds
 
@@ -903,10 +1178,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            dp1    = np.zeros((self.NC, self.NP))
-            dp2    = np.zeros((self.NC, self.NP))
-            dpdp   = np.zeros((self.NC, self.NP, self.NP))
+            c      = np.zeros((self.NCG,))
+            dp1    = np.zeros((self.NCG, self.NP))
+            dp2    = np.zeros((self.NCG, self.NP))
+            dpdp   = np.zeros((self.NCG, self.NP, self.NP))
 
             t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
@@ -980,10 +1255,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            dq1    = np.zeros((self.NC, self.NQ))
-            dq2    = np.zeros((self.NC, self.NQ))
-            dqdq   = np.zeros((self.NC, self.NQ, self.NQ))
+            c      = np.zeros((self.NCG,))
+            dq1    = np.zeros((self.NCG, self.NQ))
+            dq2    = np.zeros((self.NCG, self.NQ))
+            dqdq   = np.zeros((self.NCG, self.NQ, self.NQ))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NU))
@@ -1076,10 +1351,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            ds    = np.zeros((self.NC, self.NS))
-            dp    = np.zeros((self.NC, self.NP))
-            dsdp  = np.zeros((self.NC, self.NS, self.NP))
+            c     = np.zeros((self.NCG,))
+            ds    = np.zeros((self.NCG, self.NS))
+            dp    = np.zeros((self.NCG, self.NP))
+            dsdp  = np.zeros((self.NCG, self.NS, self.NP))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros(self.NX, self.NX)
@@ -1101,9 +1376,9 @@ class Problem(object):
 
                 # state and controls for this time step
                 x      = xs[i, :]
-                x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
+                x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
                 x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
-                x_ddot = np.reshape(xs_ddot[i, :, :, :], x_ddot.shape)
+                x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, :], x_ddot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -1117,10 +1392,10 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NG):
-                    dsdp[i + k * self.NTS, self.NX:, :] = g_ddot[k, :, :]
-                    ds[i + k * self.NTS, self.NX:]      = g_dot1[k, :]
-                    dp[i + k * self.NTS, :]             = g_dot2[k, :]
-                    c[i + k * self.NTS]                 = g[k]
+                    dsdp[i + k * self.NTS, 0:self.NX:, :] = g_ddot[k, :, :]
+                    ds[i + k * self.NTS, 0:self.NX]       = g_dot1[k, :]
+                    dp[i + k * self.NTS, :]               = g_dot2[k, :]
+                    c[i + k * self.NTS]                   = g[k]
 
         return c, ds, dp, dsdp
 
@@ -1153,10 +1428,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c    = np.zeros((self.NC,))
-            ds   = np.zeros((self.NC, self.NS))
-            dq   = np.zeros((self.NC, self.NP))
-            dsdq = np.zeros((self.NC, self.NS, self.NP))
+            c    = np.zeros((self.NCG,))
+            ds   = np.zeros((self.NCG, self.NS))
+            dq   = np.zeros((self.NCG, self.NP))
+            dsdq = np.zeros((self.NCG, self.NS, self.NP))
 
             t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
@@ -1182,9 +1457,9 @@ class Problem(object):
 
                     # state and controls for this time step
                     x      = xs[i, :]
-                    x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
+                    x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
                     x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
-                    x_ddot = np.reshape(xs_ddot[i, :, :, j], x_ddot.shape)
+                    x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, j], x_ddot.shape)
 
                     for l in xrange(0, self.NU):
                         u[l] = q[i + l * self.NTS]
@@ -1203,12 +1478,12 @@ class Problem(object):
 
                     # store gradient
                     for k in xrange(0, self.NG):
-                        c[i + k * self.NTS]            = g[k]
-                        ds[i + k * self.NTS, self.NX:] = g_dot1[k, :]
+                        c[i + k * self.NTS]             = g[k]
+                        ds[i + k * self.NTS, 0:self.NX] = g_dot1[k, :]
 
                         for l in xrange(0, self.NU):
-                            dsdq[i + k * self.NTS, self.NX:, j + l * self.NTS] = g_ddot[k, :, l]
-                            dxq[i + k * self.NTS, j + l * self.NTS]            = g_dot2[k, l]
+                            dsdq[i + k * self.NTS, 0:self.NX, j + l * self.NTS] = g_ddot[k, :, l]
+                            dxq[i + k * self.NTS, j + l * self.NTS]             = g_dot2[k, l]
 
 
         return c, ds, dq, dsdq
@@ -1242,10 +1517,10 @@ class Problem(object):
         if self.NG > 0:
 
             # allocate memory
-            c    = np.zeros((self.NC,))
-            dp   = np.zeros((self.NC, self.NP))
-            dq   = np.zeros((self.NC, self.NQ))
-            dpdq = np.zeros((self.NC, self.NP, self.NQ))
+            c    = np.zeros((self.NCG,))
+            dp   = np.zeros((self.NCG, self.NP))
+            dq   = np.zeros((self.NCG, self.NQ))
+            dpdq = np.zeros((self.NCG, self.NP, self.NQ))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NP))
@@ -1328,7 +1603,7 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c = np.zeros((self.NC,))
+            c = np.zeros((self.NCH,))
 
             x = np.zeros((self.NX,))
             g = np.zeros((self.NH,))
@@ -1373,14 +1648,14 @@ class Problem(object):
 
         """
 
-        c   = None
+        c  = None
         ds = None
 
         if self.NH > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            ds   = np.zeros((self.NC, self.NX))
+            c    = np.zeros((self.NCH,))
+            ds   = np.zeros((self.NCH, self.NS))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NX))
@@ -1395,7 +1670,7 @@ class Problem(object):
 
                 # state and controls for this time step
                 x     = xs[i, :]
-                x_dot = np.reshape(xs_dot1[i, :, :], x_dot.shape)
+                x_dot = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -1405,8 +1680,8 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NH):
-                    ds[i + k * self.NTS, :] = g_dot[k, :]
-                    c[i + k * self.NTS]      = g[k]
+                    ds[i + k * self.NTS, 0:self.NX] = g_dot[k, :]
+                    c[i + k * self.NTS]             = g[k]
 
         return c, ds
 
@@ -1437,8 +1712,8 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            c_dp  = np.zeros((self.NC, self.NP))
+            c     = np.zeros((self.NCH,))
+            c_dp  = np.zeros((self.NCH, self.NP))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NP))
@@ -1495,8 +1770,8 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c     = np.zeros((self.NC,))
-            dq    = np.zeros((self.NC, self.NQ))
+            c     = np.zeros((self.NCH,))
+            dq    = np.zeros((self.NCH, self.NQ))
 
             x     = np.zeros((self.NX,))
             x_dot = np.zeros((self.NX, self.NU))
@@ -1557,18 +1832,18 @@ class Problem(object):
 
         """
 
-        c      = None
-        ds1   = None
-        ds2   = None
+        c    = None
+        ds1  = None
+        ds2  = None
         dsds = None
 
         if self.NH > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            ds1   = np.zeros((self.NC, self.NX))
-            ds2   = np.zeros((self.NC, self.NX))
-            dsds = np.zeros((self.NC, self.NX, self.NX))
+            c    = np.zeros((self.NCH,))
+            ds1  = np.zeros((self.NCH, self.NS))
+            ds2  = np.zeros((self.NCH, self.NS))
+            dsds = np.zeros((self.NCH, self.NS, self.NS))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NX))
@@ -1589,9 +1864,9 @@ class Problem(object):
 
                 # state and controls for this time step
                 x      = xs[i, :]
-                x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
-                x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
-                x_ddot = np.reshape(xs_ddot[i, :, :, :], x_ddot.shape)
+                x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
+                x_dot2 = np.reshape(xs_dot2[i, :, 0:self.NX], x_dot2.shape)
+                x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, 0:self.NX], x_ddot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -1605,10 +1880,10 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NH):
-                    dsds[i + k * self.NTS, :, :] = g_ddot[k, :, :]
-                    ds1[i + k * self.NTS, :]      = g_dot1[k, :]
-                    ds2[i + k * self.NTS, :]      = g_dot2[k, :]
-                    c[i + k * self.NTS]            = g[k]
+                    dsds[i + k * self.NTS, 0:self.NX, 0:self.NX] = g_ddot[k, :, :]
+                    ds1[i + k * self.NTS, 0:self.NX]             = g_dot1[k, :]
+                    ds2[i + k * self.NTS, 0:self.NX]             = g_dot2[k, :]
+                    c[i + k * self.NTS]                          = g[k]
 
         return c, ds1, ds2, dsds
 
@@ -1641,10 +1916,10 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            dp1    = np.zeros((self.NC, self.NP))
-            dp2    = np.zeros((self.NC, self.NP))
-            dpdp   = np.zeros((self.NC, self.NP, self.NP))
+            c      = np.zeros((self.NCH,))
+            dp1    = np.zeros((self.NCH, self.NP))
+            dp2    = np.zeros((self.NCH, self.NP))
+            dpdp   = np.zeros((self.NCH, self.NP, self.NP))
 
             t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
@@ -1718,10 +1993,10 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            dq1    = np.zeros((self.NC, self.NQ))
-            dq2    = np.zeros((self.NC, self.NQ))
-            dqdq   = np.zeros((self.NC, self.NQ, self.NQ))
+            c      = np.zeros((self.NCH,))
+            dq1    = np.zeros((self.NCH, self.NQ))
+            dq2    = np.zeros((self.NCH, self.NQ))
+            dqdq   = np.zeros((self.NCH, self.NQ, self.NQ))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NU))
@@ -1806,18 +2081,18 @@ class Problem(object):
 
         """
 
-        c     = None
+        c    = None
         ds   = None
-        dp    = None
+        dp   = None
         dsdp = None
 
         if self.NH > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            ds    = np.zeros((self.NC, self.NX))
-            dp     = np.zeros((self.NC, self.NP))
-            dsdp  = np.zeros((self.NC, self.NX, self.NP))
+            c     = np.zeros((self.NCH,))
+            ds    = np.zeros((self.NCH, self.NS))
+            dp    = np.zeros((self.NCH, self.NP))
+            dsdp  = np.zeros((self.NCH, self.NS, self.NP))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros(self.NX, self.NX)
@@ -1839,9 +2114,9 @@ class Problem(object):
 
                 # state and controls for this time step
                 x      = xs[i, :]
-                x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
+                x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
                 x_dot2 = np.reshape(xs_dot2[i, :, :], x_dot2.shape)
-                x_ddot = np.reshape(xs_ddot[i, :, :, :], x_ddot.shape)
+                x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, :], x_ddot.shape)
 
                 for l in xrange(0, self.NU):
                     u[l] = q[i + l * self.NTS]
@@ -1855,10 +2130,10 @@ class Problem(object):
 
                 # store gradient
                 for k in xrange(0, self.NH):
-                    dsdp[i + k * self.NTS, :, :] = g_ddot[k, :, :]
-                    ds[i + k * self.NTS, :]      = g_dot1[k, :]
-                    dxp[i + k * self.NTS, :]      = g_dot2[k, :]
-                    c[i + k * self.NTS]           = g[k]
+                    dsdp[i + k * self.NTS, 0:self.NX, :] = g_ddot[k, :, :]
+                    ds[i + k * self.NTS, 0:self.NX]      = g_dot1[k, :]
+                    dxp[i + k * self.NTS, :]             = g_dot2[k, :]
+                    c[i + k * self.NTS]                  = g[k]
 
         return c, ds, dp, dsdp
 
@@ -1891,10 +2166,10 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c      = np.zeros((self.NC,))
-            ds    = np.zeros((self.NC, self.NX))
-            dq     = np.zeros((self.NC, self.NP))
-            dsdq  = np.zeros((self.NC, self.NX, self.NP))
+            c     = np.zeros((self.NCH,))
+            ds    = np.zeros((self.NCH, self.NS))
+            dq    = np.zeros((self.NCH, self.NP))
+            dsdq  = np.zeros((self.NCH, self.NS, self.NP))
 
             t      = np.zeros((1,))
             x      = np.zeros((self.NX,))
@@ -1920,9 +2195,9 @@ class Problem(object):
 
                     # state and controls for this time step
                     x      = xs[i, :]
-                    x_dot1 = np.reshape(xs_dot1[i, :, :], x_dot1.shape)
+                    x_dot1 = np.reshape(xs_dot1[i, :, 0:self.NX], x_dot1.shape)
                     x_dot2 = np.reshape(xs_dot2[i, :, j], x_dot2.shape)
-                    x_ddot = np.reshape(xs_ddot[i, :, :, j], x_ddot.shape)
+                    x_ddot = np.reshape(xs_ddot[i, :, 0:self.NX, j], x_ddot.shape)
 
                     for l in xrange(0, self.NU):
                         u[l] = q[i + l * self.NTS]
@@ -1941,12 +2216,12 @@ class Problem(object):
 
                     # store gradient
                     for k in xrange(0, self.NH):
-                        c[i + k * self.NTS]      = g[k]
-                        ds[i + k * self.NTS, :] = g_dot1[k, :]
+                        c[i + k * self.NTS]             = g[k]
+                        ds[i + k * self.NTS, 0:self.NX] = g_dot1[k, :]
 
                         for l in xrange(0, self.NU):
-                            dsdq[i + k * self.NTS, :, j + l * self.NTS] = g_ddot[k, :, l]
-                            dxq[i + k * self.NTS, j + l * self.NTS]      = g_dot2[k, l]
+                            dsdq[i + k * self.NTS, 0:self.NX, j + l * self.NTS] = g_ddot[k, :, l]
+                            dxq[i + k * self.NTS, j + l * self.NTS]             = g_dot2[k, l]
 
 
         return c, ds, dq, dsdq
@@ -1980,10 +2255,10 @@ class Problem(object):
         if self.NH > 0:
 
             # allocate memory
-            c    = np.zeros((self.NC,))
-            dp   = np.zeros((self.NC, self.NP))
-            dq   = np.zeros((self.NC, self.NQ))
-            dpdq = np.zeros((self.NC, self.NP, self.NQ))
+            c    = np.zeros((self.NCH,))
+            dp   = np.zeros((self.NCH, self.NP))
+            dq   = np.zeros((self.NCH, self.NQ))
+            dpdq = np.zeros((self.NCH, self.NP, self.NQ))
 
             x      = np.zeros((self.NX,))
             x_dot1 = np.zeros((self.NX, self.NP))
@@ -2326,6 +2601,303 @@ class Problem(object):
         mc_dpdq = xs_ddot[-1, :, :, :]
 
         return mc, mc_dp, mc_dq, mc_dpdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc = np.zeros((self.NQ * 2 + self.NS * 2,))
+
+        # set the lower bnds for the controls q and the shooting variables s
+        for i in xrange(0, self.NU):
+            bc[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 0] - q
+
+        for i in xrange(0, self.NS):
+            bc[self.NQ + i] = -1e6 - s[i]
+
+        # set the upper bnds for the controls q and the shooting variables s
+        l = self.NQ + self.NS
+        for i in xrange(0, self.NU):
+            bc[l + i * self.NTS:l + (i + 1) * self.NTS] = q - self.bnds[i, 1]
+
+        for i in xrange(0, self.NS):
+            bc[2 * self.NQ + self.NS + i] = -s[i] - 1e6
+
+        # fix the shooting variables s at the boundaries if necessary
+        l = self.NQ
+        for i in xrange(0, self.NX):
+            if self.x0[i] is not None:
+                bc[l]     = self.x0[i] - s[i]
+                bc[l + 1] = s[i] - self.x0[i]
+                l         = l + 2
+
+        l = self.NQ * 2 + self.NS
+        for i in xrange(0, self.NX):
+            if self.xend[i] is not None:
+                bc[l]     = self.xend[i] - s[i]
+                bc[l + 1] = s[i] - self.xend[i]
+                l         = l + 2
+
+        return bc
+
+    """
+    ===============================================================================
+    """
+
+    def bc_ds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_ds = np.zeros((self.NQ * 2 + self.NS * 2, self.NS))
+
+        # set derivatives
+        bc_ds[self.NQ:self.NQ + self.NS, :] = -np.eye(self.NS)
+        bc_ds[self.NQ * 2 + self.NS:, :]    = np.eye(self.NS)
+
+        return bc_ds
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        bc_dp = np.zeros((self.NQ * 2 + self.NS * 2, self.NP))
+
+        return bc_dp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dq = np.zeros((self.NQ * 2 + self.NS * 2, self.NQ))
+
+        # set derivatives
+        bc_dq[0:self.NQ, :]                               = -np.eye(self.NQ)
+        bc_dq[self.NQ + self.NS:self.NQ * 2 + self.NS, :] = np.eye(self.NQ)
+
+        return bc_dq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsds(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsds = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NS))
+
+        return bc_dsds
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dpdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dpdp = np.zeros((self.NQ * 2 + self.NS * 2, self.NP, self.NP))
+
+        return bc_dpdp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dqdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dqdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NQ, self.NQ))
+
+        return bc_dqdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsdp(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsdp = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NP))
+
+        return bc_dsdp
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dsdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dsdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NS, self.NQ))
+
+        return bc_dsdq
+
+    """
+    ===============================================================================
+    """
+
+    def bc_dpdq(self, xs, xs_dot1, xs_dot2, xs_ddot, p, q, s):
+
+        """
+
+        description ...
+
+        input:
+            ...
+
+        output:
+            ...
+
+        TODO:
+            ...
+
+        """
+
+        # allocate memory
+        bc_dpdq = np.zeros((self.NQ * 2 + self.NS * 2, self.NP, self.NQ))
+
+        return bc_dpdq
 
     """
     ===============================================================================
