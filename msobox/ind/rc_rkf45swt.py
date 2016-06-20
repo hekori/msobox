@@ -41,6 +41,7 @@ References
 
 import numpy
 
+from msobox.ind.polynomials import (NevilleInterpolationPolynomial,)
 
 class RcRKF45SWT(object):
 
@@ -85,7 +86,7 @@ class RcRKF45SWT(object):
     ])
 
     # coefficients for Horn's locally sixth-order approximation in tau=0.6
-    _ws = numpy.array([
+    _Ws = numpy.array([
               1559.0/  12500.0,
                            0.0,
             153856.0/ 296875.0,
@@ -108,7 +109,7 @@ class RcRKF45SWT(object):
         return self._f
 
     def _set_f(self, value):
-        self._f[...] = value
+        self._f[:] = value
 
     f = property(
         _get_f, _set_f, None,
@@ -116,21 +117,65 @@ class RcRKF45SWT(object):
     )
 
     # --------------------------------------------------------------------------
-    def _get_x(self):
-        return self._x
-
-    def _set_x(self, value):
-        self._x[...] = value
-
     x = property(
-        _get_x, _set_x, None,
+        None, None, None,
         "Current state of the ordinary differential equation."
     )
 
     # --------------------------------------------------------------------------
-    def __init__(self, NX=0):
+    def _get_y(self):
+        return self._y
+
+    def _set_y(self, value):
+        self._y[...] = value
+
+    y = property(
+        _get_y, _set_y, None,
+        "Current state of the ordinary differential equation."
+    )
+
+    # --------------------------------------------------------------------------
+    def _get_z(self):
+        return self._z
+
+    def _set_z(self, value):
+        self._z[...] = value
+
+    z = property(
+        _get_z, _set_z, None,
+        "Current algebraic state from interpolation."
+    )
+
+    # --------------------------------------------------------------------------
+    def _get_tswts(self):
+        return numpy.asarray(self._tswts)
+
+    tswts = property(
+        _get_tswts, None, None,
+        "Current switching times."
+    )
+
+    # --------------------------------------------------------------------------
+    def _get_yswts(self):
+        return numpy.asarray(self._yswts)
+
+    yswts = property(
+        _get_yswts, None, None,
+        "Current switching differential states."
+    )
+
+    # --------------------------------------------------------------------------
+    def _get_zswts(self):
+        return numpy.asarray(self._zswts)
+
+    zswts = property(
+        _get_zswts, None, None,
+        "Current switching algebraic states."
+    )
+
+    # --------------------------------------------------------------------------
+    def __init__(self, y0, z0=None, NS=0):
         """Initialize integrator."""
-        self._STATE = 'provide_x0'
 
         self.j = 0
         self.t = numpy.zeros(1)
@@ -138,36 +183,59 @@ class RcRKF45SWT(object):
         self.NTS = 0
         self.ts = numpy.zeros([self.NTS], dtype=float)
 
-        self.NX = NX
-        self._f = numpy.zeros([self.NX], dtype=float)
-        self._x = numpy.zeros([self.NX], dtype=float)
-        self._y = numpy.zeros([self.NX], dtype=float)
-        # 2nd procedure
-        self._x1 = numpy.zeros([self.NX])
-        self._y1 = numpy.zeros([self.NX])
+        # assign differential states
+        self.NX = y0.size
+        self._f = y0.copy()
+        self._y = y0.copy()
+        self._y_tmp = y0.copy()
+        #   2nd procedure
+        self._y1 = y0.copy()
+
+        #   algebraic states for interpolation
+        self._z = z0
+        if z0:
+            self._z = z0.copy()
+
+        # prepare placeholder for switching structure
+        self._tswts = []
+        self._yswts = []
+        self._zswts = []
 
         # Runge-Kutta intermediate step evaluation
-        self._Ks = numpy.zeros((self._stages[-1], self.NX))
+        # NOTE: _Ks[-1, :] is used to store Horn's locally sixth-order
+        #       approximation in tau=0.6 for error control interpolation
+        self._ts = numpy.zeros((self._stages[-1]+1,))
+        self._Ks = numpy.zeros((self._stages[-1]+1, self.NX))
         self.h = None
 
-    def init_zo_forward(self, ts, NX=None):
+        # go into first state
+        self._STATE = 'provide_y0'
+        self._K_CNT = 0
+
+    def init_zo_forward(self, ts):
         """Check dimensions and allocate memory."""
-        if NX and NX != self.NX:
-            self.NX = NX
-            self._f.resize([NX])
-            self._x.resize([NX])
-            self._y .resize([NX])
-            # 2nd procedure
-            self._x1.resize([NX])
-            self._y1.resize([NX])
-
-            # Runge-Kutta intermediate step evaluation
-            self._Ks.resize([self._stages[-1], self.NX])
-
         self.NTS = ts.size
         self.ts = ts
+
         self.j = 0
-        self._STATE = 'provide_x0'
+
+        self._f.fill(0.0)
+        self._y.fill(0.0)
+        self._y_tmp.fill(0.0)
+        self._y1.fill(0.0)
+        if self._z:
+            self._z.fill(0.0)
+
+        # interpolation polynomial
+        self.p = None
+
+        # prepare placeholder for switching structure
+        self._tswts = []
+        self._yswts = []
+        self._zswts = []
+
+        # go into first state
+        self._STATE = 'provide_y0'
         self._K_CNT = 0
 
     # --------------------------------------------------------------------------
@@ -176,10 +244,12 @@ class RcRKF45SWT(object):
         Solve nominal differential equation using an Runge-Kutta scheme.
         """
         # rename for convenience
+        ts = self.ts
         As = self._As
         Bs = self._Bs
         Cs = self._Cs
         Ks = self._Ks
+        Ws = self._Ws
 
         # try get time step
         try:
@@ -191,46 +261,56 @@ class RcRKF45SWT(object):
         if self.j == self.NTS - 1:
             self._STATE = 'finished'
 
-        elif self.STATE == 'provide_x0':
+        elif self.STATE == 'provide_y0':
             # NOTE: temporarily save initial value
-            self._y[:] = self._x
+            self._y_tmp[:] = self._y
             self._STATE = 'plot'
 
         elif self.STATE == 'plot':
             self._STATE = 'prepare_K'
 
         elif self.STATE == 'prepare_K':
+            # TODO evaluate f only when x0 was provided, else recycle last evaluation
             if self._K_CNT == 0:
                 self.t[0] = ts[self.j]
-                self._x[:] = self._y  # As[0] = 0.0
+                self._ts[0] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp  # As[0] = 0.0
 
             elif self._K_CNT == 1:
                 self.t[0] = self.ts[self.j] + As[1]*self.h
-                self._x[:] = self._y + Bs[0, :1].dot(Ks[:1])
+                self._ts[1] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp + Bs[0, :1]*(Ks[0])
 
             elif self._K_CNT == 2:
                 self.t[0] = self.ts[self.j] + As[2]*self.h
-                self._x[:] = self._y + Bs[1, 0]*Ks[0] + Bs[1, 1]*Ks[1]
+                self._ts[2] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp + Bs[1, 0]*Ks[0] + Bs[1, 1]*Ks[1]
 
             elif self._K_CNT == 3:
                 self.t[0] = ts[self.j] + As[3]*self.h
-                self._x[:] = self._y \
+                self._ts[3] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp \
                     + Bs[2, 0]*Ks[0] + Bs[2, 1]*Ks[1] + Bs[2, 2]*Ks[2]
 
             elif self._K_CNT == 4:
                 self.t[0] = self.ts[self.j] + As[4]*self.h
-                self._x[:] = self._y \
+                self._ts[4] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp \
                     + Bs[3, 0]*Ks[0] + Bs[3, 1]*Ks[1] + Bs[3, 2]*Ks[2] \
                     + Bs[3, 3]*Ks[3]
 
             elif self._K_CNT == 5:
                 self.t[0] = self.ts[self.j] + As[5]*self.h
-                self._x[:] = self._y \
+                self._ts[5] = self.t[0]  # NOTE: save time node for evaluation
+                self._y[:] = self._y_tmp \
                     + Bs[4, 0]*Ks[0] + Bs[4, 1]*Ks[1] + Bs[4, 2]*Ks[2] \
                     + Bs[4, 3]*Ks[3] + Bs[4, 4]*Ks[4]
+
             else:
                 err_str = "Ups, something went wrong!"
                 raise IndexError(err_str)
+
+            # compute right hand side evaluation
             self._STATE = 'provide_f'
 
         elif self.STATE == 'provide_f':
@@ -246,14 +326,36 @@ class RcRKF45SWT(object):
                 self._STATE = 'prepare_K'
 
         elif self.STATE == 'advance':
-            self._x[:] = self._y \
+            self._y[:] = self._y_tmp \
                 + Cs[0, 0]*Ks[0] + Cs[0, 1]*Ks[1] + Cs[0, 2]*Ks[2] \
-                + Cs[0, 3]*Ks[3] + Cs[0, 4]*Ks[4] + Cs[0, 5]*Ks[5]
-            self._x1[:] = self._y \
+                + Cs[0, 3]*Ks[3] + Cs[0, 4]*Ks[4]
+            self._y1[:] = self._y_tmp \
                 + Cs[1, 0]*Ks[0] + Cs[1, 1]*Ks[1] + Cs[1, 2]*Ks[2] \
-                + Cs[1, 3]*Ks[3] + Cs[1, 4]*Ks[4] + Cs[1, 5]*Ks[5]  # TODO extra node?
-            self._y[:] = self._x[:]
-            self._y1[:] = self._x1[:]
+                + Cs[1, 3]*Ks[3] + Cs[1, 4]*Ks[4] + Cs[1, 5]*Ks[5]
+
+            # TODO check if this is correct
+            # compute Horn's locally sixth-order approximation in tau=0.6
+            self._ts[6] = self.ts[self.j] + 0.6*self.h
+            self._Ks[6] = Ws[0]*Ks[0] + Ws[2]*Ks[2] + Ws[3]*Ks[3] \
+                + Ws[4]*Ks[4] + Ws[5]*Ks[5]
+
+            self._Ks[...] = self._y_tmp + self._Ks
+
+            # TODO check which procedure is best used to predict next step
+            self._y_tmp[:] = self._y[:]
+            # self._y_tmp[:] = self._y1[:]
+
+            self._STATE = 'interpolate'
+
+        elif self._STATE == 'interpolate':
+            self.p = self._get_interpolation_polynomial(self._ts, Ks)
+            self._STATE = 'provide_sigma'
+
+        elif self._STATE == 'provide_sigma':
+            self._STATE = 'provide_delta'
+
+        elif self._STATE == 'provide_delta':
+
             self.j += 1
             self._STATE = 'plot'
 
@@ -263,7 +365,7 @@ class RcRKF45SWT(object):
 
 
     # --------------------------------------------------------------------------
-    def _get_interpolation_polynomial(self, x0, x1, ks, h, res):
+    def _get_interpolation_polynomial(self, ts, ys):
         """
         Get interpolation polynomial on intervall [x0, x1].
 
@@ -273,39 +375,19 @@ class RcRKF45SWT(object):
 
         Parameters
         ----------
-        x0 : array-like of shape (NX,)
-            Solution y(t)
-        x1 : array-like of shape (NX,)
-            Solution y(t+h)
-        ks : array-like of shape (7, NX)
-            Matrix of approximate derivatives, we need y'(t), y'(t+h)
-        h : scalar
-            Step size h
+        ts : array-like (NTS,)
+            time nodes of function evaluations
+
+        ys : array-like (NTS, NY)
+            function evaluation at given time nodes
 
         Returns
         -------
         res : Functor
             Cubic Hermite polynomial evaluation using Atkin-Neville's algorithm
         """
-        # check dimensions of derivatives
-        assert ks.shape == (7, self.NX)
-
-        # allocate memory
-        Xs = numpy.zeros(8, )
-        Ys = numpy.zeros(8, self.NX)
-
-        # assign function evaluations from integration
-        Xs[:-1,]   = 0.0
-        Ys[:-1, :] = ks[:, :]
-
-        # compute Horn's locally sixth-order approximation in tau=0.6
-        Ys[:, -1] = x0 + h*(
-            w[0]*ks[:, 0] + w[2]*ks[:, 2] + w[3]*ks[:, 3] +
-            w[4]*ks[:, 4] + w[5]*ks[:, 5]
-        )
-
         # return interpolation polynomial
-        return NevilleInterpolationPolynomial(Xs, Ys)
+        return NevilleInterpolationPolynomial(ts, ys)
 
 
 # ------------------------------------------------------------------------------
@@ -313,41 +395,61 @@ if __name__ == '__main__':
     import sys
 
     def ffcn(f, t, x, p, u):
-        f[0] = -p[0]*x[0]
+        f[0] = x[1]
+        f[1] = -10.0
+
+        # f[0] = - p[0]*x[0]
+        # f[1] = - p[1]*x[1]
 
     def ref(xs, ts, p, u, x0):
-        xs[...] = (numpy.exp(-p[0]*ts)*x0).reshape(xs.shape)
+        xs[:, 0] = (numpy.exp(-p[0]*ts)*x0[0])
+        xs[:, 1] = (numpy.exp(-p[1]*ts)*x0[1])
 
-    NTS = 101
+    NTS = 11
     t0 = 0.0
     tf = 10.
     ts = numpy.linspace(t0, tf, NTS, endpoint=True)
 
-    NX = 1
-    NP = 1
+    NX = 2
+    NP = 2
     NU = 1
-    x = numpy.array([2.])
-    p = numpy.array([1])
-    u = numpy.array([0])
+    x = numpy.array([2.0, 0.0])
+    p = numpy.array([1.0, 0.7])
+    u = numpy.array([0.0])
 
     xs = numpy.zeros([NTS, NX])
     rs = xs.copy()
     ref(rs, ts, p, u, x)
 
-    ind = RcRKF45SWT(NX=1)
+    ind = RcRKF45SWT(x)
     ind.init_zo_forward(ts=ts)
 
     # reverse communication loop
     while True:
-        if ind.STATE == 'provide_x0':
-            ind.x = x
+        # TODO remove debug out
+        print "STATE: ", ind._STATE,
+        print "K_CNT: ", ind._K_CNT,
+        print "j: ", ind.j, " / ", ind.NTS
+
+        if ind.STATE == 'provide_y0':
+            ind.y = x
 
         if ind.STATE == 'provide_f':
             u[0] = 1.
-            ffcn(ind.f, ind.t, ind.x, p, u)
+            print "evaluate f"
+            ffcn(ind.f, ind.t, ind.y, p, u)
 
         if ind.STATE == 'plot':
-            xs[ind.j, :] = ind.x
+            xs[ind.j, :] = ind.y
+
+        print "ts[", ind.j, "] = \n", ts[ind.j]
+        print "rs[", ind.j, "] = \n", rs[ind.j]
+        print "-"
+        print "ind.y = \n", ind.y
+        print "ind._y_tmp = \n", ind._y_tmp
+        print "ind._f = \n", ind._f
+        print "ind._Ks = \n", ind._Ks.T
+        print ""
 
         if ind.STATE == 'finished':
             print 'done'
@@ -356,7 +458,7 @@ if __name__ == '__main__':
         ind.step_zo_forward()
 
     import matplotlib.pyplot as plt
-    plt.plot(ts, xs, '-k', label="rkf45swt")
+    plt.plot(ts, xs, '-k', label="rk45swt")
     plt.plot(ts, rs, ':r', label="ref")
     plt.legend(loc="best")
     plt.show()

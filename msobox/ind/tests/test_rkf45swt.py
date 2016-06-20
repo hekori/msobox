@@ -60,7 +60,7 @@ def ref_solution(xs, ts, p, t0, x0):
     tswts = []
     xswts = []
     cnt = 0
-    while tswt[0] <= tf[0]:
+    while tswt[0] < tf[0]:
         # evaluate next switching point
         ref_tswt(tswt, p, t0, x0)
         ref_xs(xswt, tswt, p, t0, x0)

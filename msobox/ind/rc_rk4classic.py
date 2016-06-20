@@ -44,29 +44,29 @@ class RcRK4Classic(object):
     )
 
     # --------------------------------------------------------------------------
-    def __init__(self, NX=0):
+    def __init__(self, x0):
         """Classic Runge-Kutta scheme with reverse communication interface."""
-        self._STATE = 'provide_x0'
-
         self.j = 0
         self.t = numpy.zeros(1)
 
         self.NTS = 0
         self.ts = numpy.zeros([self.NTS], dtype=float)
 
-        self.NX = NX
-        self._f = numpy.zeros([self.NX], dtype=float)
-        self._x = numpy.zeros([self.NX], dtype=float)
-        self._y = numpy.zeros([self.NX], dtype=float)
+        self.NX = x0.size
+        self._f = x0.copy()
+        self._y = x0.copy()
+        self._x = x0
 
         # Runge-Kutta intermediate steps
-        self._K1 = numpy.zeros([self.NX])
-        self._K2 = numpy.zeros([self.NX])
-        self._K3 = numpy.zeros([self.NX])
-        self._K4 = numpy.zeros([self.NX])
+        self._K1 = x0.copy()
+        self._K2 = x0.copy()
+        self._K3 = x0.copy()
+        self._K4 = x0.copy()
 
-        self.h = 0.0
-        self.h2 = 0.0
+        self.h = None
+        self.h2 = None
+
+        self._STATE = 'provide_x0'
 
     def init_zo_forward(self, ts, NX=None):
         """
@@ -76,23 +76,12 @@ class RcRK4Classic(object):
         ----------
         ts : array-like
             time grid for integration
-        NX : int
-            number of differential states
         """
-        if NX and NX != self.NX:
-            self.NX = NX
-            self._f.resize([NX])
-            self._x.resize([NX])
-            self._y .resize([NX])
-
-            self._K1.resize([NX])
-            self._K2.resize([NX])
-            self._K3.resize([NX])
-            self._K4.resize([NX])
-
         self.NTS = ts.size
         self.ts = ts
+
         self.j = 0
+
         self._STATE = 'provide_x0'
         self._K_CNT = 0
 
@@ -104,8 +93,8 @@ class RcRK4Classic(object):
             self.h = self.ts[self.j+1] - self.ts[self.j]
             self.h2 = self.h/2.0
         except IndexError:
-            self.h = 0.0
-            self.h2 = self.h/2.0
+            self.h = None
+            self.h2 = None
 
         if self.j == self.NTS - 1:
             self._STATE = 'finished'
@@ -217,28 +206,30 @@ if __name__ == '__main__':
     import sys
 
     def ffcn(f, t, x, p, u):
-        f[0] = -p[0]*x[0]
+        f[0] = - p[0]*x[0]
+        f[1] = - p[1]*x[1]
 
     def ref(xs, ts, p, u, x0):
-        xs[...] = (numpy.exp(-p[0]*ts)*x0).reshape(xs.shape)
+        xs[:, 0] = (numpy.exp(-p[0]*ts)*x0[0])
+        xs[:, 1] = (numpy.exp(-p[1]*ts)*x0[1])
 
     NTS = 101
     t0 = 0.0
     tf = 10.
     ts = numpy.linspace(t0, tf, NTS, endpoint=True)
 
-    NX = 1
-    NP = 1
+    NX = 2
+    NP = 2
     NU = 1
-    x = numpy.array([2.])
-    p = numpy.array([1])
-    u = numpy.array([0])
+    x = numpy.array([2.0, 1.5])
+    p = numpy.array([1.0, 0.7])
+    u = numpy.array([0.0])
 
     xs = numpy.zeros([NTS, NX])
     rs = xs.copy()
     ref(rs, ts, p, u, x)
 
-    ind = RcRK4Classic(NX=1)
+    ind = RcRK4Classic(x)
     ind.init_zo_forward(ts=ts)
 
     # reverse communication loop
