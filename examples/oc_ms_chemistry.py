@@ -61,10 +61,10 @@ ocs.solver = "scipy"  # nlp solver to be used
 ocs.solve()			  # solve the ocp
 
 print "\n"
-pprint.pprint(ocs.results)  # print results
+pprint.pprint(ocp.optimal)  # print results
 
-ocp.q = ocs.results["q"]
-ocp.s = ocs.results["s"]
+ocp.q = ocp.optimal["q"]
+ocp.s = ocp.optimal["s"]
 ocp.plot()  # plot results
 
 """
