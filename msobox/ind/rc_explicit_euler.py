@@ -32,6 +32,21 @@ class RcExplicitEuler(object):
     )
 
     # --------------------------------------------------------------------------
+    def _get_f_d(self):
+        return self._f_d
+
+    def _set_f_d(self, value):
+        if self._f_d is None:
+            self._f_d = value
+
+        self._f_d[...] = value
+
+    f_d = property(
+        _get_f_d, _set_f_d, None,
+        "Current right hand side f first-order forward derivative."
+    )
+
+    # --------------------------------------------------------------------------
     def _get_x(self):
         return self._x
 
@@ -40,6 +55,21 @@ class RcExplicitEuler(object):
 
     x = property(
         _get_x, _set_x, None,
+        "Current state of the ordinary differential equation."
+    )
+
+    # --------------------------------------------------------------------------
+    def _get_x_d(self):
+        return self._x_d
+
+    def _set_x_d(self, value):
+        if self._x_d is None:
+            self._x_d = value
+
+        self._x_d[...] = value
+
+    x_d = property(
+        _get_x_d, _set_x_d, None,
         "Current state of the ordinary differential equation."
     )
 
@@ -54,7 +84,10 @@ class RcExplicitEuler(object):
 
         self.NX = x0.size
         self._f = x0.copy()
-        self._x = x0
+        self._x = x0.copy()
+
+        self._f_d = None
+        self._x_d = None
 
         self._STATE = 'provide_x0'
 
@@ -101,7 +134,7 @@ class RcExplicitEuler(object):
 
     def init_fo_forward(self, ts):
         """
-        Initialize memory for zero order forward integration.
+        Initialize memory for first order forward integration.
 
         Parameters
         ----------
@@ -116,7 +149,7 @@ class RcExplicitEuler(object):
 
     def step_fo_forward(self):
         """
-        Solve nominal differential equation using an Runge-Kutta scheme.
+        Solve nominal differential equation using an explicit Euler.
         """
         self.t[0] = self.ts[self.j]
 
@@ -125,12 +158,13 @@ class RcExplicitEuler(object):
 
         elif self.STATE == 'provide_x0':
             # NOTE: temporarily save initial value
+            self._f_d = self._x_d.copy()
             self._STATE = 'plot'
 
         elif self.STATE == 'plot':
-            self._STATE = 'provide_f'
+            self._STATE = 'provide_f_dot'
 
-        elif self.STATE == 'provide_f':
+        elif self.STATE == 'provide_f_dot':
             self._STATE = 'advance'
 
         elif self.STATE == 'advance':
@@ -172,8 +206,6 @@ if __name__ == '__main__':
 
     # reverse communication loop
     while True:
-        print "STATE: ", ind.STATE, "(", ind.j, "/", ind.NTS,")"
-
         if ind.STATE == 'provide_x0':
             ind.x = x
 

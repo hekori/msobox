@@ -116,7 +116,8 @@ class SNOPT(object):
         self.lenG[0] = self.n * self.nF
         self.iGfun = np.zeros((self.lenG[0],), dtype=np.int32)  # row coordinate
         self.jGvar = np.zeros((self.lenG[0],), dtype=np.int32)  # col coordinate
-        # NOTE: G would be (row, col) value but is handle by SNOPT7
+        # NOTE: G would be (row, col) = value but is handled by SNOPT7
+        self.x_d = np.eye(self.n)  # directions for gradient evaluation
 
         self.nxname = np.zeros((1,), dtype=np.int32)
         self.nFname = np.zeros((1,), dtype=np.int32)
@@ -178,7 +179,7 @@ class SNOPT(object):
                 err_s = err_s.format(spc="".join(self.specname))
                 print err_s
 
-    def set_derivative_mode(der_mode = 0):
+    def set_derivative_mode(self, der_mode = 0):
         # set options not specified in the spec file
         self.deropt[0] = der_mode
 
@@ -186,7 +187,7 @@ class SNOPT(object):
         strOpt = np.zeros((200*8,), dtype=np.character)
         strOpt[:len(strOpt_s)] = list(strOpt_s)
         snopt.snseti(
-            strOpt, deropt,
+            strOpt, self.deropt,
             self.iPrint, self.iSumm, self.INFO,
             self.cw, self.iw, self.rw
         )
@@ -313,5 +314,3 @@ if __name__ == "__main__":
 
     print sn.x
     print sn.xstate
-
-
