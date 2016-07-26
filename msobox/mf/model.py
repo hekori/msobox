@@ -133,6 +133,11 @@ def generate_derivative_declarations(
                     raise Exception()
             args.insert(args.index(v) + 1, new_v)
 
+        # NOTE overwrite function name with current derivative name
+        _func["name"] = name
+        _func["args"] = args
+
+        # generate derivative dictionary
         _deriv_func = {
             # NOTE function and file name coincide if no 'func_d' is given!
             "name": name,
@@ -142,24 +147,22 @@ def generate_derivative_declarations(
         }
 
         # create functor from module and data
-        # _d[function_d["name"]] = (_dims, _func)
         declarations[name] = (_deriv_dims, _deriv_func)
 
-        # add 'dot' alias for total derivative
-        # FIXME: if invar + outvar == args then add '_dot' or '_bar' as alias
+        # is function derived wrt. all arguments?
         if outvar + ["t"] + invar == _func["args"]:
+            # then add 'dot' alias for total forward derivative
             if "d" in mode:
                 declarations[_func["name"] + "_dot"] = (
                     _deriv_dims, _deriv_func
                 )
+            # then add 'bar' alias for total reverse derivative
             elif "b" in mode:
                 declarations[_func["name"] + "_bar"] = (
                     _deriv_dims, _deriv_func
                 )
 
-        # TODO: add recursively higher order derivatives
-        # NOTE: there will be a problem with nbdirs of fortran calls
-        continue
+        # # NOTE: there will be a problem with nbdirs of fortran calls
         # assign next level of derivatives when specified
         if _deriv_func["deriv"]:
             generate_derivative_declarations(
@@ -394,7 +397,8 @@ class Model(object):
 
 
 # ------------------------------------------------------------------------------
-class OldModel(object):
+'''
+class _OldModel(object):
 
     """
     Model base class implementing model functions back end of MSO tool box.
@@ -616,4 +620,7 @@ class OldModel(object):
         """Python interface dummy function."""
         err_str = ""
         raise NotImplementedError()
+
+'''
+# ------------------------------------------------------------------------------
 

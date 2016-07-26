@@ -13,9 +13,11 @@ from numpy.testing import (TestCase, run_module_suite)
 from numpy.testing import (assert_equal, assert_allclose)
 
 from conftest import (md_dict,)
-from conftest import (ffcn_py, ffcn_d_xpu_v_py, ffcn_d_xpu_v_d_xx_dpp_duu_d_py)
+from conftest import (ffcn_py, ffcn_d_xpu_v_py,)
+from conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
 from conftest import (ffcn_b_xpu_py,)
-from conftest import (hfcn_py, hfcn_d_xpu_v_py,)  # hfcn_d_xpu_v_d_xx_dpp_duu_d_py)
+from conftest import (hfcn_py, hfcn_d_xpu_v_py,)
+# from conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
 from conftest import (hfcn_b_xpu_py,)
 
 from msobox.mf.model import (Model,)
@@ -132,10 +134,11 @@ def test_model_function_evaluation_from_mf_py(
 
 
 @pytest.mark.parametrize("member", [
+    "ffcn_d_xpu_v_d_xx_dpp_duu_d_v",
     "ffcn_d_xpu_v", "hfcn_d_xpu_v",
     "ffcn_b_xpu", "hfcn_b_xpu",
 ])
-def test_model_fo_derivative_evaluation_from_mf_py(
+def test_model_derivative_evaluation_from_mf_py(
     temp_mf_py_file, temp_md_file, member
 ):
     """."""

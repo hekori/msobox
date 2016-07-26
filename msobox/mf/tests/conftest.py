@@ -48,7 +48,7 @@ def ffcn_b_xpu_py(f, f_b, t, x, x_b, p, p_b, u, u_b):
     f_b[4] = x_b[4] + p_b[4] + u_b[3]
 
 
-def ffcn_d_xpu_v_d_xx_dpp_duu_d_py(
+def ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py(
     f, f_d0, f_d, f_d_d,
     t,
     x, x_d0, x_d, x_d_d,
@@ -56,6 +56,12 @@ def ffcn_d_xpu_v_d_xx_dpp_duu_d_py(
     u, u_d0, u_d, u_d_d
 ):
     """Dummy for test cases."""
+    f_d_d[0] = x_d_d[0] + p_d_d[0] + u_d_d[0]
+    f_d_d[1] = x_d_d[1] + p_d_d[1] + t*u_d_d[0]
+    f_d_d[2] = x_d_d[2] + p_d_d[2] + u_d_d[1]
+    f_d_d[3] = x_d_d[3] + p_d_d[3] + u_d_d[2]
+    f_d_d[4] = x_d_d[4] + p_d_d[4] + u_d_d[3]
+
     f_d0[0] = x_d0[0] + p_d0[0] + u_d0[0]
     f_d0[1] = x_d0[1] + p_d0[1] + t*u_d0[0]
     f_d0[2] = x_d0[2] + p_d0[2] + u_d0[1]
@@ -146,7 +152,7 @@ def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
     f_b[4] = x_b[4] + p_b[4] + u_b[3]
 
 
-def ffcn_d_xpu_v_d_xx_dpp_duu_d(
+def ffcn_d_xpu_v_d_xx_dpp_duu_d_v(
     f, f_d0, f_d, f_d_d,
     t,
     x, x_d0, x_d, x_d_d,
@@ -154,6 +160,12 @@ def ffcn_d_xpu_v_d_xx_dpp_duu_d(
     u, u_d0, u_d, u_d_d
 ):
     '''Dummy for test cases.'''
+    f_d_d[0] = x_d_d[0] + p_d_d[0] + u_d_d[0]
+    f_d_d[1] = x_d_d[1] + p_d_d[1] + t*u_d_d[0]
+    f_d_d[2] = x_d_d[2] + p_d_d[2] + u_d_d[1]
+    f_d_d[3] = x_d_d[3] + p_d_d[3] + u_d_d[2]
+    f_d_d[4] = x_d_d[4] + p_d_d[4] + u_d_d[3]
+
     f_d0[0] = x_d0[0] + p_d0[0] + u_d0[0]
     f_d0[1] = x_d0[1] + p_d0[1] + t*u_d0[0]
     f_d0[2] = x_d0[2] + p_d0[2] + u_d0[1]
@@ -244,6 +256,62 @@ C       ------------------------------------------------------------------------
           f_d(nd0, 3) = x_d(nd0, 3) + p_d(nd0, 3) + u_d(nd0, 2)
           f_d(nd0, 4) = x_d(nd0, 4) + p_d(nd0, 4) + u_d(nd0, 3)
           f_d(nd0, 5) = x_d(nd0, 5) + p_d(nd0, 5) + u_d(nd0, 4)
+        ENDDO
+
+        ! Independent values
+        f(1) = x(1) + p(1) + u(1)
+        f(2) = x(2) + p(2) + t*u(1)
+        f(3) = x(3) + p(3) + u(2)
+        f(4) = x(4) + p(4) + u(3)
+        f(5) = x(5) + p(5) + u(4)
+C       ------------------------------------------------------------------------
+      end
+
+C-------------------------------------------------------------------------------
+
+      subroutine ffcn_d_xpu_v_d_xx_dpp_duu_d_v(
+     *  f, f_d0, f_d, f_d_d,
+     *  t,
+     *  x, x_d0, x_d, x_d_d,
+     *  p, p_d0, p_d, p_d_d,
+     *  u, u_d0, u_d, u_d_d,
+     *  nbdirs, nbdirs0
+     *  )
+C       Dummy for test cases.
+        implicit none
+        real*8 f(5), t, x(5), p(5), u(4)
+        real*8 f_d(nbdirs, 5), x_d(nbdirs, 5), p_d(nbdirs, 5)
+        real*8 f_d0(nbdirs0, 5), x_d0(nbdirs0, 5), p_d0(nbdirs0, 5)
+        real*8 f_d_d(nbdirs0, 5), x_d_d(nbdirs0, 5), p_d_d(nbdirs0, 5)
+        real*8 u_d(nbdirs, 4), u_d0(nbdirs0, 4), u_d_d(nbdirs0, 4)
+        integer nbdirs, nbdirs0
+        integer nd0
+C       ------------------------------------------------------------------------
+        ! Derivative evaluation second-order second directions
+C        DO nd0=1,nbdirs0
+C          f_d(nd0, 1) = x_d0(nd0, 1) + p_d0(nd0, 1) + u_d0(nd0, 1)
+C          f_d0(nd0, 2) = x_d0(nd0, 2) + p_d0(nd0, 2) + u_d0(nd0, 1)*t
+C          f_d0(nd0, 3) = x_d0(nd0, 3) + p_d0(nd0, 3) + u_d0(nd0, 2)
+C          f_d0(nd0, 4) = x_d0(nd0, 4) + p_d0(nd0, 4) + u_d0(nd0, 3)
+C          f_d0(nd0, 5) = x_d0(nd0, 5) + p_d0(nd0, 5) + u_d0(nd0, 4)
+C        ENDDO
+
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          f_d(nd0, 1) = x_d(nd0, 1) + p_d(nd0, 1) + u_d(nd0, 1)
+          f_d(nd0, 2) = x_d(nd0, 2) + p_d(nd0, 2) + u_d(nd0, 1)*t
+          f_d(nd0, 3) = x_d(nd0, 3) + p_d(nd0, 3) + u_d(nd0, 2)
+          f_d(nd0, 4) = x_d(nd0, 4) + p_d(nd0, 4) + u_d(nd0, 3)
+          f_d(nd0, 5) = x_d(nd0, 5) + p_d(nd0, 5) + u_d(nd0, 4)
+        ENDDO
+
+        ! Derivative evaluation first-order second directions
+        DO nd0=1,nbdirs0
+          f_d(nd0, 1) = x_d0(nd0, 1) + p_d0(nd0, 1) + u_d0(nd0, 1)
+          f_d0(nd0, 2) = x_d0(nd0, 2) + p_d0(nd0, 2) + u_d0(nd0, 1)*t
+          f_d0(nd0, 3) = x_d0(nd0, 3) + p_d0(nd0, 3) + u_d0(nd0, 2)
+          f_d0(nd0, 4) = x_d0(nd0, 4) + p_d0(nd0, 4) + u_d0(nd0, 3)
+          f_d0(nd0, 5) = x_d0(nd0, 5) + p_d0(nd0, 5) + u_d0(nd0, 4)
         ENDDO
 
         ! Independent values
@@ -362,21 +430,6 @@ C-------------------------------------------------------------------------------
 
 # FIXME add this to fortran version
 """
-def ffcn_d_xpu_v(f, f_d, t, x, x_d, p, p_d, u, u_d):
-    '''Dummy for test cases.'''
-    f_d[0] = x_d[0] + p_d[0] + u_d[0]
-    f_d[1] = x_d[1] + p_d[1] + t*u_d[0]
-    f_d[2] = x_d[2] + p_d[2] + u_d[1]
-    f_d[3] = x_d[3] + p_d[3] + u_d[2]
-    f_d[4] = x_d[4] + p_d[4] + u_d[3]
-
-    f[0] = x[0] + p[0] + u[0]
-    f[1] = x[1] + p[1] + t*u[0]
-    f[2] = x[2] + p[2] + u[1]
-    f[3] = x[3] + p[3] + u[2]
-    f[4] = x[4] + p[4] + u[3]
-
-
 def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
     '''Dummy for test cases.'''
     f[0] = x[0] + p[0] + u[0]
@@ -400,25 +453,31 @@ md_dict = {
     "functions": [
         {"type": "ffcn", "name": "ffcn", "args": ["f", "t", "x", "p", "u"],
          "deriv":[
-                {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
+            {"mode": "forward_vector", "in": ["x", "p", "u"], "out": ["f"],
                  "deriv": [
                         {"mode": "forward_vector",
                             "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
-                            "out": ["f", "f_d"]}
-                ]},
+                            "out": ["f", "f_d"]
+                        },
+                    ]
+                },
                 {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["f"]}
-         ]},
+            ]
+        },
         {"type": "hfcn", "name": "hfcn", "args": ["h", "t", "x", "p", "u"],
-         "deriv":[
+            "deriv":[
                 {"mode": "forward_vector",
                     "in": ["x", "p", "u"], "out": ["h"],
-                 "deriv": [
-                        {"mode": "forward_vector",
-                            "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
-                            "out": ["h", "h_d"]}
-                        ]},
+                    "deriv": [
+                        # {"mode": "forward_vector",
+                        #     "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
+                        #     "out": ["h", "h_d"]
+                        # },
+                    ]
+                },
                 {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["h"]}
-        ]}
+            ]
+        }
     ]
 }
 
