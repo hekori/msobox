@@ -53,7 +53,7 @@ ffi.cdef("""
       double *u, double *u_bar
     );
 
-    void fcn_d_xpu_v_d_xx_dpp_duu_d_v_(
+    void gfcn_d_xpu_v_d_xx_dpp_duu_d_v_(
       double *g, double *g_dot1, double *g_dot2, double *g_ddot,
       double *t,
       double *x, double *x_dot1, double *x_dot2, double *x_ddot,

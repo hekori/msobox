@@ -1,14 +1,12 @@
 C =============================================================================
 
-	subroutine ffcn(f, t, x, p, u)
+	subroutine gfcn(g, t, x, p, u)
 
 		implicit none
 
-		double precision f(3), t(1), x(3), p(1), u(1)
+		double precision g(1), t(1), x(1), p(2), u(1)
 
-		f(1) = x(2) * x(3)
-		f(2) = u(1) * x(3) * p(1)
-		f(3) = 0
+		g(1) = -x(1)
 
 	end
 

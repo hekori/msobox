@@ -38,7 +38,7 @@ class ImplicitEuler(IND):
         for i in range(self.NTS - 1):
 
             # update control discretization
-            self.update_u(i, self.ts[i])
+            self.update_u(i, self.ts[i + 1])
 
             # calculate step size
             h = self.ts[i + 1] - self.ts[i]
@@ -97,7 +97,7 @@ class ImplicitEuler(IND):
         for i in range(self.NTS - 1):
 
             # update control discretization
-            self.update_u_dot(i, self.ts[i])
+            self.update_u_dot(i, self.ts[i + 1])
 
             # calculate step size
             h = self.ts[i + 1] - self.ts[i]
@@ -188,7 +188,7 @@ class ImplicitEuler(IND):
         for i in range(self.NTS-1):
 
             # update control discretization
-            self.update_u_ddot(i, self.ts[i])
+            self.update_u_ddot(i, self.ts[i + 1])
 
             # calculate step size
             h = self.ts[i+1] - self.ts[i]

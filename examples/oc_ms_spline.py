@@ -42,7 +42,7 @@ ocp.NP   = 2  					  		   		 # number of parameters >= 1
 ocp.NU   = 1  									 # number of control functions >= 1
 ocp.NG   = 1                             		 # number of inequality constraints
 ocp.NH   = 0  							 		 # number of equality constraints
-ocp.ts   = np.linspace(0, 1, 25)	   		     # control and shooting grid
+ocp.ts   = np.linspace(0, 1, 50)	   		     # control and shooting grid
 ocp.NTS  = ocp.ts.size   						 # number of controls and shooting nodes
 ocp.NTSI = 2              		  		 		 # number of time steps per shooting interval >= 2
 
@@ -58,14 +58,14 @@ ocp.prepare() 			  						 # check input and prepare subsequent solution
 
 ocs        = Solver()
 ocs.ocp    = ocp      # ocp to be solved
-ocs.solver = "scipy"  # nlp solver to be used
+ocs.solver = "snopt"  # nlp solver to be used
 ocs.solve()			  # solve the ocp
 
 print "\n"
-pprint.pprint(ocs.results)  # print results
+pprint.pprint(ocp.optimal)  # print results
 
-ocp.q = ocs.results["q"]
-ocp.s = ocs.results["s"]
+ocp.q = ocp.optimal["q"]
+ocp.s = ocp.optimal["s"]
 ocp.plot()  # plot results
 
 """

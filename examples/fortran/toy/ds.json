@@ -1,5 +1,5 @@
 {
-    "dims": {"t": 1, "x": 3, "p": 1, "u": 1},
+    "dims": {"t": 1, "x": 3, "p": 2, "u": 1},
     "functions":[
         {"type": "ffcn",
         "args": ["f", "t", "x", "p", "u"],
