@@ -99,6 +99,31 @@ def hfcn_d_xpu_v_py(h, h_d, t, x, x_d, p, p_d, u, u_d):
     h[2] = x[2]
 
 
+def hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py(
+    h, h_d0, h_d, h_d_d,
+    t,
+    x, x_d0, x_d, x_d_d,
+    p, p_d0, p_d, p_d_d,
+    u, u_d0, u_d, u_d_d
+):
+    """Dummy for test cases."""
+    h_d_d[0, :] = x_d_d[0, :]
+    h_d_d[1, :] = x_d_d[1, :]
+    h_d_d[2, :] = x_d_d[2, :]
+
+    h_d[0, :] = x_d[0, :]
+    h_d[1, :] = x_d[1, :]
+    h_d[2, :] = x_d[2, :]
+
+    h_d0[0, :] = x_d0[0, :]
+    h_d0[1, :] = x_d0[1, :]
+    h_d0[2, :] = x_d0[2, :]
+
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
 def hfcn_b_xpu_py(h, h_b, t, x, x_b, p, p_b, u, u_b):
     """Dummy for test cases."""
     h[0] = x[0]
@@ -203,6 +228,31 @@ def hfcn_d_xpu_v(h, h_d, t, x, x_d, p, p_d, u, u_d):
     h[2] = x[2]
 
 
+def hfcn_d_xpu_v_d_xx_dpp_duu_d_v(
+    h, h_d0, h_d, h_d_d,
+    t,
+    x, x_d0, x_d, x_d_d,
+    p, p_d0, p_d, p_d_d,
+    u, u_d0, u_d, u_d_d
+):
+    '''Dummy for test cases.'''
+    h_d_d[0, :] = x_d_d[0, :]
+    h_d_d[1, :] = x_d_d[1, :]
+    h_d_d[2, :] = x_d_d[2, :]
+
+    h_d[0, :] = x_d[0, :]
+    h_d[1, :] = x_d[1, :]
+    h_d[2, :] = x_d[2, :]
+
+    h_d0[0, :] = x_d0[0, :]
+    h_d0[1, :] = x_d0[1, :]
+    h_d0[2, :] = x_d0[2, :]
+
+    h[0] = x[0]
+    h[1] = x[1]
+    h[2] = x[2]
+
+
 def hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b):
     '''Dummy for test cases.'''
     h[0] = x[0]
@@ -288,13 +338,14 @@ C       Dummy for test cases.
         integer nd0
 C       ------------------------------------------------------------------------
         ! Derivative evaluation second-order second directions
-C        DO nd0=1,nbdirs0
-C          f_d(nd0, 1) = x_d0(nd0, 1) + p_d0(nd0, 1) + u_d0(nd0, 1)
-C          f_d0(nd0, 2) = x_d0(nd0, 2) + p_d0(nd0, 2) + u_d0(nd0, 1)*t
-C          f_d0(nd0, 3) = x_d0(nd0, 3) + p_d0(nd0, 3) + u_d0(nd0, 2)
-C          f_d0(nd0, 4) = x_d0(nd0, 4) + p_d0(nd0, 4) + u_d0(nd0, 3)
-C          f_d0(nd0, 5) = x_d0(nd0, 5) + p_d0(nd0, 5) + u_d0(nd0, 4)
-C        ENDDO
+        DO nd0=1,nbdirs0
+          f_d_d(nd0, 1) = x_d_d(nd0, 1) + p_d_d(nd0, 1) + u_d_d(nd0, 1)
+          f_d_d(nd0, 2) = x_d_d(nd0, 2) + p_d_d(nd0, 2)
+     *      + u_d_d(nd0, 1)*t
+          f_d_d(nd0, 3) = x_d_d(nd0, 3) + p_d_d(nd0, 3) + u_d_d(nd0, 2)
+          f_d_d(nd0, 4) = x_d_d(nd0, 4) + p_d_d(nd0, 4) + u_d_d(nd0, 3)
+          f_d_d(nd0, 5) = x_d_d(nd0, 5) + p_d_d(nd0, 5) + u_d_d(nd0, 4)
+        ENDDO
 
         ! Derivative evaluation
         DO nd0=1,nbdirs
@@ -354,7 +405,6 @@ C       ------------------------------------------------------------------------
 C       ------------------------------------------------------------------------
       end
 
-
 C-------------------------------------------------------------------------------
 
       subroutine hfcn(h, t, x, p, u)
@@ -399,6 +449,54 @@ C       ------------------------------------------------------------------------
 
 C-------------------------------------------------------------------------------
 
+      subroutine hfcn_d_xpu_v_d_xx_dpp_duu_d_v(
+     *  h, h_d0, h_d, h_d_d,
+     *  t,
+     *  x, x_d0, x_d, x_d_d,
+     *  p, p_d0, p_d, p_d_d,
+     *  u, u_d0, u_d, u_d_d,
+     *  nbdirs, nbdirs0
+     *  )
+C       Dummy for test cases.
+        implicit none
+        real*8 h(5), t, x(5), p(5), u(4)
+        real*8 h_d(nbdirs, 5), x_d(nbdirs, 5), p_d(nbdirs, 5)
+        real*8 h_d0(nbdirs0, 5), x_d0(nbdirs0, 5), p_d0(nbdirs0, 5)
+        real*8 h_d_d(nbdirs0, 5), x_d_d(nbdirs0, 5), p_d_d(nbdirs0, 5)
+        real*8 u_d(nbdirs, 4), u_d0(nbdirs0, 4), u_d_d(nbdirs0, 4)
+        integer nbdirs, nbdirs0
+        integer nd0
+C       ------------------------------------------------------------------------
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          h_d_d(nd0, 1) = x_d_d(nd0, 1)
+          h_d_d(nd0, 2) = x_d_d(nd0, 2)
+          h_d_d(nd0, 3) = x_d_d(nd0, 3)
+        ENDDO
+
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          h_d(nd0, 1) = x_d(nd0, 1)
+          h_d(nd0, 2) = x_d(nd0, 2)
+          h_d(nd0, 3) = x_d(nd0, 3)
+        ENDDO
+
+        ! Derivative evaluation
+        DO nd0=1,nbdirs
+          h_d0(nd0, 1) = x_d0(nd0, 1)
+          h_d0(nd0, 2) = x_d0(nd0, 2)
+          h_d0(nd0, 3) = x_d0(nd0, 3)
+        ENDDO
+
+        ! Independent values
+        h(1) = x(1)
+        h(2) = x(2)
+        h(3) = x(3)
+C       ------------------------------------------------------------------------
+      end
+
+C-------------------------------------------------------------------------------
+
       subroutine hfcn_b_xpu(h, h_b, t, x, x_b, p, p_b, u, u_b
      *, nbdirs)
 C       ------------------------------------------------------------------------
@@ -427,25 +525,6 @@ C       ------------------------------------------------------------------------
 C-------------------------------------------------------------------------------
 """
 
-
-# FIXME add this to fortran version
-"""
-def ffcn_b_xpu(f, f_b, t, x, x_b, p, p_b, u, u_b):
-    '''Dummy for test cases.'''
-    f[0] = x[0] + p[0] + u[0]
-    f[1] = x[1] + p[1] + t*u[0]
-    f[2] = x[2] + p[2] + u[1]
-    f[3] = x[3] + p[3] + u[2]
-    f[4] = x[4] + p[4] + u[3]
-
-    f_b[0] = x_b[0] + p_b[0] + u_b[0]
-    f_b[1] = x_b[1] + p_b[1] + t*u_b[0]
-    f_b[2] = x_b[2] + p_b[2] + u_b[1]
-    f_b[3] = x_b[3] + p_b[3] + u_b[2]
-    f_b[4] = x_b[4] + p_b[4] + u_b[3]
-
-"""
-
 # ------------------------------------------------------------------------------
 # model definitions
 md_dict = {
@@ -469,10 +548,10 @@ md_dict = {
                 {"mode": "forward_vector",
                     "in": ["x", "p", "u"], "out": ["h"],
                     "deriv": [
-                        # {"mode": "forward_vector",
-                        #     "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
-                        #     "out": ["h", "h_d"]
-                        # },
+                        {"mode": "forward_vector",
+                            "in": ["x", "x_d", "p", "p_d", "u", "u_d"],
+                            "out": ["h", "h_d"]
+                        },
                     ]
                 },
                 {"mode": "reverse_single", "in": ["x", "p", "u"], "out": ["h"]}
