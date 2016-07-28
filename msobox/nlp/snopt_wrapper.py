@@ -160,13 +160,6 @@ class SNOPT(object):
         # to their default values.
         snopt.sninit(self.iPrint, self.iSumm, self.cw, self.iw, self.rw)
 
-        # set up problem to be solved
-        # self.setup(
-        #     INFO, Prob, nF, n, iAfun, jAvar, lenA, neA, A,
-        #     iGfun, jGvar, lenG, neG, ObjAdd, ObjRow, xlow, xupp, Flow,
-        #     Fupp, x, xstate, Fmul
-        # )
-
         # open spec file
         if self.iSpecs[0] > 0 and self.specname.nonzero():
             snopt.snfilewrapper(
@@ -203,6 +196,11 @@ class SNOPT(object):
             self.cw, self.iw, self.rw,
             self.cw, self.iw, self.rw
         )
+        # convert to python convention
+        self.iAfun -= 1
+        self.jAvar -= 1
+        self.iGfun -= 1
+        self.jGvar -= 1
 
     def sqp_step(self, call_back):
         """Solve NLP for given initial value."""
@@ -212,8 +210,8 @@ class SNOPT(object):
             self.nxname, self.nFname,
             self.ObjAdd, self.ObjRow, self.Prob,
             call_back,
-            self.iAfun, self.jAvar, self.lenA, self.neA, self.A,
-            self.iGfun, self.jGvar, self.lenG, self.neG,
+            self.iAfun+1, self.jAvar+1, self.lenA, self.neA, self.A,
+            self.iGfun+1, self.jGvar+1, self.lenG, self.neG,
             self.xlow, self.xupp, self.xnames,
             self.Flow, self.Fupp, self.Fnames,
             self.x, self.xstate, self.xmul,
@@ -263,28 +261,26 @@ if __name__ == "__main__":
     # define gradient information
     # TODO create from scipy.sparse matrix
     sn.neG[0]    = 0
+    sn.iGfun[sn.neG[0]] = 0
+    sn.jGvar[sn.neG[0]] = 1
+
+    sn.neG[0]       += 1
     sn.iGfun[sn.neG[0]] = 1
-    sn.jGvar[sn.neG[0]] = 2
+    sn.jGvar[sn.neG[0]] = 0
 
     sn.neG[0]       += 1
-    sn.iGfun[sn.neG[0]] = 2
+    sn.iGfun[sn.neG[0]] = 1
     sn.jGvar[sn.neG[0]] = 1
 
     sn.neG[0]       += 1
     sn.iGfun[sn.neG[0]] = 2
-    sn.jGvar[sn.neG[0]] = 2
+    sn.jGvar[sn.neG[0]] = 0
 
     sn.neG[0]       += 1
-    sn.iGfun[sn.neG[0]] = 3
+    sn.iGfun[sn.neG[0]] = 2
     sn.jGvar[sn.neG[0]] = 1
-
-    sn.neG[0]       += 1
-    sn.iGfun[sn.neG[0]] = 3
-    sn.jGvar[sn.neG[0]] = 2
 
     sn.neG[0] += 1
-    # neG[0] = 6
-
     sn.neA[0] = 0
 
     def evaluate(status, x, needF, nF, F, needG, neG, G, cu, iu, ru):

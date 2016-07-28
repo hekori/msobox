@@ -579,8 +579,8 @@ if __name__ == "__main__":
     k = 0
     for i in range(NC + 1):
         for j in range(NV):
-            sn.iGfun[k] = i+1  # row coordinate of G[k]
-            sn.jGvar[k] = j+1  # col coordinate of G[k]
+            sn.iGfun[k] = i  # row coordinate of G[k]
+            sn.jGvar[k] = j  # col coordinate of G[k]
             k += 1
 
     sn.neG[0] = k

@@ -2,16 +2,39 @@
 MSOBox - A Tool Box for Mathematical Modeling, Simulation and Optimization
 ==========================================================================
 
-Action Points
-=============
+Features
+========
+
+Python conform SNOPT interface
+------------------------------
+
+The interplay between Fortran and Python is followed by some problems concerning
+arrays starting from 1 instead of zero in Fortran. ::
+
+[x] python conform interface to SNOPT7
+[ ] support scipy.sparse coo formats
+
 
 Finish higher-order derivatives back end
 ----------------------------------------
 
-* check first-order derivatives forward and reverse mode
-* add second-order derivatives forward and reverse
+Derivative-based optimization methods rely on high-quality derivatives.
+Therefore MSOBox provides back ends to state-of-the-art AD tools. ::
 
-Goal: Calculate Hessian with mixed first-order forward, second-order reverse
+    [x] comfortable and fully automatic AD back ends
+    [x] easy derivative evaluation and assignment
+    [ ] check first-order derivatives forward and reverse mode
+    [ ] add second-order derivatives forward and reverse
+    [ ] add the rest of the AD back ends already written
+    [ ] port unit tests from old back end code
+
+Goal: Calculate Hessian in mixed first-order forward, second-order reverse mode
+
+
+IND: RK4Classic and RKFSWT
+--------------------------
+
+* finis
 
 
 Implement LP-Newton for NLPs
