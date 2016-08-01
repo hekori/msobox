@@ -2,21 +2,19 @@ C-------------------------------------------------------------------------------
 C       Model function definitions of the rocket car example.
 C-------------------------------------------------------------------------------
 
-      subroutine ffcn(f, t, x, u)
+      subroutine rfcn_f(r, t, x)
 C       ------------------------------------------------------------------------
-        ! Right-hand side of the dynamic model of the rocket car.
-
-        ! The reduced order model of the point mass with rocket engine given by
-        ! the control -1 <= u(t) <= 1 for all t in [0, T] is give by:
-
-        !   x_dot[0] = x[1],
-        !   x_dot[1] = u[0],
+        ! Endpoint constraint ensuring the reaching of a fixed end position and
+        ! velocity, given by:
+!
+        !       r(0, x) = [x[0] - 1] = 0
+        !                 [x[1] - 0]
 C       ------------------------------------------------------------------------
         implicit none
-        double precision f(2), t(1), x(2), u(1)
+        double precision r(2), t(1), x(2)
 C       ------------------------------------------------------------------------
-        f(1) = x(2)
-        f(2) = u(1)
+        r(1) = x(1) - 1.0d0
+        r(2) = x(2) - 0.0d0
 C       ------------------------------------------------------------------------
       end
 

@@ -23,6 +23,12 @@ Therefore MSOBox provides back ends to state-of-the-art AD tools. ::
 
     [x] comfortable and fully automatic AD back ends
     [x] easy derivative evaluation and assignment
+    [ ] load example models
+        [ ] academic
+        [ ] bimolkat
+        [ ] rocket car
+        [ ] bouncing ball
+        [ ] simplest walker
     [ ] check first-order derivatives forward and reverse mode
     [ ] add second-order derivatives forward and reverse
     [ ] add the rest of the AD back ends already written

@@ -2,21 +2,19 @@ C-------------------------------------------------------------------------------
 C       Model function definitions of the rocket car example.
 C-------------------------------------------------------------------------------
 
-      subroutine ffcn(f, t, x, u)
+      subroutine mfcn(m, t, x, p)
 C       ------------------------------------------------------------------------
-        ! Right-hand side of the dynamic model of the rocket car.
+        ! Mayer objective of the rocket car example, which is one possible
+        ! formulation of the minimal time optimal control problem, in the form
+        ! of:
 
-        ! The reduced order model of the point mass with rocket engine given by
-        ! the control -1 <= u(t) <= 1 for all t in [0, T] is give by:
-
-        !   x_dot[0] = x[1],
-        !   x_dot[1] = u[0],
+        !     min E(T, x(T), p) = T
+        !      T
 C       ------------------------------------------------------------------------
         implicit none
-        double precision f(2), t(1), x(2), u(1)
+        double precision m(1), t(1), x(2), p(1)
 C       ------------------------------------------------------------------------
-        f(1) = x(2)
-        f(2) = u(1)
+        m(1) = p(1)
 C       ------------------------------------------------------------------------
       end
 
