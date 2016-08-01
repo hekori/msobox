@@ -5,6 +5,8 @@ import json
 import pytest
 import subprocess
 
+from msobox.mf.tapenade import (Differentiator,)
+
 
 # ------------------------------------------------------------------------------
 # PYTHON REFERENCE IMPLEMENTATION
@@ -645,6 +647,39 @@ def temp_md_file(tmpdir):
 def temp_md_json():
     """Create temporary json string."""
     return json.dumps(md_dict)
+
+
+@pytest.fixture
+def get_msobox_examples_path():
+    """Get root directory of msobox examples."""
+    DIR = os.path.dirname(os.path.abspath(__file__))
+    DIR = os.path.dirname(DIR)
+    DIR = os.path.dirname(DIR)
+    DIR = os.path.dirname(DIR)
+    DIR = os.path.join(DIR, "examples")
+    return DIR
+
+
+# TODO how does this shit work
+# TODO make this run only once per session, because of compilation
+@pytest.fixture
+def load_fortran_example_model_by_name(p_name):
+    """Compile and load fortran model by name form msobox examples."""
+    # retrieve msobox examples path
+    DIR = get_msobox_examples_path()
+    DIR = os.path.join(DIR, "fortran")
+
+    # load json model description
+    p_path = os.path.join(DIR, p_name)
+    with open(os.path.join(p_path, "json.txt"), "r") as f:
+        ds = json.load(f)
+
+    # differentiate model functions
+    # TODO differentiate only once
+    # Differentiator(p_path, ds=ds)
+    so_path = os.path.join(p_path, "gen", "libproblem.so")
+
+    return so_path, ds
 
 
 # ------------------------------------------------------------------------------

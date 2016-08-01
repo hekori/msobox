@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Base class of MSOBox model function implementation."""
 
 import os
@@ -115,14 +116,16 @@ def generate_derivative_declarations(
             vector = []
 
         # generate derivative name
+        args = deepcopy(_func["args"])
         invar = deriv["in"]
         outvar = deriv["out"]
         invar_s = "".join(deriv["in"])
         outvar_s = "".join(deriv["out"])
+        oname = _func["name"]
         name = "_".join([_func["name"], mode, invar_s] + vector)
 
         # update args of derivative
-        args = deepcopy(_func["args"])
+        dargs = deepcopy(_func["args"])
         for v in outvar + invar:
             new_v = "_".join([v, mode])
             v_cnt = 0
@@ -131,18 +134,18 @@ def generate_derivative_declarations(
                 v_cnt += 1
                 if v_cnt > 10:
                     raise Exception()
-            args.insert(args.index(v) + 1, new_v)
+            dargs.insert(args.index(v) + 1, new_v)
 
         # NOTE overwrite function name with current derivative name
         _func["name"] = name
-        _func["args"] = args
+        _func["args"] = dargs
 
         # generate derivative dictionary
         _deriv_func = {
             # NOTE function and file name coincide if no 'func_d' is given!
             "name": name,
             "type": _func["type"],
-            "args": args,
+            "args": dargs,
             "deriv": deriv.get("deriv", [])
         }
 
@@ -150,15 +153,15 @@ def generate_derivative_declarations(
         declarations[name] = (_deriv_dims, _deriv_func)
 
         # is function derived wrt. all arguments?
-        if outvar + ["t"] + invar == _func["args"]:
+        if outvar + [u"t"] + invar == args:
             # then add 'dot' alias for total forward derivative
             if "d" in mode:
-                declarations[_func["name"] + "_dot"] = (
+                declarations[oname + "_dot"] = (
                     _deriv_dims, _deriv_func
                 )
             # then add 'bar' alias for total reverse derivative
             elif "b" in mode:
-                declarations[_func["name"] + "_bar"] = (
+                declarations[oname + "_bar"] = (
                     _deriv_dims, _deriv_func
                 )
 
