@@ -25,7 +25,7 @@ import warnings
 matplotlib.style.use('ggplot')
 
 # setting print options to print all array elements
-np.set_printoptions(threshold=np.nan, precision=4, linewidth=200)
+np.set_printoptions(threshold=np.nan, precision=4, linewidth=100)
 
 
 # ------------------------------------------------------------------------------
@@ -149,8 +149,8 @@ class Plotter(object):
     def update(self, F, x):
         """Update plots in structure."""
         # unpack variables
-        y0 = x[:NY]  # initial values
-        q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
+        y = x[:NTS*NY].reshape(NTS, NY)  # shooting variables
+        q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
         p = x[-NP:]  # parameters
 
         # update objective
@@ -248,14 +248,15 @@ def eval_F(F, x, ind, mf):
     ind.ys_plt = []
 
     # unpack variables
-    y0 = x[:NY]  # initial values
-    q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y = x[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
 
     # evaluate start point constraint
     r0 = F[1:1+NY]
-    mf.rfcn_0(r0, ts[0:1], y0)
+    mf.rfcn_0(r0, ts[0:1], y[0, :])
 
+    r_mc = F[1+NY:-NY].reshape(NMS, NY)
     # integration loop from shooting node to shooting node
     for ci in range(NMS):
         tis = np.linspace(ts[ci], ts[ci+1], NIS, endpoint=True)
@@ -264,13 +265,10 @@ def eval_F(F, x, ind, mf):
         # reverse communication loop
         while True:
             if ind.STATE == 'provide_x0':
-                if ci == 0:
-                    ind.x = y0
-                else:
-                    # NOTE current state is used else
-                    pass
+                ind.x = y[ci, :]
 
             if ind.STATE == 'provide_f':
+                # evaluate ffcn with current time, state and control to provide f
                 mf.ffcn(ind.f, ind.t, ind.x, q[ci])
                 #NOTE: rescale to unit interval [0, 1] by parameter p::
                 ind.f *= p[0]
@@ -281,19 +279,25 @@ def eval_F(F, x, ind, mf):
                 ind.ys_plt.append(ind.x.copy())
 
             if ind.STATE == 'finished':
+                # print 'done'
                 break
 
             ind.step_zo_forward()
+        # END WHILE LOOP
+
+        # evaluate multiple shooting matching conditions
+        r_mc[ci, :] = y[ci+1, :] - ind.x
+
     else:  # end of for loop
         pass
 
     # evaluate Mayer-type objective
     m = F[0:1]
-    mf.mfcn(m, ts[-1:], ind.x, p)
+    mf.mfcn(m, ts[-1:], y[-1, :], p)
 
     # evaluate end point constraint
-    rf = F[1+NY:1+2*NY]
-    mf.rfcn_f(rf, ts[-1:], ind.x)
+    rf = F[-NY:]
+    mf.rfcn_f(rf, ts[-1:], y[-1, :])
 
     return 0
 
@@ -306,14 +310,14 @@ def eval_G(F, G, x, x_d, ind, mf):
     ind.ys_plt = []
 
     # unpack variables
-    y0 = x[:NY]  # initial values
-    q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y = x[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
 
     # unpack directions
     P = x_d.shape[1]
-    y0_d = x_d[:NY, :]  # initial values
-    q_d = x_d[NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
+    y_d = x_d[:NTS*NY, :].reshape(NTS, NY, P)  # initial values
+    q_d = x_d[NTS*NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
     p_d = x_d[-NP:, :]  # parameters
 
     # reshape G
@@ -334,8 +338,10 @@ def eval_G(F, G, x, x_d, ind, mf):
     # evaluate start point constraint
     r0_d = G[1:1+NY, :]
     r0 = F[1:1+NY]
-    mf.rfcn_0_dot(r0, r0_d, ts[0:1], y0, y0_d)
+    mf.rfcn_0_dot(r0, r0_d, ts[0:1], y[0, :], y_d[0, :])
 
+    r_mc_d = G[1+NY:-NY, :].reshape(NMS, NY, P)
+    r_mc = F[1+NY:-NY].reshape(NMS, NY)
     # integration loop from shooting node to shooting node
     for ci in range(NMS):
         tis = np.linspace(ts[ci], ts[ci+1], NIS, endpoint=True)
@@ -343,12 +349,11 @@ def eval_G(F, G, x, x_d, ind, mf):
 
         # reverse communication loop
         while True:
+            # print "STATE: ", ind.STATE, "(", ind.j, "/", ind.NTS,")"
+
             if ind.STATE == 'provide_x0':
-                if ci == 0:
-                    ind.x_d = y0_d.copy()
-                    ind.x = y0
-                else:
-                    pass
+                ind.x_d = y_d[ci, :].copy()
+                ind.x = y[ci, :]
 
             if ind.STATE == 'provide_f_dot':
                 mf.ffcn_dot(
@@ -367,20 +372,29 @@ def eval_G(F, G, x, x_d, ind, mf):
                 ind.ys_plt.append(ind.x.copy())
 
             if ind.STATE == 'finished':
+                # print 'done'
                 break
 
             ind.step_fo_forward()
+        # END WHILE LOOP
+
+        # evaluate multiple shooting matching conditions
+        # TODO check gradient matrix visually
+        r_mc_d[ci, ...] = 0.0
+        r_mc_d[ci, :, :] = -ind.x_d
+        r_mc_d[ci, :, (ci+1)*NY:(ci+2)*NY] = np.eye(NY)
+        r_mc[ci, :] = y[ci+1, :] - ind.x
     else:  # end of for loop
         pass
 
     # evaluate Mayer-type objective
     m_d = G[0:1, :]
     m = F[0:1]
-    mf.mfcn_dot(m, m_d, ts[-1:], ind.x, ind.x_d, p, p_d)
+    mf.mfcn_dot(m, m_d, ts[-1:], y[-1, :], y_d[-1, :], p, p_d)
 
     # evaluate end point constraint
-    rf_d = G[1+NY:1+2*NY, :]
-    rf = F[1+NY:1+2*NY]
+    rf_d = G[-NY:, :]
+    rf = F[-NY:]
     mf.rfcn_f_dot(rf, rf_d, ts[-1:], ind.x, ind.x_d)
 
     return 0
@@ -423,24 +437,32 @@ if __name__ == "__main__":
 
     # number of shooting variables
     # variables
-    # V = [x0, u0, u1, ..., u_NMS, p]
-    NV = NY + NMS*NU + NP
-    NC = NY + NY  # for start and endpoint constraints
+    # V = [x0, x1, ..., xNTS, u0, u1, ..., u_NMS, p]
+    NV = NTS*NY + NMS*NU + NP
+    NC = (
+        NMS*NY  # for matching conditions on shooting intervals
+        +
+        NY + NY  # for start and endpoint constraints
+    )
 
     # setup NLP problem using SNOPT
     sn = SNOPT(NV=NV, NC=NC)
-    # F = np.zeros([1 + NC])
-    # G = np.zeros([1 + NC, NV])
 
     # SETUP OF SHOOTING NLP
     # retrieve variables from NLP solver
-    # x = np.zeros(NV)
     x = sn.x
-    y0 = x[:NY]  # initial values
-    q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y = x[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
+    assert x.size == y.size + q.size + p.size
 
-    y0[...] = [0.0, 0.0]  # define initial values
+    # define initial positions
+    y[:, 0] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
+    y[:, 1] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
+
+    # define initial velocities
+    # y[:NTS/2, 1] = np.linspace(0, 1, NTS/2, endpoint=True)
+    # y[NTS/2:, 1] = np.linspace(1, 0, NTS - NTS/2, endpoint=True)
 
     # initialize with bang bang solution
     q[:NTS/2, :] = 1.0
@@ -449,19 +471,22 @@ if __name__ == "__main__":
     # time scaling of one
     p[...] = [1.5]
 
-    print "y0: \n", y0
+    print "y: \n", y
     print "q: \n", q
     print "p: \n", p
+    sn.xstate[...] = sn.x
 
     # Gradient calculation
     # setup directions for directional derivatives
     P = NV
     x_d = np.eye(NV)
-    y0_d = x_d[:NY, :]  # initial values
-    q_d = x_d[NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
+    y_d = x_d[:NTS*NY, :].reshape(NTS, NY, P)  # initial values
+    q_d = x_d[NTS*NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
     p_d = x_d[-NP:, :]  # parameters
+    assert x_d.size == y_d.size + q_d.size + p_d.size
 
     # define Gradient in sparse coordinate form (i, j, val)
+    # TODO use sparsity in SNOPT7
     k = 0
     for i in range(NC + 1):
         for j in range(NV):
@@ -476,17 +501,16 @@ if __name__ == "__main__":
 
     # set bounds on variables
     v_lo = sn.xlow
-    y0_lo = v_lo[:NY]  # initial values
-    q_lo = v_lo[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y_lo = v_lo[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q_lo = v_lo[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p_lo = v_lo[-NP:]  # parameters
+    assert v_lo.size == y_lo.size + q_lo.size + p_lo.size
 
     v_up = sn.xupp
-    y0_up = v_up[:NY]  # initial values
-    q_up = v_up[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y_up = v_up[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q_up = v_up[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p_up = v_up[-NP:]  # parameters
-
-    y0_lo[...] = 0.0
-    y0_up[...] = 0.0
+    assert v_up.size == y_up.size + q_up.size + p_up.size
 
     q_lo[...] = -1.0
     q_up[...] = 1.0
@@ -495,11 +519,28 @@ if __name__ == "__main__":
     p_up[...] = 5.0
 
     # set bounds on nonlinear constraints
-    sn.Flow[1:1+NY] = [0.0, 0.0]
-    sn.Fupp[1:1+NY] = [0.0, 0.0]
+    # start point constraints
+    r0_lo = sn.Flow[1:1+NY]
+    r0_up = sn.Fupp[1:1+NY]
 
-    sn.Flow[1+NY:1+2*NY] = [0.0, 0.0]
-    sn.Fupp[1+NY:1+2*NY] = [0.0, 0.0]
+    # matching conditions
+    r_mc_lo = sn.Flow[1+NY:-NY].reshape(NMS, NY)
+    r_mc_up = sn.Fupp[1+NY:-NY].reshape(NMS, NY)
+
+    # end point constraints
+    rf_lo = sn.Flow[-NY:]
+    rf_up = sn.Fupp[-NY:]
+    assert sn.Fupp.size == 1 + r0_up.size + r_mc_up.size + rf_up.size
+    assert sn.Flow.size == 1 + r0_lo.size + r_mc_lo.size + rf_lo.size
+
+    r0_lo[:] = [0.0, 0.0]
+    r0_up[:] = [0.0, 0.0]
+
+    r_mc_lo[:, :] = 0.0
+    r_mc_up[:, :] = 0.0
+
+    rf_lo[:] = [0.0, 0.0]
+    rf_up[:] = [0.0, 0.0]
 
     # load model function interface
     generate_so = False
@@ -509,8 +550,7 @@ if __name__ == "__main__":
     mf = Model(model_functions=so_path, model_definitions=ds, verbose=True)
 
     # instantiate integrator
-    ind = RcExplicitEuler(x0=y0.copy())
-    # ind = RcRK4Classic(x0=y0.copy())
+    ind = RcExplicitEuler(x0=y[0, :].copy())
 
     # setup plotting routines
     show_canvas = False
@@ -543,7 +583,6 @@ if __name__ == "__main__":
 
         # evaluate F only when explicitly needed
         if needF[0] != 0:
-            # print "In need F!"
             eval_F(F, x, ind, mf)
 
         cnt += 1
@@ -557,8 +596,6 @@ if __name__ == "__main__":
         print "estimate jacobian structure"
         print "-"*30
         sn.calc_jacobian(evaluate)
-        print "iGfun = \n", sn.iGfun
-        print "jGvar = \n", sn.jGvar
         print ""
 
     print "solve SQP problem"
@@ -567,20 +604,24 @@ if __name__ == "__main__":
     print ""
 
     print "evaluate F for plotting"
+    print "-"*30
+    print ""
     F = sn.F
     x = sn.x
 
-    y0 = x[:NY]  # initial values
-    q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
+    y = x[:NTS*NY].reshape(NTS, NY)  # shooting variables
+    q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
 
-    print "y0: \n", y0
+    print "Results"
+    print "-"*30
+    print "y: \n", y
     print "q: \n", q
     print "p: \n", p
 
     eval_F(F, x, ind, mf)
     plot.update(F, x)
-    plot.savefig(fname="oc_ss_rc_rocketcar")
+    plot.savefig(fname="oc_ms_rc_rocketcar")
     print ""
 
 

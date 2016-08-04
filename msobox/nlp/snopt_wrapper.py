@@ -19,7 +19,7 @@ class SNOPT(object):
 
     """Wrapper class for SNOPT sparse NLP solver."""
 
-    INF = 1.1e+20
+    INF = 1.0e+20
 
     def __init__(self, NV, NC):
         """Set up SNOPT solver."""
