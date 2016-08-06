@@ -25,7 +25,7 @@ import warnings
 matplotlib.style.use('ggplot')
 
 # setting print options to print all array elements
-np.set_printoptions(threshold=np.nan, precision=4, linewidth=100)
+np.set_printoptions(threshold=np.nan, precision=2, linewidth=200)
 
 
 # ------------------------------------------------------------------------------
@@ -239,6 +239,9 @@ class Plotter(object):
         _d.update(kwargs)
         self.fig.savefig('{fname}.{fmt}'.format(**_d), **_d)
 
+    def __del__(self):
+        plt.close(self.fig)
+
 
 # ------------------------------------------------------------------------------
 def eval_F(F, x, ind, mf):
@@ -395,7 +398,7 @@ def eval_G(F, G, x, x_d, ind, mf):
     # evaluate end point constraint
     rf_d = G[-NY:, :]
     rf = F[-NY:]
-    mf.rfcn_f_dot(rf, rf_d, ts[-1:], ind.x, ind.x_d)
+    mf.rfcn_f_dot(rf, rf_d, ts[-1:], y[-1, :], y_d[-1, :])
 
     return 0
 
@@ -457,8 +460,8 @@ if __name__ == "__main__":
     assert x.size == y.size + q.size + p.size
 
     # define initial positions
-    y[:, 0] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
-    y[:, 1] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
+    # y[:, 0] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
+    # y[:, 1] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
 
     # define initial velocities
     # y[:NTS/2, 1] = np.linspace(0, 1, NTS/2, endpoint=True)
@@ -556,16 +559,11 @@ if __name__ == "__main__":
     show_canvas = False
     plot = Plotter(NY=NY, NU=NU, ind=ind, mf=mf, show_canvas=show_canvas)
 
-    # add clobal counter for number of calls
-    cnt = 0
-
     # -------------------------------------------------------------------------
     # EVALUATION OF SHOOTING NLP
     # define shooting problem in an SNOPT compatible way
     def evaluate(status, x, needF, nF, F, needG, neG, G, cu, iu, ru):
         """Function to implement that is used by SNOPT to solve the problem."""
-        global cnt
-        # print "iteration: ", cnt
         F_evaluated = False
 
         # set status flag
@@ -584,8 +582,6 @@ if __name__ == "__main__":
         # evaluate F only when explicitly needed
         if needF[0] != 0:
             eval_F(F, x, ind, mf)
-
-        cnt += 1
 
         return None
     # -------------------------------------------------------------------------

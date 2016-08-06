@@ -116,7 +116,7 @@ class SNOPT(object):
         self.lenG[0] = self.n * self.nF
         self.iGfun = np.zeros((self.lenG[0],), dtype=np.int32)  # row coordinate
         self.jGvar = np.zeros((self.lenG[0],), dtype=np.int32)  # col coordinate
-        # NOTE: G would be (row, col) = value but is handled by SNOPT7
+        # NOTE: G would be (row, col) = value but is handled by SNOPT7 internally
         self.x_d = np.eye(self.n)  # directions for gradient evaluation
 
         self.nxname = np.zeros((1,), dtype=np.int32)

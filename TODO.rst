@@ -40,7 +40,19 @@ Goal: Calculate Hessian in mixed first-order forward, second-order reverse mode
 IND: RK4Classic and RKFSWT
 --------------------------
 
-* finis
+[ ] implement first-order forward derivatives
+[ ] implement first-order reverse derivatives
+
+[ ] implement second-order forward derivatives
+[ ] implement second-order reverse derivatives
+
+[ ] finish RKFSWT
+  [ ] finish and test interpolation or replace with scipy.rootfind
+  [ ] add switch execution
+  [ ] add sensitivity forward update
+  [ ] add sensitivity reverse update
+  [ ] what about second order?
+  [ ] run bouncing ball
 
 
 Implement LP-Newton for NLPs
@@ -62,8 +74,6 @@ Implement SQP for NLPs
 
 Goal: Implement rocket-car example for SQP solver
 
-
-Finish implementation of derivatives in RC-IND solvers
 
 Add polynomials as convenience functions for control and state discretization
 -----------------------------------------------------------------------------
