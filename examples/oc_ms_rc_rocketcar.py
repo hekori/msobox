@@ -25,7 +25,7 @@ import warnings
 matplotlib.style.use('ggplot')
 
 # setting print options to print all array elements
-np.set_printoptions(threshold=np.nan, precision=2, linewidth=200)
+np.set_printoptions(threshold=np.nan, precision=4, linewidth=200)
 
 
 # ------------------------------------------------------------------------------
@@ -282,7 +282,6 @@ def eval_F(F, x, ind, mf):
                 ind.ys_plt.append(ind.x.copy())
 
             if ind.STATE == 'finished':
-                # print 'done'
                 break
 
             ind.step_zo_forward()
@@ -343,6 +342,7 @@ def eval_G(F, G, x, x_d, ind, mf):
     r0 = F[1:1+NY]
     mf.rfcn_0_dot(r0, r0_d, ts[0:1], y[0, :], y_d[0, :])
 
+    # unpack matching constraints and directions
     r_mc_d = G[1+NY:-NY, :].reshape(NMS, NY, P)
     r_mc = F[1+NY:-NY].reshape(NMS, NY)
     # integration loop from shooting node to shooting node
@@ -352,8 +352,6 @@ def eval_G(F, G, x, x_d, ind, mf):
 
         # reverse communication loop
         while True:
-            # print "STATE: ", ind.STATE, "(", ind.j, "/", ind.NTS,")"
-
             if ind.STATE == 'provide_x0':
                 ind.x_d = y_d[ci, :].copy()
                 ind.x = y[ci, :]
@@ -375,14 +373,12 @@ def eval_G(F, G, x, x_d, ind, mf):
                 ind.ys_plt.append(ind.x.copy())
 
             if ind.STATE == 'finished':
-                # print 'done'
                 break
 
             ind.step_fo_forward()
         # END WHILE LOOP
 
         # evaluate multiple shooting matching conditions
-        # TODO check gradient matrix visually
         r_mc_d[ci, ...] = 0.0
         r_mc_d[ci, :, :] = -ind.x_d
         r_mc_d[ci, :, (ci+1)*NY:(ci+2)*NY] = np.eye(NY)
@@ -458,21 +454,6 @@ if __name__ == "__main__":
     q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
     assert x.size == y.size + q.size + p.size
-
-    # define initial positions
-    # y[:, 0] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
-    # y[:, 1] = np.linspace(0, 1, NTS, endpoint=True)  # define initial values
-
-    # define initial velocities
-    # y[:NTS/2, 1] = np.linspace(0, 1, NTS/2, endpoint=True)
-    # y[NTS/2:, 1] = np.linspace(1, 0, NTS - NTS/2, endpoint=True)
-
-    # initialize with bang bang solution
-    q[:NTS/2, :] = 1.0
-    q[NTS/2:, :] = -1.0
-
-    # time scaling of one
-    p[...] = [1.5]
 
     print "y: \n", y
     print "q: \n", q

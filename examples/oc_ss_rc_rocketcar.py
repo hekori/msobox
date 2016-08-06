@@ -239,6 +239,9 @@ class Plotter(object):
         _d.update(kwargs)
         self.fig.savefig('{fname}.{fmt}'.format(**_d), **_d)
 
+    def __del__(self):
+        plt.close(self.fig)
+
 
 # ------------------------------------------------------------------------------
 def eval_F(F, x, ind, mf):
@@ -271,6 +274,7 @@ def eval_F(F, x, ind, mf):
                     pass
 
             if ind.STATE == 'provide_f':
+                # evaluate ffcn with current time, state and control to provide f
                 mf.ffcn(ind.f, ind.t, ind.x, q[ci])
                 #NOTE: rescale to unit interval [0, 1] by parameter p::
                 ind.f *= p[0]
@@ -284,6 +288,7 @@ def eval_F(F, x, ind, mf):
                 break
 
             ind.step_zo_forward()
+        # END WHILE LOOP
     else:  # end of for loop
         pass
 
@@ -370,6 +375,7 @@ def eval_G(F, G, x, x_d, ind, mf):
                 break
 
             ind.step_fo_forward()
+        # END WHILE LOOP
     else:  # end of for loop
         pass
 
@@ -429,29 +435,19 @@ if __name__ == "__main__":
 
     # setup NLP problem using SNOPT
     sn = SNOPT(NV=NV, NC=NC)
-    # F = np.zeros([1 + NC])
-    # G = np.zeros([1 + NC, NV])
 
     # SETUP OF SHOOTING NLP
     # retrieve variables from NLP solver
-    # x = np.zeros(NV)
     x = sn.x
     y0 = x[:NY]  # initial values
     q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
-
-    y0[...] = [0.0, 0.0]  # define initial values
-
-    # initialize with bang bang solution
-    q[:NTS/2, :] = 1.0
-    q[NTS/2:, :] = -1.0
-
-    # time scaling of one
-    p[...] = [1.5]
+    assert x.size == y0.size + q.size + p.size
 
     print "y0: \n", y0
     print "q: \n", q
     print "p: \n", p
+    sn.xstate[...] = sn.x
 
     # Gradient calculation
     # setup directions for directional derivatives
@@ -460,8 +456,10 @@ if __name__ == "__main__":
     y0_d = x_d[:NY, :]  # initial values
     q_d = x_d[NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
     p_d = x_d[-NP:, :]  # parameters
+    assert x_d.size == y0_d.size + q_d.size + p_d.size
 
     # define Gradient in sparse coordinate form (i, j, val)
+    # TODO use sparsity in SNOPT7
     k = 0
     for i in range(NC + 1):
         for j in range(NV):
@@ -479,11 +477,13 @@ if __name__ == "__main__":
     y0_lo = v_lo[:NY]  # initial values
     q_lo = v_lo[NY:-NP].reshape(NMS, NU)  # pwc. controls
     p_lo = v_lo[-NP:]  # parameters
+    assert v_lo.size == y0_lo.size + q_lo.size + p_lo.size
 
     v_up = sn.xupp
     y0_up = v_up[:NY]  # initial values
     q_up = v_up[NY:-NP].reshape(NMS, NU)  # pwc. controls
     p_up = v_up[-NP:]  # parameters
+    assert v_up.size == y0_up.size + q_up.size + p_up.size
 
     y0_lo[...] = 0.0
     y0_up[...] = 0.0
@@ -495,11 +495,21 @@ if __name__ == "__main__":
     p_up[...] = 5.0
 
     # set bounds on nonlinear constraints
-    sn.Flow[1:1+NY] = [0.0, 0.0]
-    sn.Fupp[1:1+NY] = [0.0, 0.0]
+    # start point constraints
+    r0_lo = sn.Flow[1:1+NY]
+    r0_up = sn.Fupp[1:1+NY]
 
-    sn.Flow[1+NY:1+2*NY] = [0.0, 0.0]
-    sn.Fupp[1+NY:1+2*NY] = [0.0, 0.0]
+    # end point constraints
+    rf_lo = sn.Flow[-NY:]
+    rf_up = sn.Fupp[-NY:]
+    assert sn.Fupp.size == 1 + r0_up.size + rf_up.size
+    assert sn.Flow.size == 1 + r0_lo.size + rf_lo.size
+
+    r0_lo[:] = [0.0, 0.0]
+    r0_up[:] = [0.0, 0.0]
+
+    rf_lo[:] = [0.0, 0.0]
+    rf_up[:] = [0.0, 0.0]
 
     # load model function interface
     generate_so = False
@@ -510,22 +520,16 @@ if __name__ == "__main__":
 
     # instantiate integrator
     ind = RcExplicitEuler(x0=y0.copy())
-    # ind = RcRK4Classic(x0=y0.copy())
 
     # setup plotting routines
     show_canvas = False
     plot = Plotter(NY=NY, NU=NU, ind=ind, mf=mf, show_canvas=show_canvas)
-
-    # add clobal counter for number of calls
-    cnt = 0
 
     # -------------------------------------------------------------------------
     # EVALUATION OF SHOOTING NLP
     # define shooting problem in an SNOPT compatible way
     def evaluate(status, x, needF, nF, F, needG, neG, G, cu, iu, ru):
         """Function to implement that is used by SNOPT to solve the problem."""
-        global cnt
-        # print "iteration: ", cnt
         F_evaluated = False
 
         # set status flag
@@ -543,10 +547,7 @@ if __name__ == "__main__":
 
         # evaluate F only when explicitly needed
         if needF[0] != 0:
-            # print "In need F!"
             eval_F(F, x, ind, mf)
-
-        cnt += 1
 
         return None
     # -------------------------------------------------------------------------
@@ -557,8 +558,6 @@ if __name__ == "__main__":
         print "estimate jacobian structure"
         print "-"*30
         sn.calc_jacobian(evaluate)
-        print "iGfun = \n", sn.iGfun
-        print "jGvar = \n", sn.jGvar
         print ""
 
     print "solve SQP problem"
@@ -567,6 +566,8 @@ if __name__ == "__main__":
     print ""
 
     print "evaluate F for plotting"
+    print "-"*30
+    print ""
     F = sn.F
     x = sn.x
 
