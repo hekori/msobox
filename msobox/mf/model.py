@@ -136,8 +136,6 @@ def generate_derivative_declarations(
                     raise Exception()
             dargs.insert(dargs.index(v) + 1, new_v)
 
-        print "dargs: ", dargs
-
         # NOTE overwrite function name with current derivative name
         _func["name"] = name
         _func["args"] = dargs
