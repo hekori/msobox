@@ -14,7 +14,16 @@ from collections import (OrderedDict,)
 from numpy.testing import (TestCase, run_module_suite)
 from numpy.testing import (assert_equal, assert_allclose)
 
+from msobox.mf.model import (import_module_from_file, import_shared_library)
+from msobox.mf.functions import (Function)
+
 from conftest import (md_dict,)
+from conftest import (ffcn_py, ffcn_d_xpu_v_py,)
+from conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from conftest import (ffcn_b_xpu_py,)
+from conftest import (hfcn_py, hfcn_d_xpu_v_py,)
+from conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from conftest import (hfcn_b_xpu_py,)
 
 
 # ------------------------------------------------------------------------------
