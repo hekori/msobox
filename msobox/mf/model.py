@@ -134,7 +134,9 @@ def generate_derivative_declarations(
                 v_cnt += 1
                 if v_cnt > 10:
                     raise Exception()
-            dargs.insert(args.index(v) + 1, new_v)
+            dargs.insert(dargs.index(v) + 1, new_v)
+
+        print "dargs: ", dargs
 
         # NOTE overwrite function name with current derivative name
         _func["name"] = name
