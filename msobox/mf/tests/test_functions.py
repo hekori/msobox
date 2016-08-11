@@ -187,6 +187,8 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
     func = {
         "type": "ffcn",
         "name": "ffcn_d_xpu_v",
+        "mode": "forward_vector",
+        "level": 1,
         "args": ["f", "f_d", "t", "x", "x_d", "p", "p_d", "u", "u_d", "nbdirs"],
         "deriv": []
     }

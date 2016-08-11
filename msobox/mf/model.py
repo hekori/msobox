@@ -91,7 +91,7 @@ def import_shared_library(path_to_so, verbose=True):
 
 # ------------------------------------------------------------------------------
 def generate_derivative_declarations(
-    declarations, derivatives, dimensions, function_d, verbose=True
+    declarations, derivatives, dimensions, function_d, level, verbose=True
 ):
     """Recursively get all derivatives from function declarations."""
     # look-up table for mode assignment
@@ -107,6 +107,7 @@ def generate_derivative_declarations(
         # copy original dictionaries
         _dims = deepcopy(dimensions)
         _func = deepcopy(function_d)
+        _mode = deriv["mode"]
 
         _deriv_dims = _dims
         mode, vector = _mode_d[deriv["mode"]]
@@ -146,6 +147,8 @@ def generate_derivative_declarations(
             "name": name,
             "type": _func["type"],
             "args": dargs,
+            "mode": _mode,
+            "level": level,
             "deriv": deriv.get("deriv", [])
         }
 
@@ -156,45 +159,36 @@ def generate_derivative_declarations(
         if outvar + [u"t"] + invar == args:
             # then add 'dot' alias for total forward derivative
             if "d" in mode:
-                declarations[oname + "_dot"] = (
-                    _deriv_dims, _deriv_func
-                )
+                # TODO pass original name as well an replace type
+                alias = _func["type"] + "_" + "d"*(level - 1) + "dot"
+                declarations[alias] = (_deriv_dims, _deriv_func)
             # then add 'bar' alias for total reverse derivative
             elif "b" in mode:
-                declarations[oname + "_bar"] = (
-                    _deriv_dims, _deriv_func
-                )
+                # TODO pass original name as well an replace type
+                alias = _func["type"] + "_" + "b"*(level - 1) + "bar"
+                declarations[alias] = (_deriv_dims, _deriv_func)
 
         # # NOTE: there will be a problem with nbdirs of fortran calls
         # assign next level of derivatives when specified
         if _deriv_func["deriv"]:
             generate_derivative_declarations(
-                declarations, _deriv_func["deriv"], _dims, _func, verbose
+                declarations, _deriv_func["deriv"], _dims, _func,
+                level=level + 1,  # increment derivative level
+                verbose=verbose
             )
 
 
 def args_str_from_args(fargs):
     """Generate arguments for C header."""
-    pt = re.compile(r"_d(?P<cnt>\d?)")
-
     s = []
-    dirs = []
-
     for arg in fargs:
         s.append("double* {}".format(arg))
-        m = pt.findall(fargs[1])
-        for m in pt.finditer(arg):
-            m = m.group("cnt")
-            if m not in dirs:
-                dirs.append(m)
-    for cnt in dirs:
-        s.append("int* nbdirs{}".format(cnt))
 
     s = ", ".join([str(x) for x in s])
     return s
 
 
-def header_from_function_name_and_args(fname, fargs):
+def header_from_function_name_and_args(fname, fargs, mode, level):
     """
     Create C header file for the FFI interface.
 
@@ -216,8 +210,20 @@ def header_from_function_name_and_args(fname, fargs):
             int* nbdirs
         )
     """
+    fargs_str = args_str_from_args(fargs)
+    if "vector" in mode:
+        dirs = []
+        for i in range(level):
+            if i == 0:
+                i = ""
+            else:
+                i = i-1
+            dirs.append("int* nbdirs{}".format(i))
+        dirs_str = ", ".join(dirs)
+        fargs_str = ", ".join([fargs_str, dirs_str])
+
     header = "void {fname}_({fargs_str});".format(
-        fname=fname, fargs_str=args_str_from_args(fargs)
+        fname=fname, fargs_str=fargs_str
     )
     return header
 
@@ -226,7 +232,9 @@ def generate_header_from_declarations(function_declarations, verbose=True):
     """Create C header file for the FFI interface."""
     header = ""
     for (f_name, (f_dims, f_dict)) in function_declarations.iteritems():
-        s = header_from_function_name_and_args(f_name, f_dict["args"])
+        s = header_from_function_name_and_args(
+            f_name, f_dict["args"], f_dict["mode"], f_dict["level"],
+        )
         header += s + "\n"
 
     return header
@@ -316,6 +324,8 @@ class Model(object):
                 "name": func["name"],
                 "type": func["type"],
                 "args": func["args"],
+                "mode": "nominal",
+                "level": 0,
                 "deriv": func["deriv"],
             }
             # assign function declaration
@@ -323,7 +333,8 @@ class Model(object):
 
             # assign derivative declarations
             generate_derivative_declarations(
-                _d, func["deriv"], _dims, _func, verbose
+                _d, func["deriv"], _dims, _func, level=_func["level"]+1,
+                verbose=verbose
             )
 
         return _d

@@ -48,13 +48,17 @@ class Functor(object):
                 if len(arg.shape) == 2 and arg.shape[1] not in ffi_Ps:
                     ffi_Ps.append(arg.shape[1])
 
+            # print "ffi_args\n", ffi_args
+            # print "ffi_shps\n", ffi_shps
+            # print "ffi_Ps\n", ffi_Ps
             # Add directions to arguments
             # FIXME: higher order derivatives include multiple directions
-            ffi_Ps = numpy.asarray(ffi_Ps)
-            for i, P in enumerate(ffi_Ps):
-                ffi_args.append(
-                    self._ffi.cast("int*", ffi_Ps[i:i+1].ctypes.data)
-                )
+            if "vector" in self._declaration["mode"]:
+                ffi_Ps = numpy.asarray(ffi_Ps)
+                for i, P in enumerate(ffi_Ps):
+                    ffi_args.append(
+                        self._ffi.cast("int*", ffi_Ps[i:i+1].ctypes.data)
+                    )
 
             # call FFI function with proper args
             return self._function(*ffi_args, **kwargs)
@@ -76,6 +80,8 @@ class Function(object):
             "name": "",
             "type": "",
             "args": [],
+            "mode": "",
+            "level": 0,
             "deriv": []
         }
         _func.update(func_d)
