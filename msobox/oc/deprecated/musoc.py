@@ -828,15 +828,15 @@ class MUSOC(object):
         """
 
         self.preparation_phase()
-        print 'computing U s V^T = self.JC[:self.M * self.NH, :]'
+        print('computing U s V^T = self.JC[:self.M * self.NH, :]')
         U,s,VT = numpy.linalg.svd(self.JC[:self.M * self.NH, :])
 
         i = numpy.where(s <= 1.e-12)
 
         V = VT.T
-        print 'V=\n', V
-        print 'singular values =\n', s
-        print 'dependent parameters =\n', V[:,i]
+        print(('V=\n', V))
+        print(('singular values =\n', s))
+        print(('dependent parameters =\n', V[:,i]))
 
 
     def __str__(self):

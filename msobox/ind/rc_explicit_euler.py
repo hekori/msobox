@@ -217,7 +217,7 @@ if __name__ == '__main__':
             xs[ind.j, :] = ind.x
 
         if ind.STATE == 'finished':
-            print 'done'
+            print('done')
             break
 
         ind.step_zo_forward()

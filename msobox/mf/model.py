@@ -17,7 +17,7 @@ from inspect import (getargspec, getcallargs)
 from functools import (wraps,)
 from collections import (OrderedDict,)
 
-from functions import (Function)
+from .functions import (Function)
 
 
 # ------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ def generate_derivative_declarations(
         declarations[name] = (_deriv_dims, _deriv_func)
 
         # is function derived wrt. all arguments?
-        if outvar + [u"t"] + invar == args:
+        if outvar + ["t"] + invar == args:
             # then add 'dot' alias for total forward derivative
             if "d" in mode:
                 # TODO pass original name as well an replace type
@@ -231,7 +231,7 @@ def header_from_function_name_and_args(fname, fargs, mode, level):
 def generate_header_from_declarations(function_declarations, verbose=True):
     """Create C header file for the FFI interface."""
     header = ""
-    for (f_name, (f_dims, f_dict)) in function_declarations.iteritems():
+    for (f_name, (f_dims, f_dict)) in list(function_declarations.items()):
         s = header_from_function_name_and_args(
             f_name, f_dict["args"], f_dict["mode"], f_dict["level"],
         )
@@ -275,7 +275,7 @@ class Model(object):
         )
 
         # load functions from module
-        for (f_name, (f_dims, f_dict)) in _function_declarations.iteritems():
+        for (f_name, (f_dims, f_dict)) in list(_function_declarations.items()):
             # create function
             func = Function(
                 self.module, f_dims, f_dict, ffi=self.ffi, verbose=self.verbose

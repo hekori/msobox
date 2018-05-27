@@ -485,9 +485,9 @@ clean:
             for filename in fnmatch.filter(filenames, '*.f'):
                 matches.append(os.path.join(root, filename))
 
-        print matches
+        print(matches)
         for match in matches:
-            print '%s to %s'%(match, self.outdir)
+            print(('%s to %s'%(match, self.outdir)))
             shutil.copy(match, self.outdir)
 
     def clean(self):

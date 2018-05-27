@@ -26,7 +26,7 @@ xs_bar[-1,1] = 1.
 
 rk4.fo_reverse(xs_bar)
 
-print 'gradient of x(t=2; x0, p, q) w.r.t. p  = \n', rk4.p_bar
-print 'gradient of x(t=2; x0, p, q) w.r.t. q  = \n', rk4.q_bar
-print 'gradient of x(t=2; x0, p, q) w.r.t. x0 = \n', rk4.x0_bar
+print('gradient of x(t=2; x0, p, q) w.r.t. p  = \n', rk4.p_bar)
+print('gradient of x(t=2; x0, p, q) w.r.t. q  = \n', rk4.q_bar)
+print('gradient of x(t=2; x0, p, q) w.r.t. x0 = \n', rk4.x0_bar)
 

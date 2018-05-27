@@ -455,9 +455,9 @@ if __name__ == "__main__":
     p = x[-NP:]  # parameters
     assert x.size == y.size + q.size + p.size
 
-    print "y: \n", y
-    print "q: \n", q
-    print "p: \n", p
+    print("y: \n", y)
+    print("q: \n", q)
+    print("p: \n", p)
     sn.xstate[...] = sn.x
 
     # Gradient calculation
@@ -570,19 +570,19 @@ if __name__ == "__main__":
     # set derivative mode of SNOPT and evaluate initial Jacobian
     sn.set_derivative_mode(1)  # mode 0 means use finite differences
     if sn.deropt[0] == 0:
-        print "estimate jacobian structure"
-        print "-"*30
+        print("estimate jacobian structure")
+        print("-"*30)
         sn.calc_jacobian(evaluate)
-        print ""
+        print("")
 
-    print "solve SQP problem"
-    print "-"*30
+    print("solve SQP problem")
+    print("-"*30)
     sn.sqp_step(evaluate)
-    print ""
+    print("")
 
-    print "evaluate F for plotting"
-    print "-"*30
-    print ""
+    print("evaluate F for plotting")
+    print("-"*30)
+    print("")
     F = sn.F
     x = sn.x
 
@@ -590,16 +590,16 @@ if __name__ == "__main__":
     q = x[NTS*NY:-NP].reshape(NMS, NU)  # pwc. controls
     p = x[-NP:]  # parameters
 
-    print "Results"
-    print "-"*30
-    print "y: \n", y
-    print "q: \n", q
-    print "p: \n", p
+    print("Results")
+    print("-"*30)
+    print("y: \n", y)
+    print("q: \n", q)
+    print("p: \n", p)
 
     eval_F(F, x, ind, mf)
     plot.update(F, x)
     plot.savefig(fname="oc_ms_rc_rocketcar")
-    print ""
+    print("")
 
 
 # ------------------------------------------------------------------------------

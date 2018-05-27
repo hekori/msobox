@@ -4,7 +4,7 @@ import numpy
 
 from numpy.testing import (TestCase, run_module_suite)
 from msobox.mf.python import BackendPython
-from fixtures import (PureBackendFixture,)
+from .fixtures import (PureBackendFixture,)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DIR = os.path.dirname(DIR)

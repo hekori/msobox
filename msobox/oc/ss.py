@@ -13,7 +13,7 @@ from msobox.mf.tapenade import Differentiator
 from msobox.mf.fortran import BackendFortran
 from msobox.ind.rk4classic import RK4Classic
 from msobox.ind.explicit_euler import ExplicitEuler
-from utilities import rq
+from .utilities import rq
 
 # imports for nlp solver
 import snopt
@@ -53,7 +53,7 @@ class SS(object):
             q_array = np.zeros((self.NU, self.NTS, self.NQI))
 
             # convert controls from one-dimensional to 3-dimensional
-            for i in xrange(0, self.NU):
+            for i in range(0, self.NU):
                 q_array[i, :, 0] = self.q[i * self.NTS:(i + 1) * self.NTS]
 
             return q_array
@@ -87,7 +87,7 @@ class SS(object):
             s_array = np.zeros((2, self.NX))
 
             # convert shooting variables from one-dimensional to 3-dimensional
-            for i in xrange(0, 2):
+            for i in range(0, 2):
                 s_array[i, :] = self.s[i * self.NX:(i + 1) * self.NX]
 
             return s_array
@@ -117,7 +117,7 @@ class SS(object):
         self.s = np.zeros((2 * self.NX,))
 
         # approximate shooting variables by linear interpolation if possible
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
 
             # set initial shooting variables to x0 if possible
             if self.x0[i] is not None:
@@ -255,7 +255,7 @@ class SS(object):
             self.sign = -1
 
         else:
-            print "No valid input for minormax."
+            print("No valid input for minormax.")
             raise Exception
 
         # load json containing data structure for differentiator
@@ -274,7 +274,7 @@ class SS(object):
             self.ind = ExplicitEuler(self.backend_fortran)
 
         else:
-            print "Chosen integrator is not available."
+            print("Chosen integrator is not available.")
             raise NotImplementedError
 
     # =========================================================================
@@ -306,11 +306,11 @@ class SS(object):
         q = self.q2array()
 
         # plot q and xs
-        for i in xrange(0, self.NU):
+        for i in range(0, self.NU):
             ax.plot(self.ts, q[i, :, 0], color=colors[i], linewidth=2,
                      linestyle="dashed", label="u_" + str(i))
 
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
             ax.plot(self.ts, self.xs[:, i], color=colors[i], linewidth=2,
                      linestyle="solid", label="x_" + str(i))
 
@@ -352,7 +352,7 @@ class SS(object):
         self.xs[0, :] = s[0, :]
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -395,7 +395,7 @@ class SS(object):
         q_dot = np.zeros((self.NU, self.NX))
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -441,7 +441,7 @@ class SS(object):
         q_dot = np.zeros((self.NU, self.NP))
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -484,7 +484,7 @@ class SS(object):
         self.xs[0, :] = s[0, :]
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set time steps for this interval
             tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
@@ -497,7 +497,7 @@ class SS(object):
             x0_dot = self.xs_dq[i, :, :]
             p_dot = np.zeros((self.NP, self.NQ))
             q_dot = np.zeros((self.NU, self.NQ))
-            for j in xrange(0, self.NU):
+            for j in range(0, self.NU):
                 q_dot[j, j * self.NTS + i] = 1
 
             # integrate
@@ -538,7 +538,7 @@ class SS(object):
         q_ddot = np.zeros((self.NU, self.NX, self.NX))
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -590,7 +590,7 @@ class SS(object):
         q_ddot = np.zeros((self.NU, self.NP, self.NP))
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -638,7 +638,7 @@ class SS(object):
         self.xs[0, :] = s[0, :]
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set time steps for this interval
             tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
@@ -653,10 +653,10 @@ class SS(object):
             p_dot = np.zeros((self.NP, self.NQ))
             p_ddot = np.zeros((self.NP, self.NQ, self.NQ))
             q_dot1 = np.zeros((self.NU, self.NQ))
-            for j in xrange(0, self.NU):
+            for j in range(0, self.NU):
                 q_dot1[j, j * self.NTS + i] = 1
             q_dot2 = np.zeros((self.NU, self.NQ))
-            for j in xrange(0, self.NU):
+            for j in range(0, self.NU):
                 q_dot2[j, j * self.NTS + i] = 1
             q_ddot = np.zeros((self.NU, self.NQ, self.NQ))
 
@@ -704,7 +704,7 @@ class SS(object):
         q_ddot = np.zeros((self.NU, self.NX, self.NP))
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set initial conditions
             x0 = self.xs[i, :]
@@ -755,7 +755,7 @@ class SS(object):
         self.xs_ds[0, :, :self.NX] = np.eye(self.NX)
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set time steps for this interval
             tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
@@ -773,7 +773,7 @@ class SS(object):
             p_ddot = np.zeros((self.NP, self.NX, self.NQ))
             q_dot1 = np.zeros((self.NU, self.NX))
             q_dot2 = np.zeros((self.NU, self.NQ))
-            for j in xrange(0, self.NU):
+            for j in range(0, self.NU):
                 q_dot2[j, j * self.NTS + i] = 1
             q_ddot = np.zeros((self.NU, self.NX, self.NQ))
 
@@ -814,7 +814,7 @@ class SS(object):
         self.xs[0, :] = s[0, :]
 
         # integrate
-        for i in xrange(0, self.NTS - 1):
+        for i in range(0, self.NTS - 1):
 
             # set time steps for this interval
             tsi = np.linspace(self.ts[i], self.ts[i + 1], self.NTSI)
@@ -832,7 +832,7 @@ class SS(object):
             p_ddot = np.zeros((self.NP, self.NP, self.NQ))
             q_dot1 = np.zeros((self.NU, self.NP))
             q_dot2 = np.zeros((self.NU, self.NQ))
-            for j in xrange(0, self.NU):
+            for j in range(0, self.NU):
                 q_dot2[j, j * self.NTS + i] = 1
             q_ddot = np.zeros((self.NU, self.NP, self.NQ))
 
@@ -875,19 +875,19 @@ class SS(object):
         u = np.zeros((self.NU,))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
 
-            for k in xrange(0, self.NU):
+            for k in range(0, self.NU):
                 u[k] = q[i + k * self.NTS]
 
             # call fortran backend
             self.backend_fortran.gfcn(g, self.ts[i:i + 1], x, p, u)
 
             # build constraints
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc[i + k * self.NTS] = g[k]
 
     # =========================================================================
@@ -924,13 +924,13 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NX))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x     = self.xs[i, :]
             x_dot = np.reshape(self.xs_ds[i, :, :self.NX], x_dot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -938,7 +938,7 @@ class SS(object):
                                           x, x_dot, p, p_dot, u, u_dot)
 
             # store gradient
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc_ds[i + k * self.NTS, :self.NX] = g_dot[k, :]
                 self.ineqc[i + k * self.NTS] = g[k]
 
@@ -976,13 +976,13 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NP))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x  = self.xs[i, :]
             x_dot = np.reshape(self.xs_dp[i, :, :], x_dot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -990,7 +990,7 @@ class SS(object):
                                           x, x_dot, p, p_dot, u, u_dot)
 
             # store gradient
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc[i + k * self.NTS] = g[k]
                 self.ineqc_dp[i + k * self.NTS, :] = g_dot[k, :]
 
@@ -1028,16 +1028,16 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NU))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all previous controls plus the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
                 x_dot = np.reshape(self.xs_dq[i, :, j], x_dot.shape)
 
-                for k in xrange(0, self.NU):
+                for k in range(0, self.NU):
                     u[k] = q[i + k * self.NTS]
 
                 if i == j:
@@ -1050,10 +1050,10 @@ class SS(object):
                                               x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
-                for k in xrange(0, self.NG):
+                for k in range(0, self.NG):
                     self.ineqc[i + k * self.NTS] = g[k]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.ineqc_dq[i + k * self.NTS,
                             j + l * self.NTS] = g_dot[k, l]
 
@@ -1096,7 +1096,7 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NX,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
@@ -1104,7 +1104,7 @@ class SS(object):
             x_ddot = np.reshape(self.xs_dsds[i, :, :self.NX, :self.NX],
                                 x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend to calculate derivatives of constraint functions
@@ -1115,7 +1115,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc_dsds[i + k * self.NTS, :self.NX, :self.NX] = \
                     g_ddot[k, :, :]
                 self.ineqc_ds[i + k * self.NTS, :self.NX] = g_dot1[k, :]
@@ -1161,14 +1161,14 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NP,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
             x_dot = np.reshape(self.xs_dp[i, :, :], x_dot.shape)
             x_ddot = np.reshape(self.xs_dpdp[i, :, :, :], x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend to calculate derivatives of constraint functions
@@ -1179,7 +1179,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc_dpdp[i + k * self.NTS, :, :] = g_ddot[k, :, :]
                 self.ineqc_dp[i + k * self.NTS, :] = g_dot1[k, :]
                 self.ineqc[i + k * self.NTS] = g[k]
@@ -1225,9 +1225,9 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time steps three times
-        for i in xrange(0, self.NTS):
-            for j in xrange(0, i + 1):
-                for m in xrange(0, i + 1):
+        for i in range(0, self.NTS):
+            for j in range(0, i + 1):
+                for m in range(0, i + 1):
 
                     # state and controls for this time step
                     x = self.xs[i, :]
@@ -1235,7 +1235,7 @@ class SS(object):
                     x_dot2 = np.reshape(self.xs_dq[i, :, m], x_dot2.shape)
                     x_ddot = np.reshape(self.xs_dqdq[i, :, j, m], x_ddot.shape)
 
-                    for k in xrange(0, self.NU):
+                    for k in range(0, self.NU):
                         u[k] = q[i + k * self.NTS]
 
                     if i == j:
@@ -1256,11 +1256,11 @@ class SS(object):
                                                    u, u_dot2, u_dot1, u_ddot)
 
                     # store gradient
-                    for k in xrange(0, self.NG):
+                    for k in range(0, self.NG):
                         self.ineqc[i + k * self.NTS] = g[k]
 
-                        for l in xrange(0, self.NU):
-                            for b in xrange(0, self.NU):
+                        for l in range(0, self.NU):
+                            for b in range(0, self.NU):
                                 self.ineqc_dq[i + k * self.NTS,
                                     j + l * self.NTS] = g_dot1[k, l]
                                 self.ineqc_dqdq[i + k * self.NTS,
@@ -1308,7 +1308,7 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NP,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x      = self.xs[i, :]
@@ -1316,7 +1316,7 @@ class SS(object):
             x_dot2 = np.reshape(self.xs_dp[i, :, :], x_dot2.shape)
             x_ddot = np.reshape(self.xs_dsdp[i, :, :self.NX, :], x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend to calculate derivatives of constraint functions
@@ -1327,7 +1327,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NG):
+            for k in range(0, self.NG):
                 self.ineqc_dsdp[i + k * self.NTS, :self.NX:, :] = \
                     g_ddot[k, :, :]
                 self.ineqc_ds[i + k * self.NTS, :self.NX] = g_dot1[k, :]
@@ -1375,10 +1375,10 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all time steps including the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
@@ -1387,7 +1387,7 @@ class SS(object):
                 x_ddot = np.reshape(self.xs_dsdq[i, :, :self.NX, j],
                                     x_ddot.shape)
 
-                for l in xrange(0, self.NU):
+                for l in range(0, self.NU):
                     u[l] = q[i + l * self.NTS]
 
                 if i == j:
@@ -1403,11 +1403,11 @@ class SS(object):
                                                u, u_dot2, u_dot1, u_ddot)
 
                 # store gradient
-                for k in xrange(0, self.NG):
+                for k in range(0, self.NG):
                     self.ineqc[i + k * self.NTS] = g[k]
                     self.ineqc_ds[i + k * self.NTS, :self.NX] = g_dot1[k, :]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.ineqc_dsdq[i + k * self.NTS, :self.NX,
                             j + l * self.NTS] = g_ddot[k, :, l]
                         self.ineqc_dq[i + k * self.NTS, j + l * self.NTS] = \
@@ -1455,10 +1455,10 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all time steps including the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
@@ -1466,7 +1466,7 @@ class SS(object):
                 x_dot2 = np.reshape(self.xs_dq[i, :, j], x_dot2.shape)
                 x_ddot = np.reshape(self.xs_dpdq[i, :, :, j], x_ddot.shape)
 
-                for l in xrange(0, self.NU):
+                for l in range(0, self.NU):
                     u[l] = q[i + l * self.NTS]
 
                 if i == j:
@@ -1482,11 +1482,11 @@ class SS(object):
                                                u, u_dot2, u_dot1, u_ddot)
 
                 # store gradient
-                for k in xrange(0, self.NG):
+                for k in range(0, self.NG):
                     self.ineqc[i + k * self.NTS] = g[k]
                     self.ineqc_dp[i + k * self.NTS, :] = g_dot1[k, :]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.ineqc_dpdq[i + k * self.NTS, :, j + l * \
                                         self.NTS] = g_ddot[k, :, l]
                         self.ineqc_dq[i + k * self.NTS, j + l * \
@@ -1522,19 +1522,19 @@ class SS(object):
         u = np.zeros((self.NU,))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
 
-            for k in xrange(0, self.NU):
+            for k in range(0, self.NU):
                 u[k] = q[i + k * self.NTS]
 
             # call fortran backend
             self.backend_fortran.hfcn(h, self.ts[i:i + 1], x, p, u)
 
             # build constraints
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
                 self.eqc[i + k * self.NTS] = h[k]
 
     # =========================================================================
@@ -1571,13 +1571,13 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NX))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x     = self.xs[i, :]
             x_dot = np.reshape(self.xs_ds[i, :, :self.NX], x_dot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -1585,7 +1585,7 @@ class SS(object):
                                           x, x_dot, p, p_dot, u, u_dot)
 
             # store gradient
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
 
                 self.eqc_ds[i + k * self.NTS, :self.NX] = h_dot[k, :]
                 self.eqc[i + k * self.NTS] = h[k]
@@ -1624,13 +1624,13 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NP))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x  = self.xs[i, :]
             x_dot = np.reshape(self.xs_dp[i, :, :], x_dot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -1638,7 +1638,7 @@ class SS(object):
                                           x, x_dot, p, p_dot, u, u_dot)
 
             # store gradient
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
                 self.eqc[i + k * self.NTS] = h[k]
                 self.eqc_dp[i + k * self.NTS, :] = h_dot[k, :]
 
@@ -1676,16 +1676,16 @@ class SS(object):
         u_dot = np.zeros((self.NU, self.NU))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all previous controls plus the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
                 x_dot = np.reshape(self.xs_dq[i, :, j], x_dot.shape)
 
-                for k in xrange(0, self.NU):
+                for k in range(0, self.NU):
                     u[k] = q[i + k * self.NTS]
 
                 if i == j:
@@ -1698,10 +1698,10 @@ class SS(object):
                                               x, x_dot, p, p_dot, u, u_dot)
 
                 # store gradient
-                for k in xrange(0, self.NH):
+                for k in range(0, self.NH):
                     self.eqc[i + k * self.NTS] = h[k]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.eqc_dq[i + k * self.NTS,
                             j + l * self.NTS] = h_dot[k, l]
 
@@ -1744,7 +1744,7 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NX,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
@@ -1752,7 +1752,7 @@ class SS(object):
             x_ddot = np.reshape(self.xs_dsds[i, :, :self.NX, :self.NX],
                                 x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -1763,7 +1763,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
                 self.eqc_dsds[i + k * self.NTS, :self.NX, :self.NX] = \
                     h_ddot[k, :, :]
                 self.eqc_ds[i + k * self.NTS, :self.NX] = h_dot1[k, :]
@@ -1809,14 +1809,14 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NP,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
             x_dot = np.reshape(self.xs_dp[i, :, :], x_dot.shape)
             x_ddot = np.reshape(self.xs_dpdp[i, :, :, :], x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -1827,7 +1827,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
                 self.eqc_dpdp[i + k * self.NTS, :, :] = h_ddot[k, :, :]
                 self.eqc_dp[i + k * self.NTS, :] = h_dot1[k, :]
                 self.eqc[i + k * self.NTS] = h[k]
@@ -1873,9 +1873,9 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time steps three times
-        for i in xrange(0, self.NTS):
-            for j in xrange(0, i + 1):
-                for m in xrange(0, i + 1):
+        for i in range(0, self.NTS):
+            for j in range(0, i + 1):
+                for m in range(0, i + 1):
 
                     # state and controls for this time step
                     x = self.xs[i, :]
@@ -1883,7 +1883,7 @@ class SS(object):
                     x_dot2 = np.reshape(self.xs_dq[i, :, m], x_dot2.shape)
                     x_ddot = np.reshape(self.xs_dqdq[i, :, j, m], x_ddot.shape)
 
-                    for k in xrange(0, self.NU):
+                    for k in range(0, self.NU):
                         u[k] = q[i + k * self.NTS]
 
                     if i == j:
@@ -1904,11 +1904,11 @@ class SS(object):
                                                    u, u_dot2, u_dot1, u_ddot)
 
                     # store gradient
-                    for k in xrange(0, self.NH):
+                    for k in range(0, self.NH):
                         self.eqc[i + k * self.NTS] = h[k]
 
-                        for l in xrange(0, self.NU):
-                            for b in xrange(0, self.NU):
+                        for l in range(0, self.NU):
+                            for b in range(0, self.NU):
                                 self.eqc_dq[i + k * self.NTS,
                                     j + l * self.NTS] = h_dot1[k, l]
                                 self.eqc_dqdq[i + k * self.NTS,
@@ -1956,7 +1956,7 @@ class SS(object):
         u_ddot = np.zeros(u_dot.shape + (self.NP,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # state and controls for this time step
             x = self.xs[i, :]
@@ -1964,7 +1964,7 @@ class SS(object):
             x_dot2 = np.reshape(self.xs_dp[i, :, :], x_dot2.shape)
             x_ddot = np.reshape(self.xs_dsdp[i, :, :self.NX, :], x_ddot.shape)
 
-            for l in xrange(0, self.NU):
+            for l in range(0, self.NU):
                 u[l] = q[i + l * self.NTS]
 
             # call fortran backend
@@ -1975,7 +1975,7 @@ class SS(object):
                                            u, u_dot, u_dot, u_ddot)
 
             # store gradient
-            for k in xrange(0, self.NH):
+            for k in range(0, self.NH):
                 self.eqc_dsdp[i + k * self.NTS, :self.NX:, :] = \
                     h_ddot[k, :, :]
                 self.eqc_ds[i + k * self.NTS, :self.NX] = h_dot1[k, :]
@@ -2023,10 +2023,10 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time steps
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all time steps including the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
@@ -2035,7 +2035,7 @@ class SS(object):
                 x_ddot = np.reshape(self.xs_dsdq[i, :, :self.NX, j],
                                     x_ddot.shape)
 
-                for l in xrange(0, self.NU):
+                for l in range(0, self.NU):
                     u[l] = q[i + l * self.NTS]
 
                 if i == j:
@@ -2051,11 +2051,11 @@ class SS(object):
                                                u, u_dot2, u_dot1, u_ddot)
 
                 # store gradient
-                for k in xrange(0, self.NH):
+                for k in range(0, self.NH):
                     self.eqc[i + k * self.NTS] = h[k]
                     self.eqc_ds[i + k * self.NTS, :self.NX] = h_dot1[k, :]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.eqc_dsdq[i + k * self.NTS, :self.NX,
                             j + l * self.NTS] = h_ddot[k, :, l]
                         self.eqc_dq[i + k * self.NTS, j + l * self.NTS] = \
@@ -2103,10 +2103,10 @@ class SS(object):
         u_ddot = np.zeros(u_dot1.shape + (self.NU,))
 
         # loop through all time step
-        for i in xrange(0, self.NTS):
+        for i in range(0, self.NTS):
 
             # loop through all time steps including the current one
-            for j in xrange(0, i + 1):
+            for j in range(0, i + 1):
 
                 # state and controls for this time step
                 x = self.xs[i, :]
@@ -2114,7 +2114,7 @@ class SS(object):
                 x_dot2 = np.reshape(self.xs_dq[i, :, j], x_dot2.shape)
                 x_ddot = np.reshape(self.xs_dpdq[i, :, :, j], x_ddot.shape)
 
-                for l in xrange(0, self.NU):
+                for l in range(0, self.NU):
                     u[l] = q[i + l * self.NTS]
 
                 if i == j:
@@ -2130,11 +2130,11 @@ class SS(object):
                                                u, u_dot2, u_dot1, u_ddot)
 
                 # store gradient
-                for k in xrange(0, self.NH):
+                for k in range(0, self.NH):
                     self.eqc[i + k * self.NTS] = h[k]
                     self.eqc_dp[i + k * self.NTS, :] = h_dot1[k, :]
 
-                    for l in xrange(0, self.NU):
+                    for l in range(0, self.NU):
                         self.eqc_dpdq[i + k * self.NTS, :, j + l * \
                                       self.NTS] = h_ddot[k, :, l]
                         self.eqc_dq[i + k * self.NTS, j + l * \
@@ -2446,12 +2446,12 @@ class SS(object):
         s = self.s
 
         # set the lower bnds for the controls
-        for i in xrange(0, self.NU):
+        for i in range(0, self.NU):
             self.bcq[i * self.NTS:(i + 1) * self.NTS] = (
                 self.bnds[i, 0] - q[i * self.NTS: (i + 1) * self.NTS])
 
         # set the upper bnds for the controls
-        for i in xrange(0, self.NU):
+        for i in range(0, self.NU):
             self.bcq[self.NQ + i * self.NTS:self.NQ + (i + 1) * self.NTS] = (
                 q[i * self.NTS:(i + 1) * self.NTS] - self.bnds[i, 1])
 
@@ -2727,7 +2727,7 @@ class SS(object):
         self.bcs = -1e6 * np.ones((self.NS,))
 
         # evaluate the equality constraints for s
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
 
             if self.x0[i] is not None:
                 self.bcs[i] = self.x0[i] - s[i]
@@ -2763,7 +2763,7 @@ class SS(object):
         self.bcs_ds = np.zeros((self.NS, self.NS))
 
         # evaluate the derivatives
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
 
             if self.x0[i] is not None:
                 self.bcs_ds[i, i] = -1
@@ -3333,7 +3333,7 @@ class SS(object):
             Fupp[1 + self.NC:] = 0
 
             # set the upper and lower bounds for the controls q
-            for i in xrange(0, self.NU):
+            for i in range(0, self.NU):
                 xlow[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 0]
                 xupp[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 1]
 
@@ -3342,7 +3342,7 @@ class SS(object):
             xupp[self.NQ:] = 1e6
 
             # fix the shooting variables s at the boundaries if necessary
-            for i in xrange(0, self.NX):
+            for i in range(0, self.NX):
 
                 if self.x0[i] is not None:
                     xlow[self.NQ + i] = self.x0[i]
@@ -3359,8 +3359,8 @@ class SS(object):
             neG[0] = (self.NQ + self.NS) * (1 + self.NC + self.NMC)
 
             l = 0
-            for i in xrange(0, self.NC + self.NMC + 1):
-                for j in xrange(0, self.NQ + self.NS):
+            for i in range(0, self.NC + self.NMC + 1):
+                for j in range(0, self.NQ + self.NS):
                     iGfun[l + j] = i + 1
                     jGvar[l + j] = j + 1
 
@@ -3412,7 +3412,7 @@ class SS(object):
                     self.calc_ineqc_dq()
                     self.calc_ineqc_ds()
 
-                    for i in xrange(0, self.NCG):
+                    for i in range(0, self.NCG):
                         G[l:l + self.NQ] = self.ineqc_dq[i, :]
                         G[l + self.NQ:l + self.NQ + self.NS] = \
                             self.ineqc_ds[i, :]
@@ -3422,7 +3422,7 @@ class SS(object):
                     self.calc_eqc_dq()
                     self.calc_eqc_ds()
 
-                    for i in xrange(0, self.NCH):
+                    for i in range(0, self.NCH):
                         G[l:l + self.NQ] = self.eqc_dq[i, :]
                         G[l + self.NQ:l + self.NQ + self.NS] = \
                             self.eqc_ds[i, :]
@@ -3431,7 +3431,7 @@ class SS(object):
                 self.calc_mc_dq()
                 self.calc_mc_ds()
 
-                for i in xrange(0, self.NMC):
+                for i in range(0, self.NMC):
                     G[l:l + self.NQ] = self.mc_dq[i, :]
                     G[l + self.NQ:l + self.NQ + self.NS] = self.mc_ds[i, :]
                     l = l + self.NQ + self.NS
@@ -3535,7 +3535,7 @@ class SS(object):
         snopt.snfilewrapper(specname, iSpecs, INFO, cw, iw, rw)
 
         if INFO[0] != 101:
-            print("Warning: Trouble reading specs file %s \n" % (specname))
+            print(("Warning: Trouble reading specs file %s \n" % (specname)))
 
         # set options not specified in the spec file
         #        iPrt   = np.array([0], dtype=np.int32)
@@ -3575,22 +3575,22 @@ class SS(object):
         self.calc_bcs()
 
         # print results
-        print "\n"
-        print "q_opt:", self.q, "\n"
-        print "s_opt:", self.s, "\n"
-        print "obj_opt:", self.obj, "\n"
-        if self.NG > 0: print "ineqc_opt:", self.ineqc, "\n"
-        if self.NH > 0: print "eqc_opt:", self.eqc, "\n"
-        print "mc_opt:", self.mc, "\n"
-        print "bcq_opt:", self.bcq, "\n"
-        print "bcs_opt:", self.bcs, "\n"
+        print("\n")
+        print(("q_opt:", self.q, "\n"))
+        print(("s_opt:", self.s, "\n"))
+        print(("obj_opt:", self.obj, "\n"))
+        if self.NG > 0: print(("ineqc_opt:", self.ineqc, "\n"))
+        if self.NH > 0: print(("eqc_opt:", self.eqc, "\n"))
+        print(("mc_opt:", self.mc, "\n"))
+        print(("bcq_opt:", self.bcq, "\n"))
+        print(("bcs_opt:", self.bcs, "\n"))
 
         self.ineqc_mul = Fmul[1:self.NCG + 1]
         self.eqc_mul = Fmul[self.NCG + 1:self.NCG + self.NCH + 1]
         self.mc_mul = Fmul[self.NCG + self.NCH + 1:]
-        print "ineqc_mul", self.ineqc_mul, "\n"
-        print "eqc_mul", self.eqc_mul, "\n"
-        print "mc_mul", self.mc_mul, "\n"
+        print(("ineqc_mul", self.ineqc_mul, "\n"))
+        print(("eqc_mul", self.eqc_mul, "\n"))
+        print(("mc_mul", self.mc_mul, "\n"))
 
     # =========================================================================
 
@@ -3613,22 +3613,22 @@ class SS(object):
         bnds = []
 
         # set the upper and lower bounds for the controls q
-        for j in xrange(0, self.NU):
-            for k in xrange(0, self.NTS):
+        for j in range(0, self.NU):
+            for k in range(0, self.NTS):
                 bnds.append((self.bnds[j, 0], self.bnds[j, 1]))
 
         # fix the shooting variables s at the boundaries if necessary
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
             if self.x0[i] is not None:
                 bnds.append((self.x0[i], self.x0[i]))
 
             else:
                 bnds.append((-1e6, 1e6))
 
-        for i in xrange(0, self.NS - 2 * self.NX):
+        for i in range(0, self.NS - 2 * self.NX):
             bnds.append((-1e6, 1e6))
 
-        for i in xrange(0, self.NX):
+        for i in range(0, self.NX):
             if self.xend[i] is not None:
                 bnds.append((self.xend[i], self.xend[i]))
 
@@ -3790,7 +3790,7 @@ class SS(object):
         # equality constraints only
         elif self.NG == 0 and self.NH > 0:
             res = opt.minimize(obj, x, args=(), method="SLSQP", jac=True,
-                               bounds=bndsb, constraints=(
+                               bounds=bnds, constraints=(
                                {"type":"eq", "fun":eqc, "jac":eqc_jac},
                                {"type":"eq", "fun":mc, "jac":mc_jac}),
                                options={"disp":True, "iprint":2, "ftol":1e-9})
@@ -3812,7 +3812,7 @@ class SS(object):
                                options={"disp":True, "iprint":2, "ftol":1e-9})
 
         # detailed output
-        print res
+        print(res)
 
         # save results
         self.q = res.x[:self.NQ]
@@ -3826,15 +3826,15 @@ class SS(object):
         self.calc_bcs()
 
         # print results
-        print "\n"
-        print "q_opt:", self.q, "\n"
-        print "s_opt:", self.s, "\n"
-        print "obj_opt:", self.obj, "\n"
-        if self.NG > 0: print "ineqc_opt:", self.ineqc, "\n"
-        if self.NH > 0: print "eqc_opt:", self.eqc, "\n"
-        print "mc_opt:", self.mc, "\n"
-        print "bcq_opt", self.bcq, "\n"
-        print "bcs_opt:", self.bcs, "\n"
+        print("\n")
+        print(("q_opt:", self.q, "\n"))
+        print(("s_opt:", self.s, "\n"))
+        print(("obj_opt:", self.obj, "\n"))
+        if self.NG > 0: print(("ineqc_opt:", self.ineqc, "\n"))
+        if self.NH > 0: print(("eqc_opt:", self.eqc, "\n"))
+        print(("mc_opt:", self.mc, "\n"))
+        print(("bcq_opt", self.bcq, "\n"))
+        print(("bcs_opt:", self.bcs, "\n"))
 
     # =========================================================================
 
@@ -3869,26 +3869,26 @@ class SS(object):
         self.bcsa = []
 
         # evaluate the active inequality constraints
-        for i in xrange(0, self.NCG):
+        for i in range(0, self.NCG):
             if self.ineqc[i] >= -1e-6:
                 self.ineqca.append(i)
         # self.ineqca = []
         self.NINEQCA = len(self.ineqca)
 
         # evaluate the active matching conditions
-        for i in xrange(0, self.NMC):
+        for i in range(0, self.NMC):
             if self.xend[i] is not None:
                 self.mca.append(i)
         self.NMCA = len(self.mca)
 
         # evaluate the active box constraints for q
-        for i in xrange(0, 2 * self.NQ):
+        for i in range(0, 2 * self.NQ):
             if self.bcq[i] >= -1e-6:
                 self.bcqa.append(i)
         self.NBCQA = len(self.bcqa)
 
         # evaluate the active constraints for s
-        for i in xrange(0, self.NS):
+        for i in range(0, self.NS):
             if self.bcs[i] >= -1e-6:
                 self.bcsa.append(i)
         self.NBCSA = len(self.bcsa)
@@ -3967,11 +3967,11 @@ class SS(object):
                          "constraints?")
 
             # print detailed results
-            print "ineqca:", self.ineqca, "\n"
-            print "mca:", self.mca, "\n"
-            print "bcqa:", self.bcqa, "\n"
-            print "bcsa:", self.bcsa, "\n"
-            print "mula:", self.mula, "\n"
+            print(("ineqca:", self.ineqca, "\n"))
+            print(("mca:", self.mca, "\n"))
+            print(("bcqa:", self.bcqa, "\n"))
+            print(("bcsa:", self.bcsa, "\n"))
+            print(("mula:", self.mula, "\n"))
 
     # =========================================================================
 
@@ -4103,7 +4103,7 @@ class SS(object):
             self.ca_dpdq[l, :, :] = self.ineqc_dpdq[i, :, :]
             l = l + 1
 
-        for i in xrange(0, self.NCH):
+        for i in range(0, self.NCH):
             self.ca_ds[l, :] = self.eqc_ds[i, :]
             self.ca_dp[l, :] = self.eqc_dp[i, :]
             self.ca_dq[l, :] = self.eqc_dq[i, :]
@@ -4162,7 +4162,7 @@ class SS(object):
         self.lagrange_dsdq[:] = self.obj_dsdq
         self.lagrange_dpdq[:] = self.obj_dpdq
 
-        for i in xrange(0, self.NCA):
+        for i in range(0, self.NCA):
             self.lagrange_ds = self.lagrange_ds + self.mula[i] * \
                                self.ca_ds[i, :]
             self.lagrange_dp = self.lagrange_dp + self.mula[i] * \
@@ -4208,8 +4208,8 @@ class SS(object):
         try:
             combined_dp = -np.linalg.solve(self.kkt, self.rhs)
         except:
-            print "WARNING: KKT matrix is singular! " + \
-                  "Using least squares solution. \n"
+            print(("WARNING: KKT matrix is singular! " + \
+                  "Using least squares solution. \n"))
             combined_dp = -np.linalg.lstsq(self.kkt, self.rhs)[0]
 
         self.q_dp = combined_dp[:self.NQ, :]
@@ -4225,11 +4225,11 @@ class SS(object):
                         self.lagrange_dpdp + \
                         2 * (tmp2.dot(combined_dp[:self.NQ + self.NS, :])).T
 
-        print "q_dp:", self.q_dp, "\n"
-        print "s_dp:", self.s_dp, "\n"
-        print "mul_dp:", self.mul_dp, "\n"
-        print "obj_dp:", self.obj_dp, "\n"
-        print "obj_dpdp:", self.obj_dpdp, "\n"
+        print(("q_dp:", self.q_dp, "\n"))
+        print(("s_dp:", self.s_dp, "\n"))
+        print(("mul_dp:", self.mul_dp, "\n"))
+        print(("obj_dp:", self.obj_dp, "\n"))
+        print(("obj_dpdp:", self.obj_dpdp, "\n"))
 
     # =========================================================================
 
@@ -4265,11 +4265,11 @@ class SS(object):
                              + 0.5 * ((self.p_new - self.p).T. \
                              dot(self.obj_dpdp)).dot(self.p_new - self.p)
 
-        print "mul_approx:", self.mul_approx, "\n"
-        print "q_approx:", self.q_approx, "\n"
-        print "s_approx:", self.s_approx, "\n"
-        print "obj_approx_fo:", self.obj_approx_fo, "\n"
-        print "obj_approx_so:", self.obj_approx_so, "\n"
+        print(("mul_approx:", self.mul_approx, "\n"))
+        print(("q_approx:", self.q_approx, "\n"))
+        print(("s_approx:", self.s_approx, "\n"))
+        print(("obj_approx_fo:", self.obj_approx_fo, "\n"))
+        print(("obj_approx_so:", self.obj_approx_so, "\n"))
 
     # =========================================================================
 
@@ -4328,7 +4328,7 @@ class SS(object):
             Fupp[1 + self.NC:] = 0
 
             # set the upper and lower bounds for the controls q
-            for i in xrange(0, self.NU):
+            for i in range(0, self.NU):
                 xlow[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 0]
                 xupp[i * self.NTS:(i + 1) * self.NTS] = self.bnds[i, 1]
 
@@ -4337,7 +4337,7 @@ class SS(object):
             xupp[self.NQ:] = 1e6
 
             # fix the shooting variables s at the boundaries if necessary
-            for i in xrange(0, self.NX):
+            for i in range(0, self.NX):
 
                 if self.x0[i] is not None:
                     xlow[self.NQ + i] = self.x0[i]
@@ -4354,8 +4354,8 @@ class SS(object):
             neG[0] = (self.NQ + self.NS) * (1 + self.NC + self.NMC)
 
             l = 0
-            for i in xrange(0, self.NC + self.NMC + 1):
-                for j in xrange(0, self.NQ + self.NS):
+            for i in range(0, self.NC + self.NMC + 1):
+                for j in range(0, self.NQ + self.NS):
                     iGfun[l + j] = i + 1
                     jGvar[l + j] = j + 1
 
@@ -4404,7 +4404,7 @@ class SS(object):
                     self.calc_ineqc_dq()
                     self.calc_ineqc_ds()
 
-                    for i in xrange(0, self.NCG):
+                    for i in range(0, self.NCG):
                         G[l:l + self.NQ] = self.ineqc_dq[i, :]
                         G[l + self.NQ:l + self.NQ + self.NS] = \
                             self.ineqc_ds[i, :]
@@ -4414,7 +4414,7 @@ class SS(object):
                     self.calc_eqc_dq()
                     self.calc_eqc_ds()
 
-                    for i in xrange(0, self.NCH):
+                    for i in range(0, self.NCH):
                         G[l:l + self.NQ] = self.eqc_dq[i, :]
                         G[l + self.NQ:l + self.NQ + self.NS] = \
                             self.eqc_ds[i, :]
@@ -4423,7 +4423,7 @@ class SS(object):
                 self.calc_mc_dq()
                 self.calc_mc_ds()
 
-                for i in xrange(0, self.NMC):
+                for i in range(0, self.NMC):
                     G[l:l + self.NQ] = self.mc_dq[i, :]
                     G[l + self.NQ:l + self.NQ + self.NS] = self.mc_ds[i, :]
                     l = l + self.NQ + self.NS
@@ -4527,7 +4527,7 @@ class SS(object):
         snopt.snfilewrapper(specname, iSpecs, INFO, cw, iw, rw)
 
         if INFO[0] != 101:
-            print("Warning: Trouble reading specs file %s \n" % (specname))
+            print(("Warning: Trouble reading specs file %s \n" % (specname)))
 
         # set options not specified in the spec file
         #        iPrt   = np.array([0], dtype=np.int32)
@@ -4567,22 +4567,22 @@ class SS(object):
         self.calc_bcs()
 
         # print results
-        print "\n"
-        print "q_opt:", self.q, "\n"
-        print "s_opt:", self.s, "\n"
-        print "obj_opt:", self.obj, "\n"
-        if self.NG > 0: print "ineqc_opt:", self.ineqc, "\n"
-        if self.NH > 0: print "eqc_opt:", self.eqc, "\n"
-        print "mc_opt:", self.mc, "\n"
-        print "bcq_opt", self.bcq, "\n"
-        print "bcs_opt:", self.bcs, "\n"
+        print("\n")
+        print(("q_opt:", self.q, "\n"))
+        print(("s_opt:", self.s, "\n"))
+        print(("obj_opt:", self.obj, "\n"))
+        if self.NG > 0: print(("ineqc_opt:", self.ineqc, "\n"))
+        if self.NH > 0: print(("eqc_opt:", self.eqc, "\n"))
+        print(("mc_opt:", self.mc, "\n"))
+        print(("bcq_opt", self.bcq, "\n"))
+        print(("bcs_opt:", self.bcs, "\n"))
 
         self.ineqc_mul = Fmul[1:self.NCG + 1]
         self.eqc_mul = Fmul[self.NCG + 1:self.NCG + self.NCH + 1]
         self.mc_mul = Fmul[self.NCG + self.NCH + 1:]
-        print "ineqc_mul", self.ineqc_mul, "\n"
-        print "eqc_mul", self.eqc_mul, "\n"
-        print "mc_mul", self.mc_mul, "\n"
+        print(("ineqc_mul", self.ineqc_mul, "\n"))
+        print(("eqc_mul", self.eqc_mul, "\n"))
+        print(("mc_mul", self.mc_mul, "\n"))
 
     # =========================================================================
 
@@ -4627,14 +4627,14 @@ class SS(object):
         total[l:l + self.NS, :] = self.bcs_dq.dot(self.q_dp) + self.bcs_dp
 
         # iterate through parameters
-        for j in xrange(0, self.NP):
+        for j in range(0, self.NP):
 
             # save positions in constraints and active constraints
             l = 0
             m = 0
 
             # evaluate the inequality constraints
-            for i in xrange(0, self.NCG):
+            for i in range(0, self.NCG):
 
                 if i in self.ineqca:
                     if self.mul_dp[m, j] != 0:
@@ -4658,7 +4658,7 @@ class SS(object):
             l = self.NCG
 
             # evaluate the equality constraints
-            for i in xrange(0, self.NCH):
+            for i in range(0, self.NCH):
 
                 if self.mul_dp[m, j] != 0:
                     perturbations[j, l + i] = self.p[j] - self.mula[m] / \
@@ -4672,7 +4672,7 @@ class SS(object):
             l = self.NCG + self.NCH
 
             # evaluate the matching conditions
-            for i in xrange(0, self.NMC):
+            for i in range(0, self.NMC):
 
                 if i in self.mca:
                     if self.mul_dp[m, j] != 0:
@@ -4690,7 +4690,7 @@ class SS(object):
             l = self.NCG + self.NCH + self.NMC
 
             # evaluate the box constraints for q
-            for i in xrange(0, 2 * self.NQ):
+            for i in range(0, 2 * self.NQ):
 
                 if i in self.bcqa:
                     if self.mul_dp[m, j] != 0:
@@ -4714,7 +4714,7 @@ class SS(object):
             l = self.NCG + self.NCH + self.NMC + 2 * self.NQ
 
             # evaluate the constraints for s
-            for i in xrange(0, self.NS):
+            for i in range(0, self.NS):
 
                 if i in self.bcsa:
                     if self.mul_dp[m, j] != 0:
@@ -4738,11 +4738,11 @@ class SS(object):
         # find maximal perturbations in each line
         self.domain = np.zeros((self.NP, 2))
 
-        for i in xrange(0, self.NP):
+        for i in range(0, self.NP):
             self.domain[i, 0] = np.min(perturbations[i, :])
             self.domain[i, 1] = np.max(perturbations[i, :])
 
-        print "sensitivity domain:", self.domain, "\n"
+        print(("sensitivity domain:", self.domain, "\n"))
 
     # =========================================================================
 
@@ -4782,7 +4782,7 @@ class SS(object):
         for f in functions:
             for d in derivatives:
 
-                print "Checking " + f[0] + "_d" + d[0] + ": ...",
+                print(("Checking " + f[0] + "_d" + d[0] + ": ..."))
 
                 getattr(self, "integrate_d" + d[0])()
                 getattr(self, "calc_" + f[0])()
@@ -4797,7 +4797,7 @@ class SS(object):
                     fd = np.zeros((f[1], d[1]))
 
                 # loop through all variables
-                for i in xrange(0, d[1]):
+                for i in range(0, d[1]):
 
                     # set directions and calculate function values
                     dot = np.zeros((d[1],))
@@ -4817,7 +4817,7 @@ class SS(object):
 
                 # compare ad and fd derivatives
                 np.testing.assert_almost_equal(fd, ad, decimal=5)
-                print "OK!"
+                print("OK!")
 
  # =========================================================================
 
@@ -4861,7 +4861,7 @@ class SS(object):
         for f in functions:
             for d in derivatives:
 
-                print "Checking " + f[0] + "_d" + d[0] + "d" + d[2] + ": ...",
+                print(("Checking " + f[0] + "_d" + d[0] + "d" + d[2] + ": ..."))
 
                 getattr(self, "integrate_d" + d[0] + "d" + d[2])()
                 getattr(self, "calc_" + f[0] + "_d" + d[0])()
@@ -4874,7 +4874,7 @@ class SS(object):
                 ad = ad.reshape(fd.shape)
 
                 # loop through all variables
-                for i in xrange(0, d[3]):
+                for i in range(0, d[3]):
 
                     # set directions and calculate function values
                     dot = np.zeros((d[3],))
@@ -4892,6 +4892,6 @@ class SS(object):
 
                 # compare ad and fd derivatives
                 np.testing.assert_almost_equal(fd, ad, decimal=5)
-                print "OK!"
+                print("OK!")
 
 # =============================================================================

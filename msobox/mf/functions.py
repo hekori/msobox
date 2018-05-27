@@ -117,8 +117,8 @@ class Function(object):
         args, _, _, _ = getargspec(func)
         if verbose:
             for actual, desired in zip(args, f_args):
-                print actual, " == ", desired
-            print ""
+                print((actual, " == ", desired))
+            print("")
         assert args == f_args
 
     @classmethod

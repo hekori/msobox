@@ -7,7 +7,7 @@ from numpy.testing import (TestCase, run_module_suite)
 from numpy.testing.decorators import (setastest, skipif)
 
 from msobox.mf.python import (BackendPython,)
-from fixtures import (PureBackendFixture, BackendvsPythonFixture)
+from .fixtures import (PureBackendFixture, BackendvsPythonFixture)
 
 try:
     from msobox.mf.pyadolc import BackendPyadolc

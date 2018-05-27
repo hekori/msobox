@@ -102,7 +102,7 @@ class BackendFortran(object):
         self.dir = os.path.dirname(self.path)
         # Load symbols from the current process (Python).
         self.lib = ffi.dlopen(self.path)
-        print('Loaded lib {0}'.format(self.lib))
+        print(('Loaded lib {0}'.format(self.lib)))
 
     def ffcn(self, f, t, x, p, u):
         """."""

@@ -41,7 +41,7 @@ References
 
 import numpy
 
-from msobox.ind.polynomials import (NevilleInterpolationPolynomial,)
+from msobox.ind.polynomials import NevilleInterpolationPolynomial
 
 class RcRKF45SWT(object):
 
@@ -427,32 +427,32 @@ if __name__ == '__main__':
     # reverse communication loop
     while True:
         # TODO remove debug out
-        print "STATE: ", ind._STATE,
-        print "K_CNT: ", ind._K_CNT,
-        print "j: ", ind.j, " / ", ind.NTS
+        print(("STATE: ", ind._STATE))
+        print(("K_CNT: ", ind._K_CNT))
+        print(("j: ", ind.j, " / ", ind.NTS))
 
         if ind.STATE == 'provide_y0':
             ind.y = x
 
         if ind.STATE == 'provide_f':
             u[0] = 1.
-            print "evaluate f"
+            print("evaluate f")
             ffcn(ind.f, ind.t, ind.y, p, u)
 
         if ind.STATE == 'plot':
             xs[ind.j, :] = ind.y
 
-        print "ts[", ind.j, "] = \n", ts[ind.j]
-        print "rs[", ind.j, "] = \n", rs[ind.j]
-        print "-"
-        print "ind.y = \n", ind.y
-        print "ind._y_tmp = \n", ind._y_tmp
-        print "ind._f = \n", ind._f
-        print "ind._Ks = \n", ind._Ks.T
-        print ""
+        print(("ts[", ind.j, "] = \n", ts[ind.j]))
+        print(("rs[", ind.j, "] = \n", rs[ind.j]))
+        print("-")
+        print(("ind.y = \n", ind.y))
+        print(("ind._y_tmp = \n", ind._y_tmp))
+        print(("ind._f = \n", ind._f))
+        print(("ind._Ks = \n", ind._Ks.T))
+        print("")
 
         if ind.STATE == 'finished':
-            print 'done'
+            print('done')
             break
 
         ind.step_zo_forward()

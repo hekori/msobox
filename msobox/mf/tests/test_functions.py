@@ -17,13 +17,13 @@ from numpy.testing import (assert_equal, assert_allclose)
 from msobox.mf.model import (import_module_from_file, import_shared_library)
 from msobox.mf.functions import (Function)
 
-from conftest import (md_dict,)
-from conftest import (ffcn_py, ffcn_d_xpu_v_py,)
-from conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (ffcn_b_xpu_py,)
-from conftest import (hfcn_py, hfcn_d_xpu_v_py,)
-from conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (hfcn_b_xpu_py,)
+from .conftest import (md_dict,)
+from .conftest import (ffcn_py, ffcn_d_xpu_v_py,)
+from .conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (ffcn_b_xpu_py,)
+from .conftest import (hfcn_py, hfcn_d_xpu_v_py,)
+from .conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (hfcn_b_xpu_py,)
 
 
 # ------------------------------------------------------------------------------
@@ -86,10 +86,10 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn(
     ffcn_py(desired, t, x, p, u)
 
     # compare values
-    print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
+    print("")
+    print(("actual:  ", actual))
+    print(("desired: ", desired))
+    print(("error:   ", lg.norm(desired - actual)))
     assert_allclose(actual, desired)
 
 
@@ -149,10 +149,10 @@ def test_msobox_function_interface_on_ffcn_so_calling_hfcn(
     hfcn_py(desired, t, x, p, u)
 
     # compare values
-    print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
+    print("")
+    print(("actual:  ", actual))
+    print(("desired: ", desired))
+    print(("error:   ", lg.norm(desired - actual)))
     assert_allclose(actual, desired)
 
 
@@ -201,7 +201,7 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
     u = numpy.random.random(dims["u"])
 
     # define output variables
-    P = numpy.sum(dims.values())
+    P = numpy.sum(list(dims.values()))
     x_d = numpy.random.random([dims["x"], P])
     p_d = numpy.random.random([dims["p"], P])
     u_d = numpy.random.random([dims["u"], P])
@@ -220,18 +220,18 @@ def test_msobox_function_interface_on_ffcn_so_calling_ffcn_d_xpu_v(
     ffcn_d_xpu_v_py(desired, desired_d_xpu_v, t, x, x_d, p, p_d, u, u_d)
 
     # compare values
-    print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
+    print("")
+    print(("actual:  ", actual))
+    print(("desired: ", desired))
+    print(("error:   ", lg.norm(desired - actual)))
     assert_allclose(actual, desired)
-    print ""
+    print("")
 
-    print "actual_d_xpu_v: \n", actual_d_xpu_v
-    print "desired_d_xpu_v: \n", desired_d_xpu_v
-    print "error:   ", lg.norm(desired_d_xpu_v - actual_d_xpu_v)
+    print(("actual_d_xpu_v: \n", actual_d_xpu_v))
+    print(("desired_d_xpu_v: \n", desired_d_xpu_v))
+    print(("error:   ", lg.norm(desired_d_xpu_v - actual_d_xpu_v)))
     assert_allclose(actual_d_xpu_v, desired_d_xpu_v)
-    print "successful!"
+    print("successful!")
 
 
 def test_msobox_function_interface_on_ffcn_py_calling_ffcn(temp_mf_py_file):
@@ -269,12 +269,12 @@ def test_msobox_function_interface_on_ffcn_py_calling_ffcn(temp_mf_py_file):
     ffcn_py(desired, t, x, p, u)
 
     # compare values
-    print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
+    print("")
+    print(("actual:  ", actual))
+    print(("desired: ", desired))
+    print(("error:   ", lg.norm(desired - actual)))
     assert_allclose(actual, desired)
-    print "successful!"
+    print("successful!")
 
 
 def test_msobox_function_interface_on_ffcn_py_calling_ffcn_d_xpu_v(
@@ -303,7 +303,7 @@ def test_msobox_function_interface_on_ffcn_py_calling_ffcn_d_xpu_v(
     u = numpy.random.random(dims["u"])
 
     # define output variables
-    P = numpy.sum(dims.values())
+    P = numpy.sum(list(dims.values()))
     x_d = numpy.random.random([dims["x"], P])
     p_d = numpy.random.random([dims["p"], P])
     u_d = numpy.random.random([dims["u"], P])
@@ -322,18 +322,18 @@ def test_msobox_function_interface_on_ffcn_py_calling_ffcn_d_xpu_v(
     ffcn_d_xpu_v_py(desired, desired_d_xpu_v, t, x, x_d, p, p_d, u, u_d)
 
     # compare values
-    print ""
-    print "actual:  ", actual
-    print "desired: ", desired
-    print "error:   ", lg.norm(desired - actual)
+    print("")
+    print(("actual:  ", actual))
+    print(("desired: ", desired))
+    print(("error:   ", lg.norm(desired - actual)))
     assert_allclose(actual, desired)
-    print ""
+    print("")
 
-    print "actual_d_xpu_v: \n", actual_d_xpu_v
-    print "desired_d_xpu_v: \n", desired_d_xpu_v
-    print "error:   ", lg.norm(desired_d_xpu_v - actual_d_xpu_v)
+    print(("actual_d_xpu_v: \n", actual_d_xpu_v))
+    print(("desired_d_xpu_v: \n", desired_d_xpu_v))
+    print(("error:   ", lg.norm(desired_d_xpu_v - actual_d_xpu_v)))
     assert_allclose(actual_d_xpu_v, desired_d_xpu_v)
-    print "successful!"
+    print("successful!")
 
 
 

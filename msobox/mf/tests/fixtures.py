@@ -47,7 +47,7 @@ class PureBackendFixture(object):
         u_dot = numpy.random.random((NU, P))
 
         # NOTE: These back-ends support more then one adjoint direction
-        if isinstance(backend, (BackendPython,)):
+        if isinstance(backend, BackendPython):
             Q = NX
         # NOTE: These back-ends support *only one* adjoint direction
         elif isinstance(backend, (BackendAlgopy, BackendTapenade)):
@@ -173,7 +173,7 @@ class BackendvsPythonFixture(object):
         u = numpy.random.random((NU,))
 
         # NOTE: These back-ends support more then one adjoint direction
-        if isinstance(backend, (BackendPython,)):
+        if isinstance(backend, BackendPython):
             Q = NX
         # NOTE: These back-ends support *only one* adjoint direction
         elif isinstance(backend, (BackendAlgopy, BackendTapenade)):

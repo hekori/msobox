@@ -10,7 +10,7 @@ import tempfile
 import scipy.linalg
 from numpy.testing import assert_almost_equal
 
-from mhe_plot_data import PlotData
+from .mhe_plot_data import PlotData
 
 # from msobox.mf.tapenade import Differentiator
 # from msobox.mf.fortran import BackendFortran
@@ -979,15 +979,15 @@ class MHE(object):
         """
 
         self.preparation_phase()
-        print 'computing U s V^T = self.JC[:self.M * self.NH, :]'
+        print('computing U s V^T = self.JC[:self.M * self.NH, :]')
         U,s,VT = numpy.linalg.svd(self.JC[:self.M * self.NH, :])
 
         i = numpy.where(s <= 1.e-12)
 
         V = VT.T
-        print 'V=\n', V
-        print 'singular values =\n', s
-        print 'dependent parameters =\n', V[:,i]
+        print(('V=\n', V))
+        print(('singular values =\n', s))
+        print(('dependent parameters =\n', V[:,i]))
 
 
     def __str__(self):

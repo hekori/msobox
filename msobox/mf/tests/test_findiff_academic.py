@@ -6,7 +6,7 @@ from numpy.testing.decorators import (setastest,)
 
 from msobox.mf.python import (BackendPython,)
 from msobox.mf.findiff import (BackendFiniteDifferences,)
-from fixtures import (BackendvsPythonFixture,)
+from .fixtures import (BackendvsPythonFixture,)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DIR = os.path.dirname(DIR)

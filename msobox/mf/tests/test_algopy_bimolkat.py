@@ -7,7 +7,7 @@ from numpy.testing import (TestCase, run_module_suite)
 
 from msobox.mf.python import (BackendPython,)
 from msobox.mf.mf_algopy import (BackendAlgopy,)
-from fixtures import (PureBackendFixture, BackendvsPythonFixture)
+from .fixtures import (PureBackendFixture, BackendvsPythonFixture)
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 DIR = os.path.dirname(DIR)

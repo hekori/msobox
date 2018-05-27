@@ -168,7 +168,7 @@ if __name__ == "__main__":
     _iswt = 0
     _, unq_idx = np.unique(tswts, return_index=True)
     for i, iswt in enumerate(unq_idx):
-        print i
+        print(i)
         # insert integration values
         if _iswt == 0:
             idx = np.where(ts <= tswts[iswt])
@@ -179,30 +179,30 @@ if __name__ == "__main__":
         _xs = xs[idx]
 
         _b = _a + _ts.shape[0]
-        print "s = ", _a, _b, "(", _b - _a,")"
-        print "_ts.shape: ", _ts.shape
-        print "_xs.shape: ", _xs.shape
-        print "tnew[_a:_b].shape:", tnew[_a:_b].shape
-        print "xnew[_a:_b].shape:", xnew[_a:_b].shape
+        print(("s = ", _a, _b, "(", _b - _a,")"))
+        print(("_ts.shape: ", _ts.shape))
+        print(("_xs.shape: ", _xs.shape))
+        print(("tnew[_a:_b].shape:", tnew[_a:_b].shape))
+        print(("xnew[_a:_b].shape:", xnew[_a:_b].shape))
         tnew[_a:_b] = _ts
         xnew[_a:_b] = _xs
 
         _a = _b
         _b = _b + 2
-        print "s = ", _a, _b, "(", _b - _a,")"
+        print(("s = ", _a, _b, "(", _b - _a,")"))
         tnew[_a:_b] = tswts[iswt:iswt+2]
         xnew[_a:_b] = xswts[iswt:iswt+2]
-        print "tswts[iswt:iswt+1]: ", tswts[iswt:iswt+2]
-        print "xswts[iswt:iswt+1]: ", xswts[iswt:iswt+2]
-        print "tnew[_a:_b].shape:", tnew[_a:_b].shape
-        print "xnew[_a:_b].shape:", xnew[_a:_b].shape
+        print(("tswts[iswt:iswt+1]: ", tswts[iswt:iswt+2]))
+        print(("xswts[iswt:iswt+1]: ", xswts[iswt:iswt+2]))
+        print(("tnew[_a:_b].shape:", tnew[_a:_b].shape))
+        print(("xnew[_a:_b].shape:", xnew[_a:_b].shape))
 
         _a = _b
         _iswt = iswt
-        print ""
+        print("")
 
-    print tswts
-    print tnew
+    print(tswts)
+    print(tnew)
     # print xnew
 
     # beautify axes

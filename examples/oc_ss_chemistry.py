@@ -75,6 +75,6 @@ ocp.solve()
 ocp.plot("perturbed ocp")
 
 # wait for input to close figures
-raw_input("Finished. Press any key to exit.")
+input("Finished. Press any key to exit.")
 
 # =============================================================================

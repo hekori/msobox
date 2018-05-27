@@ -80,7 +80,7 @@ class OfflinePlotData(object):
         path = os.path.join(path, fname)
 
         print('MHE writes data into file:\n')
-        print('{}\n'.format(path))
+        print(('{}\n'.format(path)))
 
         with open(path, 'w') as outf:
             json_str = json.dumps(dat, sort_keys=True, indent=4,

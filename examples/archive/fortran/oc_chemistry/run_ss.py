@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # measure execution time
     start = datetime.datetime.now()
-    print "\n" + "... starting script at " + start.strftime("%Y-%m-%d %H:%M:%S") + "..." + "\n"
+    print("\n" + "... starting script at " + start.strftime("%Y-%m-%d %H:%M:%S") + "..." + "\n")
 
     """
     ===============================================================================
@@ -52,11 +52,11 @@ if __name__ == "__main__":
     results     = solver.solve(x0=x0, xend=xend, p=p, q0=q0, s0=s0)
 
     # print results
-    print "\n" + "optimal controls:",   results[0]
-    print "shooting variables:",        results[1]
-    print "objective:",                 results[2]
-    print "constraints:",               results[3]
-    print "multipliers:",               results[4]
+    print("\n" + "optimal controls:",   results[0])
+    print("shooting variables:",        results[1])
+    print("objective:",                 results[2])
+    print("constraints:",               results[3])
+    print("multipliers:",               results[4])
 
     q_opt   = results[0]
     s_opt   = results[1]
@@ -67,9 +67,9 @@ if __name__ == "__main__":
     q_opt = problem.convert_q(q_opt)[:, :, 0]
 
     colors = ["blue", "red", "green", "yellow"]
-    for i in xrange(0, problem.NU):
+    for i in range(0, problem.NU):
         pl.plot(ts, q_opt[i], color=colors[i], linewidth=2, linestyle="dashed", label="u_" + str(i))
-    for i in xrange(0, problem.NX):
+    for i in range(0, problem.NX):
         pl.plot(np.linspace(0, 1, x_opt[:, i].size), x_opt[:, i], color=colors[i], linewidth=2, linestyle="solid", label="x_" + str(i))
 
     """
@@ -127,8 +127,8 @@ if __name__ == "__main__":
     end             = datetime.datetime.now()
     execution_time  = end - start
 
-    print "\n" + "... this script ended at " + end.strftime("%Y-%m-%d %H:%M:%S") + " and took", execution_time.days, \
-          "days,", execution_time.seconds, "seconds and", execution_time.microseconds, "microseconds to execute ..." + "\n"
+    print("\n" + "... this script ended at " + end.strftime("%Y-%m-%d %H:%M:%S") + " and took", execution_time.days, \
+          "days,", execution_time.seconds, "seconds and", execution_time.microseconds, "microseconds to execute ..." + "\n")
 
     # set plotting preferences, save and show plot
     pl.xlabel("t")

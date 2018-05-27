@@ -83,7 +83,7 @@ j = Nts-1
 xs_ddot[j, ...] = x_ddot
 
 # print d^2/dp^2 x(t=2)
-print integrator.xs_ddot[-1, :, :, :]
+print(integrator.xs_ddot[-1, :, :, :])
 
 # plot results
 pl.plot(ts, xs_ddot[:, :, 0, 0])

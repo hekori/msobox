@@ -95,8 +95,8 @@ class MHE_TR_QPOASES(MHE):
         self.AI    = self.f_old - self.f
         self.PI    = self.m_old - self.m
 
-        print 'self.AI/self.PI=', self.AI/self.PI
-        print 'self.delta=', self.delta
+        print(('self.AI/self.PI=', self.AI/self.PI))
+        print(('self.delta=', self.delta))
 
         if self.AI/self.PI < 0.25:
             self.delta *= 0.25

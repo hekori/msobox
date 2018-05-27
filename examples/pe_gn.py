@@ -62,14 +62,14 @@ for i in range(10):
 C = np.linalg.inv(gn.tJ.T.dot(gn.tJ))
 
 for i in range(gn.NX):
-    print 's%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i]))
+    print('s%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i])))
 
 for i in range(gn.NX, gn.NX + gn.NP):
-    print 'p%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i]))
+    print('p%02d = %.3f +/- %.1f%%'%(i+1, gn.v[i], 100.*C[i,i]**0.5/np.abs(gn.v[i])))
 
-print C
+print(C)
 
 import json
-print json.dumps(gn.es.tolist())
+print(json.dumps(gn.es.tolist()))
 
-raw_input("press key to continue")
+input("press key to continue")

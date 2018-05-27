@@ -5,13 +5,13 @@ import json
 import pytest
 import subprocess
 
-from conftest import (md_dict, mf_f_str, mf_py_str)
-from conftest import (ffcn_py, ffcn_d_xpu_v_py,)
-from conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (ffcn_b_xpu_py,)
-from conftest import (hfcn_py, hfcn_d_xpu_v_py,)
-from conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (hfcn_b_xpu_py,)
+from .conftest import (md_dict, mf_f_str, mf_py_str)
+from .conftest import (ffcn_py, ffcn_d_xpu_v_py,)
+from .conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (ffcn_b_xpu_py,)
+from .conftest import (hfcn_py, hfcn_d_xpu_v_py,)
+from .conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (hfcn_b_xpu_py,)
 
 
 # ------------------------------------------------------------------------------

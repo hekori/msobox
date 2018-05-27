@@ -170,7 +170,7 @@ class SNOPT(object):
             if self.INFO[0] != 101:
                 err_s = "Warning: Trouble reading specs file {spc}"
                 err_s = err_s.format(spc="".join(self.specname))
-                print err_s
+                print(err_s)
 
     def set_derivative_mode(self, der_mode = 0):
         # set options not specified in the spec file
@@ -305,8 +305,8 @@ if __name__ == "__main__":
     # sn.calc_jacobian(evaluate)
     sn.sqp_step(evaluate)
 
-    print sn.F
-    print sn.Fstate
+    print((sn.F))
+    print((sn.Fstate))
 
-    print sn.x
-    print sn.xstate
+    print((sn.x))
+    print((sn.xstate))

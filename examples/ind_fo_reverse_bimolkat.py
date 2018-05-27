@@ -68,9 +68,9 @@ xs_bar[-1, 1] = 1
 integrator.fo_reverse(xs_bar)
 
 # print results
-print "gradient of x(t=2; x0, p, q) w.r.t. p  = \n", integrator.p_bar, "\n"
-print "gradient of x(t=2; x0, p, q) w.r.t. q  = \n", integrator.q_bar, "\n"
-print "gradient of x(t=2; x0, p, q) w.r.t. x0 = \n", integrator.x0_bar
+print("gradient of x(t=2; x0, p, q) w.r.t. p  = \n", integrator.p_bar, "\n")
+print("gradient of x(t=2; x0, p, q) w.r.t. q  = \n", integrator.q_bar, "\n")
+print("gradient of x(t=2; x0, p, q) w.r.t. x0 = \n", integrator.x0_bar)
 
 """
 ===============================================================================

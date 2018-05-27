@@ -61,7 +61,7 @@ ocs.ocp    = ocp      # ocp to be solved
 ocs.solver = "snopt"  # nlp solver to be used
 ocs.solve()			  # solve the ocp
 
-print "\n"
+print("\n")
 pprint.pprint(ocp.optimal)  # print results
 
 ocp.q = ocp.optimal["q"]

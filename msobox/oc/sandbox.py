@@ -559,9 +559,9 @@ if __name__ == "__main__":
     # time scaling of one
     p[...] = [1.5]
 
-    print "y0: \n", y0
-    print "q: \n", q
-    print "p: \n", p
+    print(("y0: \n", y0))
+    print(("q: \n", q))
+    print(("p: \n", p))
 
     # Gradient calculation
     # setup directions for directional derivatives
@@ -571,9 +571,9 @@ if __name__ == "__main__":
     q_d = x_d[NY:-NP, :].reshape(NMS, NU, P)  # pwc. controls
     p_d = x_d[-NP:, :]  # parameters
 
-    print "y0_d: \n", y0_d
-    print "q_d: \n", q_d
-    print "p_d: \n", p_d
+    print(("y0_d: \n", y0_d))
+    print(("q_d: \n", q_d))
+    print(("p_d: \n", p_d))
 
     # define Gradient in sparse coordinate form (i, j, val)
     k = 0
@@ -669,12 +669,12 @@ if __name__ == "__main__":
     # run SNOPT
     sn.set_derivative_mode(1)  # mode 0 means use finite differences
     if sn.deropt[0] == 0:
-        print "estimate jacobian structure"
-        print "-"*30
+        print("estimate jacobian structure")
+        print(("-"*30))
         sn.calc_jacobian(evaluate)
-        print "iGfun = \n", sn.iGfun
-        print "jGvar = \n", sn.jGvar
-        print ""
+        print(("iGfun = \n", sn.iGfun))
+        print(("jGvar = \n", sn.jGvar))
+        print("")
 
     # calculate derivative with finite differences
     F = np.zeros([1 + NC])
@@ -687,18 +687,18 @@ if __name__ == "__main__":
         G[:, j] = (G[:, j] - F_tmp)/1e-8
     G_fd = G.copy()
 
-    print "G_fd = \n", G
+    print(("G_fd = \n", G))
     eval_G(F, G, x, x_d, ind, mf)
     G_ad = G.copy()
-    print "G_ad = \n", G_ad
-    print "err = \n", G_ad - G_fd
+    print(("G_ad = \n", G_ad))
+    print(("err = \n", G_ad - G_fd))
 
-    print "solve SQP problem"
-    print "-"*30
+    print("solve SQP problem")
+    print(("-"*30))
     sn.sqp_step(evaluate)
-    print ""
+    print("")
 
-    print "evaluate F for plotting"
+    print("evaluate F for plotting")
     F = sn.F
     x = sn.x
 
@@ -706,14 +706,14 @@ if __name__ == "__main__":
     q = x[NY:-NP].reshape(NMS, NU)  # pwc. controls
     p  = x[-NP:]  # parameters
 
-    print "y0: \n", y0
-    print "q: \n", q
-    print "p: \n", p
+    print(("y0: \n", y0))
+    print(("q: \n", q))
+    print(("p: \n", p))
 
     eval_F(F, x, ind, mf)
     plot.update(F, x)
     plot.savefig(fname="final_ss")
-    print ""
+    print("")
 
 
 # ------------------------------------------------------------------------------

@@ -552,4 +552,4 @@ def set_errorbar(plotline, caplines, barlinecols, x, y, yerr):
          caplines[i].set_data(pos)
 
     # Update the error bars
-    barlinecols[0].set_segments(zip(zip(x,y-yerr), zip(x,y+yerr)))
+    barlinecols[0].set_segments(list(zip(list(zip(x,y-yerr)), list(zip(x,y+yerr)))))

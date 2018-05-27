@@ -12,13 +12,13 @@ from collections import (OrderedDict,)
 from numpy.testing import (TestCase, run_module_suite)
 from numpy.testing import (assert_equal, assert_allclose)
 
-from conftest import (md_dict,)
-from conftest import (ffcn_py, ffcn_d_xpu_v_py,)
-from conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (ffcn_b_xpu_py,)
-from conftest import (hfcn_py, hfcn_d_xpu_v_py,)
-from conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
-from conftest import (hfcn_b_xpu_py,)
+from .conftest import (md_dict,)
+from .conftest import (ffcn_py, ffcn_d_xpu_v_py,)
+from .conftest import (ffcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (ffcn_b_xpu_py,)
+from .conftest import (hfcn_py, hfcn_d_xpu_v_py,)
+from .conftest import (hfcn_d_xpu_v_d_xx_dpp_duu_d_v_py,)
+from .conftest import (hfcn_b_xpu_py,)
 
 from msobox.mf.model import (Model,)
 
@@ -124,13 +124,13 @@ def test_model_function_evaluation_from_mf_py(
     actual(*actual_args)
     desired(*desired_args)
 
-    print ""
+    print("")
     for i in range(len(actual_args)):
-        print "actual:  ", actual_args[i]
-        print "desired: ", desired_args[i]
-        print "error:   ", lg.norm(desired_args[i] - actual_args[i])
+        print(("actual:  ", actual_args[i]))
+        print(("desired: ", desired_args[i]))
+        print(("error:   ", lg.norm(desired_args[i] - actual_args[i])))
         assert_allclose(actual_args[i], desired_args[i])
-    print "successful!"
+    print("successful!")
 
 
 @pytest.mark.parametrize("member", [
@@ -159,7 +159,7 @@ def test_model_derivative_evaluation_from_mf_py(
     P = numpy.random.randint(20)
     actual_args = []
     for arg in f_dict["args"]:
-        if f_dims.has_key(arg):
+        if arg in f_dims:
             actual_args.append(numpy.random.random(f_dims[arg]))
         else:
             arg = arg.split("_")[0]
@@ -175,13 +175,13 @@ def test_model_derivative_evaluation_from_mf_py(
     actual(*actual_args)
     desired(*desired_args)
 
-    print ""
+    print("")
     for i in range(len(actual_args)):
-        print "actual:  ", actual_args[i]
-        print "desired: ", desired_args[i]
-        print "error:   ", lg.norm(desired_args[i] - actual_args[i])
+        print(("actual:  ", actual_args[i]))
+        print(("desired: ", desired_args[i]))
+        print(("error:   ", lg.norm(desired_args[i] - actual_args[i])))
         assert_allclose(actual_args[i], desired_args[i])
-    print "successful!"
+    print("successful!")
 
 
 def test_model_function_assignment_from_mf_so(

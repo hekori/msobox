@@ -458,8 +458,8 @@ if __name__ == "__main__":
     s1 = s.copy()
     sfcn(s1, t1)
 
-    print t0, s0
-    print t1, s1
+    print((t0, s0))
+    print((t1, s1))
     rf = RootFind()
     rf.initialize(t0=t0, f0=s0, t1=t1, f1=s1)
 
@@ -480,15 +480,15 @@ if __name__ == "__main__":
         plt.pause(0.0001)
 
         if rf.STATE == 'finished':
-            print "root:  ", ret[0]
-            print "value: ", ret[1]
-            print 'done'
+            print(("root:  ", ret[0]))
+            print(("value: ", ret[1]))
+            print('done')
             break
 
-        print "sleeping"
+        print("sleeping")
         sleep(1.0)
 
-    print "sleeping"
+    print("sleeping")
     sleep(2.0)
     fig.savefig("root_find.pdf", dpi=200)
 

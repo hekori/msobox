@@ -18,7 +18,7 @@ from numpy.testing import (assert_equal, assert_allclose)
 from msobox.mf.functions import (Functor,)
 from msobox.mf.model import (Model,)
 
-from conftest import (load_fortran_example_model_by_name,)
+from .conftest import (load_fortran_example_model_by_name,)
 
 # ------------------------------------------------------------------------------
 # SET ACCURACY OF NUMERICAL TESTS
@@ -44,15 +44,15 @@ def test_forward_vs_reverse_evaluation(get_msobox_examples_path):
     # look for family of functions in model functions, e.g.
     # ffcn = [ffcn, ffcn_dot, ffcn_d_xpu_v, ...]
     functions = {}
-    for key, val in mf.__dict__.iteritems():
+    for key, val in list(mf.__dict__.items()):
         if isinstance(val, Functor):
             func = key.split("_")[0]
-            if not functions.has_key(func):
+            if func not in functions:
                 functions[func] = []
             functions[func].append(key)
 
     # walk through function families and perform tests
-    for func in functions.keys():
+    for func in list(functions.keys()):
         # perform first-order forward vs reverse test
         nom = func
         dot = func + "_dot"
@@ -73,7 +73,7 @@ def test_forward_vs_reverse_evaluation(get_msobox_examples_path):
                     n_args[arg] = numpy.random.random(nom_dims[arg])
 
             # evaluate nominal call
-            nom(*n_args.values())
+            nom(*list(n_args.values()))
 
             # prepare first-order forward derivative call
             # compute sum of dimension to provide proper forward directions
@@ -111,7 +111,7 @@ def test_forward_vs_reverse_evaluation(get_msobox_examples_path):
                         # d_args[arg] = numpy.random.random(dot_dims[arg])
 
             # evaluate forward derivative call
-            dot(*d_args.values())
+            dot(*list(d_args.values()))
 
             bar = getattr(mf, bar)
             bar_dims = bar._dimensions
@@ -141,31 +141,31 @@ def test_forward_vs_reverse_evaluation(get_msobox_examples_path):
             temp_b_args = deepcopy(b_args)
 
             # evaluate forward derivative call
-            bar(*b_args.values())
+            bar(*list(b_args.values()))
 
-            b_args.values()[1][...] = temp_b_args.values()[1]
+            list(b_args.values())[1][...] = list(temp_b_args.values())[1]
 
             # Test the nominal evaluation:
             assert_allclose(
-                n_args.values()[0], d_args.values()[0], rtol=RTOL, atol=ATOL
+                list(n_args.values())[0], list(d_args.values())[0], rtol=RTOL, atol=ATOL
             )
             assert_allclose(
-                n_args.values()[0], b_args.values()[0], rtol=RTOL, atol=ATOL
+                list(n_args.values())[0], list(b_args.values())[0], rtol=RTOL, atol=ATOL
             )
 
             # Test the AD identity:
             #  y_bar.T * y_dot = x_bar.T * x_dot + ... + u_bar.T * u_dot
             # calculate out vars
-            oarg_dot = d_args.values()[1]
-            oarg_bar = b_args.values()[1]
+            oarg_dot = list(d_args.values())[1]
+            oarg_bar = list(b_args.values())[1]
             oarg = oarg_bar.T.dot(oarg_dot)
 
             # calculate in vars
             iarg = numpy.zeros([Q, P])
-            for i, arg in enumerate(d_args.keys()[2:]):
+            for i, arg in enumerate(list(d_args.keys())[2:]):
                 if "_d" in arg:
-                    iarg_dot = d_args.values()[i+2]
-                    iarg_bar = b_args.values()[i+2]
+                    iarg_dot = list(d_args.values())[i+2]
+                    iarg_bar = list(b_args.values())[i+2]
                     iarg += iarg_bar.T.dot(iarg_dot)
 
             assert_allclose(

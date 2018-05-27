@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     t = 0.
     for i in range(100):
-        print '======== Iteration %4d ========'%i
+        print('======== Iteration %4d ========'%i)
 
         # if i % 20 == 0:
         #     mhe.p_ref[1] += 1
@@ -137,14 +137,14 @@ if __name__ == "__main__":
             mhe.optimize()
 
         # print mhe.xbar
-        print mhe.pbar
-        print mhe.p
-        print mhe.p_ref
+        print(mhe.pbar)
+        print(mhe.p)
+        print(mhe.p_ref)
 
         if np.any(mhe.p <= 0.):
             raise Exception("parameter negative")
 
 
-    raw_input("press enter to continue")
+    input("press enter to continue")
 
     # mhe.plot_data.save_data('/tmp/out.txt')
